@@ -1,31 +1,35 @@
-import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  FaUserCircle,
-  FaClipboardList,
-  FaConciergeBell,
-  FaFileAlt,
-  FaSignOutAlt,
-} from "react-icons/fa";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { FaFileAlt, FaSignOutAlt, FaHome, FaCalendarAlt, FaConciergeBell, FaBars, FaTimes } from "react-icons/fa";
 
-const RequestPage = () => {
+export default function RequestPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [servicesOpen, setServicesOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [selectedFile, setSelectedFile] = useState(null);
   const sidebarRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const handleResize = () => setIsMobile(window.innerWidth <= 768);
-
+  // Mobile detection
   useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const handleFileChange = (event) => {
-    setSelectedFile(event.target.files[0]);
-  };
+  // Close sidebar if clicking outside (mobile)
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (isMobile && sidebarOpen && sidebarRef.current && !sidebarRef.current.contains(e.target)) {
+        setSidebarOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isMobile, sidebarOpen]);
 
+  const handleFileChange = (e) => setSelectedFile(e.target.files[0]);
   const handleUpload = () => {
     if (selectedFile) {
       alert(`Uploaded: ${selectedFile.name}`);
@@ -40,95 +44,160 @@ const RequestPage = () => {
     navigate("/");
   };
 
-  const menuStyle = {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    padding: "12px 15px",
-    cursor: "pointer",
-    borderRadius: "8px",
-    marginBottom: "10px",
-    transition: "background 0.3s",
-    color: "#333",
-  };
-
-  const iconStyle = { color: "#28D69F", minWidth: "20px" };
+  const getMenuStyle = (path) => ({
+    ...menuStyle,
+    backgroundColor: location.pathname === path ? "#FFC107" : "transparent",
+    color: location.pathname === path ? "black" : "white",
+  });
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh" }}>
-      {/* Sidebar */}
-      <aside
-        ref={sidebarRef}
+    <div style={{ fontFamily: '"Lexend", sans-serif', width: "100%", minHeight: "100%" }}>
+      {/* Header */}
+      <header
         style={{
-          position: isMobile ? "fixed" : "relative",
+          backgroundColor: "#F4BE2A",
+          color: "black",
+          padding: "15px 20px",
+          display: "flex",
+          alignItems: "center",
+          position: "sticky",
           top: 0,
-          left: sidebarOpen || !isMobile ? 0 : "-260px",
-          height: "100vh",
-          width: "240px",
-          backgroundColor: "#8d6262ff",
-          boxShadow: "2px 0 8px rgba(0,0,0,0.1)",
-          transition: "left 0.3s ease",
-          zIndex: 1000,
-          padding: "20px 10px",
+          zIndex: 999,
+          boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
         }}
       >
-        <div style={{ textAlign: "center", marginBottom: "30px" }}>
-          <FaUserCircle size={50} color="#28D69F" />
-          <p style={{ fontWeight: "bold", marginTop: "10px" }}>Resident</p>
-        </div>
+        {isMobile && (
+          <div onClick={() => setSidebarOpen(!sidebarOpen)} style={{ cursor: "pointer", marginRight: "10px" }}>
+            {sidebarOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
+          </div>
+        )}
+        <h1 style={{ margin: 0, fontSize: isMobile ? "16px" : "clamp(18px, 2vw, 28px)", fontWeight: "bold" }}>
+          UPLOAD REQUEST FILE
+        </h1>
+      </header>
 
-        <div style={menuStyle} onClick={() => navigate("/resident/dashboard")}>
-          <FaClipboardList style={iconStyle} /> Dashboard
-        </div>
-        <div style={menuStyle} onClick={() => navigate("/resident/request")}>
-          <FaFileAlt style={iconStyle} /> Request
-        </div>
-        <div
-          style={menuStyle}
-          onClick={() => navigate("/resident/disclosure-board")}
-        >
-          <FaConciergeBell style={iconStyle} /> Disclosure Board
-        </div>
-        <div style={menuStyle} onClick={handleLogout}>
-          <FaSignOutAlt style={iconStyle} /> Logout
-        </div>
-      </aside>
+      <div style={{ display: "flex", position: "relative" }}>
+      {/* Sidebar */}
+<aside
+  ref={sidebarRef}
+  style={{
+    position: isMobile ? "fixed" : "relative",
+    top: 0,
+    transform: sidebarOpen || !isMobile ? "translateX(0)" : "translateX(-250px)",
+    transition: "transform 0.3s ease",
+    height: "100vh",
+    width: "220px",
+    backgroundColor: "#A43259",
+    color: "white",
+    zIndex: 1000,
+    padding: "20px 10px",
+    display: "flex",
+    flexDirection: "column",
+    boxShadow: isMobile && sidebarOpen ? "2px 0 6px rgba(0,0,0,0.3)" : "none",
+  }}
+>
 
-      {/* Main Content */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        {/* Header */}
-        <header
+        
+          {/* Home */}
+          <div
+            style={{
+              ...getMenuStyle("/resident/dashboard"),
+              backgroundColor: "#F4BE2A",
+              color: "black",
+              borderRadius: "8px",
+              padding: "10px",
+              textAlign: "center",
+              marginBottom: "10px",
+              transition: "transform 0.3s",
+            }}
+            onClick={() => navigate("/resident/dashboard")}
+            onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+          >
+            <FaHome style={{ marginRight: "5px" }} /> Home
+          </div>
+
+          {/* Services */}
+          <div>
+            <div
+              style={{
+                ...menuStyle,
+                backgroundColor: "#F4BE2A",
+                color: "black",
+                transition: "transform 0.3s",
+              }}
+              onClick={() => setServicesOpen(!servicesOpen)}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = "translateX(10px)")}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = "translateX(0)")}
+            >
+              <FaConciergeBell style={iconStyle} /> Services
+            </div>
+
+            {servicesOpen && (
+              <div style={{ marginLeft: "15px", display: "flex", flexDirection: "column", gap: "5px", marginTop: "5px" }}>
+                <div
+                  style={{
+                    ...submenuStyle,
+                    backgroundColor: location.pathname === "/resident/request" ? "#1E90FF" : "#1E90FF",
+                    color: "white",
+                    transition: "transform 0.3s",
+                  }}
+                  onClick={() => navigate("/resident/request")}
+                  onMouseEnter={(e) => (e.currentTarget.style.transform = "translateX(10px)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.transform = "translateX(0)")}
+                >
+                  <FaFileAlt style={iconStyle} /> Requests
+                </div>
+                <div
+                  style={{
+                    ...submenuStyle,
+                    backgroundColor: location.pathname === "/resident/schedule" ? "#1E90FF" : "#1E90FF",
+                    color: "white",
+                    transition: "transform 0.3s",
+                  }}
+                  onClick={() => navigate("/resident/schedule")}
+                  onMouseEnter={(e) => (e.currentTarget.style.transform = "translateX(10px)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.transform = "translateX(0)")}
+                >
+                  <FaCalendarAlt style={iconStyle} /> Schedule
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Logout */}
+          <div style={{ marginTop: "auto", paddingTop: "20px" }}>
+            <button
+              onClick={handleLogout}
+              style={{
+                ...menuStyle,
+                backgroundColor: "#ff0000",
+                color: "white",
+                width: "100%",
+                justifyContent: "center",
+                fontWeight: "bold",
+                transition: "transform 0.3s",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+            >
+              <FaSignOutAlt style={iconStyle} /> Logout
+            </button>
+          </div>
+        </aside>
+
+        {/* Main content */}
+        <main
           style={{
-            backgroundColor: "#28D69F",
-            color: "black",
-            padding: "15px 20px",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            position: "sticky",
-            top: 0,
-            zIndex: 999,
+            flex: 1,
+            padding: isMobile ? "15px 10px" : "20px",
+            overflowY: "auto",
+            minHeight: "100vh",
+            boxSizing: "border-box",
+            transition: "margin-left 0.3s ease",
+            marginLeft: isMobile && sidebarOpen ? "220px" : "0",
           }}
         >
-          <h1 style={{ margin: 0, fontSize: "20px" }}>Resident Request</h1>
-          {isMobile && (
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              style={{
-                background: "none",
-                border: "none",
-                fontSize: "24px",
-                cursor: "pointer",
-                color: "black",
-              }}
-            >
-              ☰
-            </button>
-          )}
-        </header>
-
-        {/* Upload Section */}
-        <main style={{ flex: 1, padding: "20px" }}>
           <div
             style={{
               maxWidth: "600px",
@@ -139,19 +208,9 @@ const RequestPage = () => {
               backgroundColor: "#fff",
             }}
           >
-            <h2 style={{ marginBottom: "15px", color: "#28D69F" }}>
-              Upload File for Printing
-            </h2>
-            <input
-              type="file"
-              onChange={handleFileChange}
-              style={{ marginBottom: "15px" }}
-            />
-            {selectedFile && (
-              <p>
-                <strong>Selected File:</strong> {selectedFile.name}
-              </p>
-            )}
+            <h2 style={{ marginBottom: "15px", color: "#28D69F" }}>Upload File for Printing</h2>
+            <input type="file" onChange={handleFileChange} style={{ marginBottom: "15px" }} />
+            {selectedFile && <p><strong>Selected File:</strong> {selectedFile.name}</p>}
             <button
               onClick={handleUpload}
               style={{
@@ -162,6 +221,7 @@ const RequestPage = () => {
                 border: "none",
                 borderRadius: "8px",
                 cursor: "pointer",
+                width: "100%",
               }}
             >
               Upload
@@ -169,8 +229,43 @@ const RequestPage = () => {
           </div>
         </main>
       </div>
+
+      {/* Footer */}
+      <footer
+        style={{
+          backgroundColor: "#28D69F",
+          color: "black",
+          padding: isMobile ? "10px 15px" : "15px 40px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexDirection: isMobile ? "column" : "row",
+          gap: isMobile ? "8px" : "0",
+        }}
+      >
+        <div style={{ fontWeight: "bold" }}>🌿 Barangay Logo</div>
+        <div style={{ display: "flex", gap: "15px", justifyContent: "center" }}>
+          <a href="#">Facebook</a>
+          <a href="#">Twitter</a>
+          <a href="#">Instagram</a>
+        </div>
+        <div>📞 0917-123-4567</div>
+      </footer>
     </div>
   );
+}
+
+const menuStyle = {
+  display: "flex",
+  alignItems: "center",
+  gap: "8px",
+  cursor: "pointer",
+  padding: "10px",
+  fontSize: "15px",
+  borderRadius: "6px",
+  marginBottom: "10px",
+  transition: "all 0.3s",
 };
 
-export default RequestPage;
+const submenuStyle = { ...menuStyle, fontSize: "13px", width: "90%", padding: "6px" };
+const iconStyle = { fontSize: "16px" };

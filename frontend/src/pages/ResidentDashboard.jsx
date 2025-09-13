@@ -18,6 +18,10 @@ export default function ResidentDashboard() {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const navigate = useNavigate();
   const sidebarRef = useRef(null);
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [user, setUser] = useState(null);
+
+
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -72,27 +76,35 @@ export default function ResidentDashboard() {
   ];
 
   const galleryProjects = [
-    {
-      id: 1,
-      img: 'https://i.pinimg.com/736x/9a/82/56/9a825639f9b7f73a9ba7ba2091305b4d.jpg',
-      name: 'Road Improvement Project',
-    },
-    {
-      id: 2,
-      img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcReCX6yHAZubHcIB8Y3pmNlUCa8cxIP2vKETfXaji2nNzVNaf-36e756b5-KyrtpQDm37Y&usqp=CAU',
-      name: 'Community Library',
-    },
-    {
-      id: 3,
-      img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcThxURH9aik0oxxhj4SR5Su48l0ynhMrdpr5g&s',
-      name: 'Barangay Hall Renovation',
-    },
-    {
-      id: 4,
-      img: 'https://i.pinimg.com/474x/ae/4c/3b/ae4c3bd955d744880aa3646dd4a842ad.jpg',
-      name: 'Drainage System Upgrade',
-    },
-  ];
+  {
+    id: 1,
+    img: 'https://i.pinimg.com/736x/9a/82/56/9a825639f9b7f73a9ba7ba2091305b4d.jpg',
+    name: 'Road Improvement Project',
+    details: 'This project focuses on repairing and improving the main roads of the barangay to ensure safety and smoother transportation.',
+    date: 'August 15, 2025',
+  },
+  {
+    id: 2,
+    img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcReCX6yHAZubHcIB8Y3pmNlUCa8cxIP2vKETfXaji2nNzVNaf-36e756b5-KyrtpQDm37Y&usqp=CAU',
+    name: 'Community Library',
+    details: 'A newly built community library to provide free access to books and resources for all residents.',
+    date: 'July 20, 2025',
+  },
+  {
+    id: 3,
+    img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcThxURH9aik0oxxhj4SR5Su48l0ynhMrdpr5g&s',
+    name: 'Barangay Hall Renovation',
+    details: 'Renovation of the barangay hall to improve facilities and service delivery.',
+    date: 'June 10, 2025',
+  },
+  {
+    id: 4,
+    img: 'https://i.pinimg.com/474x/ae/4c/3b/ae4c3bd955d744880aa3646dd4a842ad.jpg',
+    name: 'Drainage System Upgrade',
+    details: 'Upgrading the drainage system to prevent flooding during heavy rains.',
+    date: 'May 5, 2025',
+  },
+];
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -187,60 +199,120 @@ export default function ResidentDashboard() {
             flexDirection: 'column',
           }}
         >
-          {/* Your Account */}
-          <div
-            style={{
-              textAlign: 'center',
-              marginBottom: '20px',
-              padding: '10px',
-              backgroundColor: '#922A4C',
-              borderRadius: '8px',
-            }}
-          >
-            <FaUserCircle size={50} color="white" />
-            <p style={{ fontWeight: 'bold', marginTop: '10px' }}>Your Account</p>
-            <p style={{ fontSize: '14px' }}>Resident</p>
-          </div>
+ 
+        {/* Your Account */}
+<div
+  style={{
+    textAlign: "center",
+    marginBottom: "20px",
+    padding: "10px",
+    backgroundColor: "#f9f9f9ff",
+    borderRadius: "8px",
+    color: "black",
+    cursor: "pointer",
+    transition: "transform 0.3s ease",
+  }}
+  onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
+  onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+  onClick={() => navigate("/resident/youraccount")}
+>
+  <FaUserCircle size={50} color="black" />
+  
+  {/* Your Account heading */}
+  <p style={{ fontWeight: "bold", marginTop: "10px" }}>Your Account</p>
 
-          <div
-            style={menuStyle}
-            onClick={() => navigate('/resident/disclosure-board')}
-          >
-            <FaClipboardList style={iconStyle} /> Disclosure Board
-          </div>
+  {/* Display logged-in user name below */}
+  <p style={{ fontSize: "14px", fontStyle: "italic", marginTop: "5px" }}></p>
+</div>
 
-          <div>
-            <div
-              style={menuStyle}
-              onClick={() => setServicesOpen(!servicesOpen)}
-            >
-              <FaConciergeBell style={iconStyle} /> Services
-            </div>
-            {servicesOpen && (
-              <div
-                style={{
-                  marginLeft: '15px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '5px',
-                  marginTop: '5px',
-                }}
-              >
-                <div
-                  style={submenuStyle}
-                  onClick={() => navigate('/resident/request')}
-                >
-                  <FaFileAlt style={iconStyle} /> Requests
-                </div>
-                <div
-                  style={submenuStyle}
-                  onClick={() => navigate('/resident/schedule')}
-                >
-                  <FaCalendarAlt style={iconStyle} /> Schedule
-                </div>
-              </div>
-            )}
-          </div>
+
+
+{/* Disclosure Board */}
+<div
+  style={{
+    ...menuStyle,
+    backgroundColor: '#1E90FF', // Blue permanent
+    color: 'white',
+    transition: 'transform 0.2s ease', // smooth slide
+  }}
+  onMouseEnter={(e) => {
+    e.currentTarget.style.transform = 'translateX(10px)'; // slide right
+  }}
+  onMouseLeave={(e) => {
+    e.currentTarget.style.transform = 'translateX(0)'; // balik normal
+  }}
+  onClick={() => navigate('/resident/disclosure-board')}
+>
+  <FaClipboardList style={iconStyle} /> Disclosure Board
+</div>
+
+{/* Services */}
+<div>
+  <div
+    style={{
+      ...menuStyle,
+      backgroundColor: '#F4BE2A', // Yellow permanent
+      color: 'black',
+      transition: 'transform 0.3s ease',
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.transform = 'translateX(10px)';
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.transform = 'translateX(0)';
+    }}
+    onClick={() => setServicesOpen(!servicesOpen)}
+  >
+    <FaConciergeBell style={iconStyle} /> Services
+  </div>
+  {servicesOpen && (
+    <div
+      style={{
+        marginLeft: '15px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '5px',
+        marginTop: '5px',
+      }}
+    >
+      <div
+        style={{
+          ...submenuStyle,
+          backgroundColor: '#1E90FF', // Blue permanent
+          color: 'white',
+          transition: 'transform 0.3s ease',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateX(10px)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateX(0)';
+        }}
+        onClick={() => navigate('/resident/request')}
+      >
+        <FaFileAlt style={iconStyle} /> Requests
+      </div>
+      <div
+        style={{
+          ...submenuStyle,
+          backgroundColor: '#1E90FF',
+          color: 'white',
+          transition: 'transform 0.3s ease',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateX(10px)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateX(0)';
+        }}
+        onClick={() => navigate('/resident/schedule')}
+      >
+        <FaCalendarAlt style={iconStyle} /> Schedule
+      </div>
+    </div>
+  )}
+</div>
+
 
           <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
             <button
@@ -281,6 +353,8 @@ export default function ResidentDashboard() {
                 boxShadow: '0 0 5px #999',
               }}
             >
+
+              
               <h2>Announcements</h2>
               {announcements.map((a) => (
                 <div key={a.id} style={{ marginBottom: '10px' }}>
@@ -403,59 +477,158 @@ export default function ResidentDashboard() {
   }}
   className="horizontal-scroll"
 >
+
+
+
+
+
+
+
   {galleryProjects.map((p) => (
-    <div
-      key={p.id}
+  <div
+    key={p.id}
+    style={{
+      flex: '0 0 auto',
+      width: isMobile ? '150px' : '200px',
+      borderRadius: '10px',
+      margin:'30px',
+      overflow: 'hidden',
+      boxShadow: '0 6px 14px rgba(0,0,0,0.3)',
+      backgroundColor: '#A43259',
+      transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+    }}
+    onMouseEnter={(e) => {
+      if (!isMobile) {
+        e.currentTarget.style.transform = 'translateY(-5px)';
+        e.currentTarget.style.boxShadow = '0 12px 20px rgba(0,0,0,0.4)';
+      }
+    }}
+    onMouseLeave={(e) => {
+      if (!isMobile) {
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = '0 6px 14px rgba(0,0,0,0.3)';
+      }
+    }}
+    onClick={() => setSelectedProject(p)}   // 👉 dito mo idagdag
+  >
+    <img
+      src={p.img}
+      alt={p.name}
       style={{
-        flex: '0 0 auto', // important para hindi lumaki o lumiit
-        width: isMobile ? '150px' : '200px',
-        borderRadius: '10px',
-        margin:'30px',
-        overflow: 'hidden',
-        boxShadow: '0 6px 14px rgba(0,0,0,0.3)',
-        backgroundColor: '#A43259',
-        transition: 'transform 0.3s ease, box-shadow 0.3s ease', // smooth hover effect
+        width: '100%',
+        height: isMobile ? '120px' : '150px',
+        objectFit: 'cover',
       }}
-      onMouseEnter={(e) => {
-        if (!isMobile) {
-          e.currentTarget.style.transform = 'translateY(-5px)';
-          e.currentTarget.style.boxShadow = '0 12px 20px rgba(0,0,0,0.4)';
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!isMobile) {
-          e.currentTarget.style.transform = 'translateY(0)';
-          e.currentTarget.style.boxShadow = '0 6px 14px rgba(0,0,0,0.3)';
-        }
+    />
+    <p
+      style={{
+        margin: '5px 0',
+        fontWeight: 'bold',
+        textAlign: 'center',
+        padding: '5px',
       }}
     >
-      <img
-        src={p.img}
-        alt={p.name}
-        style={{
-          width: '100%',
-          height: isMobile ? '120px' : '150px',
-          objectFit: 'cover',
-        }}
-      />
-      <p
-        style={{
-          margin: '5px 0',
-          fontWeight: 'bold',
-          textAlign: 'center',
-          padding: '5px',
-        }}
-      >
-        {p.name}
-      </p>
-    </div>
-  ))}
+      {p.name}
+    </p>
+  </div>
+))}
+
 </div>
 </section>
 
 
           </div>
         </main>
+      {selectedProject && (
+  <div
+    style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      backgroundColor: "rgba(0,0,0,0.6)",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 2000,
+    }}
+    onClick={() => setSelectedProject(null)} // close kapag click sa labas
+  >
+    <div
+      style={{
+        position: "relative",
+        background: "white",
+        borderRadius: "12px",
+        padding: "20px",
+        maxWidth: "500px",
+        width: "90%",
+        maxHeight: "90vh",
+        overflowY: "auto",
+        textAlign: "center",
+      }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* Close button */}
+      <button
+        onClick={() => setSelectedProject(null)}
+        style={{
+          position: "absolute",
+          top: "10px",
+          right: "10px",
+          backgroundColor: "#A43259",
+          color: "white",
+          border: "none",
+          borderRadius: "50%",
+          width: "30px",
+          height: "30px",
+          cursor: "pointer",
+          fontWeight: "bold",
+        }}
+      >
+        ✕
+      </button>
+
+      {/* ✅ Indicator kung nasa recent project */}
+      <span
+        style={{
+          display: "inline-block",
+          padding: "5px 12px",
+          borderRadius: "20px",
+          backgroundColor: "#28D69F",
+          color: "white",
+          fontSize: "14px",
+          fontWeight: "bold",
+          marginBottom: "10px",
+        }}
+      >
+        📌 Recent Project
+      </span>
+
+      <h2 style={{ marginBottom: "10px" }}>{selectedProject.name}</h2>
+
+      <img
+        src={selectedProject.img}
+        alt={selectedProject.name}
+        style={{
+          maxWidth: "100%",
+          maxHeight: "60vh",
+          objectFit: "contain",
+          borderRadius: "10px",
+          marginBottom: "15px",
+        }}
+      />
+
+      <p style={{ marginBottom: "10px" }}>{selectedProject.details}</p>
+      <p style={{ fontStyle: "italic", color: "#666" }}>
+        📅 {selectedProject.date}
+      </p>
+    </div>
+  </div>
+)}
+
+
+
       </div>
 
       {/* Footer */}

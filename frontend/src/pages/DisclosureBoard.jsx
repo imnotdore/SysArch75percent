@@ -1,12 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaConciergeBell, FaFileAlt, FaSignOutAlt, FaTimes, FaHome } from 'react-icons/fa';
+import {
+  FaConciergeBell,
+  FaFileAlt,
+  FaSignOutAlt,
+  FaTimes,
+  FaHome,
+  FaCalendarAlt,
+} from 'react-icons/fa';
 
 export default function DisclosureBoard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-  const [previewFile, setPreviewFile] = useState(null); 
+  const [previewFile, setPreviewFile] = useState(null);
   const navigate = useNavigate();
   const sidebarRef = useRef(null);
 
@@ -18,7 +25,12 @@ export default function DisclosureBoard() {
 
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (isMobile && sidebarOpen && sidebarRef.current && !sidebarRef.current.contains(e.target)) {
+      if (
+        isMobile &&
+        sidebarOpen &&
+        sidebarRef.current &&
+        !sidebarRef.current.contains(e.target)
+      ) {
         setSidebarOpen(false);
       }
     };
@@ -39,122 +51,204 @@ export default function DisclosureBoard() {
   ];
 
   return (
-    <div style={{ fontFamily: '"Lexend", sans-serif', width: '100%', overflowX: 'hidden', minHeight: '100%' }}>
+    <div
+      style={{
+        fontFamily: '"Lexend", sans-serif',
+        width: '100%',
+        overflowX: 'hidden',
+        minHeight: '100vh',
+      }}
+    >
       {/* Header */}
-      <header style={{
-        backgroundColor: '#F4BE2A',
-        padding: isMobile ? '12px 10px' : '10px 20px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center', // center header text
-        position: 'sticky',
-        top: 0,
-        zIndex: 0,
-        boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-        width: '100%' // full width for mobile
-      }}>
-        {/* Disclosure Board */}
-        <span style={{
-          backgroundColor: '#A43259',
-          color: 'white',
-          padding: isMobile ? '10px 5px' : '25px 5px',
-          borderRadius: '2px',
-          fontWeight: '1000',
-          fontSize: isMobile ? '18px' : 'clamp(5px,4vw,28px)',
-          letterSpacing: '1px',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-          display: 'inline-block',
-          flex: 1,
-          textAlign: 'center'
-        }}>
-          DISCLOSURE BOARD
-        </span>
-      </header>
-
-      {/* Mobile Home Button */}
-      {isMobile && (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0', backgroundColor: '#fff' }}>
+      <header
+        style={{
+          backgroundColor: '#F4BE2A',
+          color: 'black',
+          padding: '15px 20px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          position: 'sticky',
+          top: 0,
+          zIndex: 999,
+          boxShadow: '0 2px 6px rgba(0, 0, 0, 0.15)',
+        }}
+      >
+        {/* Hamburger sa mobile */}
+        {isMobile && (
           <button
-            onClick={() => navigate('/resident/dashboard')}
+            onClick={() => setSidebarOpen(!sidebarOpen)}
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '4px',
-              background: '#32a469ff',
-              color: 'white',
+              background: 'none',
               border: 'none',
-              padding: '4px 10px', // smaller padding
-              borderRadius: '5px',
+              fontSize: '24px',
               cursor: 'pointer',
-              fontSize: '13px', // slightly smaller font
-              fontWeight: 'bold'
+              color: 'black',
+              marginRight: '10px',
             }}
           >
-            <FaHome /> Home
+            ☰
           </button>
-        </div>
-      )}
+        )}
 
-      {/* Sidebar + Main */}
-      <div style={{ display: 'flex', flexDirection: 'row', position: 'relative' }}>
+        {/* Logo */}
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <img
+            src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTuTWGBGqTAFV1r0LROEwfjVxsqs36wmWQqkQ&s"
+            alt="Barangay Logo"
+            style={{
+              width: '50px',
+              height: '50px',
+              borderRadius: '5px',
+              marginRight: '10px',
+            }}
+          />
+        </div>
+
+        <h1
+          style={{
+            margin: 0,
+            textAlign: 'center',
+            flex: 1,
+            fontSize: isMobile ? '16px' : 'clamp(18px, 2vw, 28px)',
+            fontWeight: 'bold',
+          }}
+        >
+          DISCLOSURE BOARD
+        </h1>
+
+        <div style={{ width: '34px' }} /> {/* balance placeholder */}
+      </header>
+
+      <div style={{ display: 'flex', position: 'relative' }}>
         {/* Sidebar */}
-        <div ref={sidebarRef} style={{
-          width: 220,
-          backgroundColor: '#A43259',
-          color: 'white',
-          transition: 'transform 0.3s ease',
-          position: isMobile ? 'fixed' : 'relative',
-          top: 0,
-          left: 0,
-          height: isMobile ? '100vh' : 'auto',
-          transform: isMobile ? `translateX(${sidebarOpen ? '0' : '-100%'})` : 'translateX(0)',
-          zIndex: 1000,
-          padding: '30px 5px',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'flex-start',
-          boxSizing: 'border-box'
-        }}>
-          {/* Desktop Home Button */}
-          {!isMobile && (
-            <button
-              onClick={() => navigate('/resident/dashboard')}
+        <aside
+          ref={sidebarRef}
+          style={{
+            position: isMobile ? 'fixed' : 'relative',
+            top: 0,
+            left: sidebarOpen || !isMobile ? 0 : '-240px',
+            height: '100vh',
+            width: '220px',
+            backgroundColor: '#A43259',
+            color: 'white',
+            transition: 'left 0.3s ease',
+            zIndex: 1000,
+            padding: '20px 10px',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          {/* Home */}
+          <div
+            style={{
+              ...menuStyle,
+              backgroundColor: '#FFC107',
+              color: 'black',
+              padding: '10px 15px',
+              borderRadius: '10px',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
+              fontWeight: 'bold',
+              transition: 'transform 0.3s ease',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+            onClick={() => navigate('/resident/dashboard')}
+          >
+            <FaHome style={iconStyle} /> Home
+          </div>
+
+          {/* Services */}
+          <div>
+            <div
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                background: '#2af43bff',
-                color: '#A43259',
-                border: 'none',
-                padding: '10px 12px',
-                borderRadius: '5px',
-                cursor: 'pointer',
+                ...menuStyle,
+                backgroundColor: '#F4BE2A',
+                color: 'black',
+                transition: 'transform 0.3s ease',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateX(10px)')}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateX(0)')}
+              onClick={() => setServicesOpen(!servicesOpen)}
+            >
+              <FaConciergeBell style={iconStyle} /> Services
+            </div>
+
+            {servicesOpen && (
+              <div
+                style={{
+                  marginLeft: '15px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '5px',
+                  marginTop: '5px',
+                }}
+              >
+                <div
+                  style={{
+                    ...submenuStyle,
+                    backgroundColor: '#1E90FF',
+                    color: 'white',
+                    transition: 'transform 0.3s ease',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateX(10px)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateX(0)')}
+                  onClick={() => navigate('/resident/request')}
+                >
+                  <FaFileAlt style={iconStyle} /> Requests
+                </div>
+                <div
+                  style={{
+                    ...submenuStyle,
+                    backgroundColor: '#1E90FF',
+                    color: 'white',
+                    transition: 'transform 0.3s ease',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateX(10px)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateX(0)')}
+                  onClick={() => navigate('/resident/schedule')}
+                >
+                  <FaCalendarAlt style={iconStyle} /> Schedule
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Logout */}
+          <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
+            <button
+              onClick={handleLogout}
+              style={{
+                ...menuStyle,
+                backgroundColor: '#ff0000',
+                color: 'white',
+                width: '100%',
+                justifyContent: 'center',
                 fontWeight: 'bold',
-                marginBottom: '20px'
               }}
             >
-              <FaHome /> Home
+              <FaSignOutAlt style={iconStyle} /> Logout
             </button>
-          )}
-
-          {/* Logout Button */}
-          <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
-            <div style={{ backgroundColor: '#F4BE2A', padding: '5px', borderRadius: '6px' }}>
-              <button onClick={handleLogout} style={{ ...menuStyle, backgroundColor: '#ff0000ff', color: 'white', width: '100%', justifyContent: 'center', fontWeight: 'bold' }}>
-                <FaSignOutAlt style={iconStyle} /> Logout
-              </button>
-            </div>
           </div>
-        </div>
-
-        {/* Mobile overlay */}
-        {isMobile && sidebarOpen && <div onClick={() => setSidebarOpen(false)} style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backdropFilter: 'blur(4px)', backgroundColor: 'rgba(0,0,0,0.2)', zIndex: 900, transition: '0.3s' }} />}
+        </aside>
 
         {/* Main content */}
-        <main style={{ flex: 1, padding: isMobile ? '15px 10px' : '20px', overflowY: 'auto', minHeight: '100vh', boxSizing: 'border-box' }}>
-          {/* Disclosure Files */}
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '15px' }}>
+        <main
+          style={{
+            flex: 1,
+            padding: isMobile ? '15px 10px' : '20px',
+            overflowY: 'auto',
+            minHeight: '100vh',
+            boxSizing: 'border-box',
+          }}
+        >
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+              gap: '15px',
+            }}
+          >
             {disclosureFiles.map((file) => (
               <div
                 key={file.id}
@@ -168,7 +262,7 @@ export default function DisclosureBoard() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  textAlign: 'center'
+                  textAlign: 'center',
                 }}
                 onClick={() => setPreviewFile(file)}
               >
@@ -179,13 +273,47 @@ export default function DisclosureBoard() {
         </main>
       </div>
 
-      {/* File Preview Overlay */}
+      {/* File Preview */}
       {previewFile && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000, padding: '10px', boxSizing: 'border-box' }} onClick={() => setPreviewFile(null)}>
-          <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '10px', minWidth: '300px', maxWidth: '600px', position: 'relative' }} onClick={(e) => e.stopPropagation()}>
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 2000,
+            padding: '10px',
+            boxSizing: 'border-box',
+          }}
+          onClick={() => setPreviewFile(null)}
+        >
+          <div
+            style={{
+              backgroundColor: 'white',
+              padding: '20px',
+              borderRadius: '10px',
+              minWidth: '300px',
+              maxWidth: '600px',
+              position: 'relative',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               onClick={() => setPreviewFile(null)}
-              style={{ position: 'absolute', top: '10px', right: '10px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px' }}
+              style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '18px',
+              }}
             >
               <FaTimes />
             </button>
@@ -199,9 +327,20 @@ export default function DisclosureBoard() {
       )}
 
       {/* Footer */}
-      <footer style={{ backgroundColor: '#28D69F', color: 'black', padding: isMobile ? '10px 15px' : '15px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '8px' : '0' }}>
+      <footer
+        style={{
+          backgroundColor: '#28D69F',
+          color: 'black',
+          padding: isMobile ? '10px 15px' : '15px 40px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: isMobile ? '8px' : '0',
+        }}
+      >
         <div style={{ fontWeight: 'bold' }}>🌿 Barangay Logo</div>
-        <div style={{ display:'flex', gap:'15px', justifyContent:'center' }}>
+        <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
           <a href="#">Facebook</a>
           <a href="#">Twitter</a>
           <a href="#">Instagram</a>
@@ -212,7 +351,23 @@ export default function DisclosureBoard() {
   );
 }
 
-// Styles
-const menuStyle = { display:'flex', alignItems:'center', gap:'5px', background:'white', color:'black', cursor:'pointer', padding:'10px', fontSize:'15px', borderRadius:'4px', width:'90%', textAlign:'left', margin:'0 auto', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', boxSizing:'border-box' };
-const submenuStyle = { ...menuStyle, background:'#f2f2f2', fontSize:'13px', width:'85%', padding:'6px' };
-const iconStyle = { fontSize:'16px' };
+const menuStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+  cursor: 'pointer',
+  padding: '10px',
+  fontSize: '15px',
+  borderRadius: '6px',
+  marginBottom: '10px',
+  transition: 'background 0.3s',
+};
+
+const submenuStyle = {
+  ...menuStyle,
+  fontSize: '13px',
+  width: '90%',
+  padding: '6px',
+};
+
+const iconStyle = { fontSize: '16px' };

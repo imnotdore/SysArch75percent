@@ -1,64 +1,91 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { FaUserCircle } from "react-icons/fa";
+import { FaUserCircle, FaEye, FaEyeSlash } from "react-icons/fa";
 
 function RoleSelection() {
   const navigate = useNavigate();
   const [role, setRole] = useState("");
   const [form, setForm] = useState({ username: "", password: "" });
+  const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
+  // Handle input changes
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+    if (errors[name]) setErrors({ ...errors, [name]: "" });
   };
 
+  // Validate form fields
+  const validateForm = () => {
+    const newErrors = {};
+    if (!role) newErrors.role = "Please select a role";
+    if (!form.username.trim()) newErrors.username = "Username is required";
+    if (!form.password) newErrors.password = "Password is required";
+    else if (form.password.length < 6)
+      newErrors.password = "Password must be at least 6 characters";
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validateForm()) return;
 
-    if (!role) {
-      alert("Please select a role first.");
-      return;
-    }
+    setIsLoading(true);
 
     try {
-      const res = await axios.post(
-        `${import.meta.env.VITE_API_URL}/auth/${role.toLowerCase()}/login`,
-        form
-      );
+      const url = `${import.meta.env.VITE_API_URL}/api/${role.toLowerCase()}/login`;
+      
+
+      const res = await axios.post(url, form);
+
+      
 
       localStorage.setItem("token", res.data.token);
 
-      if (role.toLowerCase() === "resident") {
-        navigate("/resident/dashboard");
-      } else if (role.toLowerCase() === "admin") {
-        navigate("/dashboard");
-      } else if (role.toLowerCase() === "staff") {
-        navigate("/staff/dashboard");
-      } else {
-        navigate("/");
+      // Redirect based on role
+      switch (role.toLowerCase()) {
+        case "resident":
+          navigate("/resident/dashboard");
+          break;
+        case "staff":
+          navigate("/staff/dashboard");
+          break;
+        case "admin":
+          navigate("/admin/dashboard");
+          break;
+        default:
+          navigate("/");
       }
     } catch (err) {
-      alert(err.response?.data?.error || "Login failed");
+      console.error("Login error: ", err);
+      const errorMessage = err.response?.data?.error || err.message || "Login failed";
+      setErrors({ submit: errorMessage });
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  // Navigate to register page
   const handleRegister = () => {
-    if (role) {
-      navigate(`/${role.toLowerCase()}/register`);
-    } else {
-      alert("Please select a role to register.");
-    }
+    if (role) navigate(`/${role.toLowerCase()}/register`);
+    else setErrors({ role: "Please select a role to register" });
   };
 
-  const inputBoxStyle = {
+  const inputStyle = (error) => ({
     width: "100%",
     padding: "12px",
     borderRadius: "10px",
-    border: "1px solid #ccc",
+    border: error ? "1px solid #e74c3c" : "1px solid #ccc",
     fontSize: "15px",
     boxSizing: "border-box",
-    marginBottom: "15px",
-  };
+    marginBottom: "5px",
+  });
 
   return (
     <div
@@ -66,58 +93,46 @@ function RoleSelection() {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        height: "100vh",
+        minHeight: "100vh",
         backgroundImage: 'url("/pic1.jpg")',
         backgroundSize: "cover",
-        backgroundImageSize: '100%',
-        backgroundPosition: 'center',
+        backgroundPosition: "center",
         padding: "15px",
       }}
     >
       <div
         style={{
           width: "100%",
-          maxWidth: "320px",
+          maxWidth: "350px",
           padding: "30px",
           borderRadius: "20px",
-          background: "#ffffff0d",
+          background: "rgba(255,255,255,0.95)",
           textAlign: "center",
-          boxShadow: "0 15px 30px rgba(0, 0, 0, 1)",
+          boxShadow: "0 15px 30px rgba(0,0,0,0.3)",
         }}
       >
-        {/* Icon Header */}
         <FaUserCircle
-          style={{ fontSize: "60px", color: "#000000ff", marginBottom: "15px" }}
+          style={{ fontSize: "60px", color: "#A43259", marginBottom: "15px" }}
         />
+        <h2 style={{ marginBottom: "20px", color: "#333" }}>Welcome Back</h2>
 
-        {/* Role Dropdown */}
         <select
           value={role}
-          onChange={(e) => setRole(e.target.value)}
-          style={{
-            width: "100%",
-            padding: "10px 12px",
-            borderRadius: "20px",
-            border: "1px solid #ccc",
-            fontSize: "14px",
-            outline: "none",
-            backgroundColor: "white",
-            color: "#333",
-            cursor: "pointer",
-            boxSizing: "border-box",
-            marginBottom: "20px", // gap below dropdown
-            transition: "border 0.1s, box-shadow 0.1s",
+          onChange={(e) => {
+            setRole(e.target.value);
+            if (errors.role) setErrors({ ...errors, role: "" });
           }}
-          onFocus={(e) => (e.target.style.border = "2px solid #c3b9b9c4")}
-          onBlur={(e) => (e.target.style.border = "1px solid #ccc")}
+          style={inputStyle(errors.role)}
         >
-          <option value="">Select Role</option>
+          <option value="">Select Your Role</option>
           <option value="Admin">Admin</option>
           <option value="Staff">Staff</option>
           <option value="Resident">Resident</option>
         </select>
+        {errors.role && (
+          <p style={{ color: "#e74c3c", fontSize: "12px" }}>{errors.role}</p>
+        )}
 
-        {/* Login Form */}
         <form onSubmit={handleSubmit}>
           <input
             type="text"
@@ -125,46 +140,77 @@ function RoleSelection() {
             placeholder="Username"
             value={form.username}
             onChange={handleChange}
-            style={inputBoxStyle}
-            required
+            style={inputStyle(errors.username)}
           />
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            value={form.password}
-            onChange={handleChange}
-            style={inputBoxStyle}
-            required
-          />
+          {errors.username && (
+            <p style={{ color: "#e74c3c", fontSize: "12px" }}>{errors.username}</p>
+          )}
+
+          <div style={{ position: "relative" }}>
+            <input
+              type={showPassword ? "text" : "password"}
+              name="password"
+              placeholder="Password"
+              value={form.password}
+              onChange={handleChange}
+              style={inputStyle(errors.password)}
+            />
+            <span
+              onClick={() => setShowPassword(!showPassword)}
+              style={{
+                position: "absolute",
+                right: "15px",
+                top: "14px",
+                cursor: "pointer",
+                color: "#777",
+              }}
+            >
+              {showPassword ? <FaEyeSlash /> : <FaEye />}
+            </span>
+            {errors.password && (
+              <p style={{ color: "#e74c3c", fontSize: "12px" }}>{errors.password}</p>
+            )}
+          </div>
+
+          {errors.submit && (
+            <div
+              style={{
+                color: "#e74c3c",
+                fontSize: "14px",
+                margin: "10px 0",
+                padding: "10px",
+                backgroundColor: "#fadbd8",
+                borderRadius: "5px",
+              }}
+            >
+              {errors.submit}
+            </div>
+          )}
+
           <button
             type="submit"
+            disabled={isLoading}
             style={{
-              ...inputBoxStyle,
-              background: "#A43259",
-              color: "white",
+              width: "100%",
+              padding: "12px",
+              borderRadius: "10px",
               border: "none",
+              backgroundColor: isLoading ? "#ccc" : "#A43259",
+              color: "white",
               fontWeight: "bold",
-              cursor: "pointer",
-              marginBottom: "0",
-              boxShadow: "0 4px 8px rgba(0,0,0,0.3)",
+              cursor: isLoading ? "not-allowed" : "pointer",
+              marginTop: "10px",
             }}
           >
-            Sign In
+            {isLoading ? "Signing In..." : "Sign In"}
           </button>
         </form>
 
-        {/* Register */}
-        <p style={{ marginTop: "15px", fontSize: "14px" }}>
-          Don’t have an account?{" "}
+        <p style={{ marginTop: "15px", fontSize: "14px", color: "#555" }}>
+          Don't have an account?{" "}
           <span
             onClick={handleRegister}
-            style={{
-              color: "blue",
-              textDecoration: "underline",
-              cursor: "pointer",
-              fontWeight: "bold",
-            }}
+            style={{ color: "#A43259", cursor: "pointer", fontWeight: "bold" }}
           >
             Register here
           </span>
