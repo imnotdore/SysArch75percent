@@ -37,15 +37,13 @@ function RoleSelection() {
     if (!validateForm()) return;
 
     setIsLoading(true);
+    setErrors({});
 
     try {
-      const url = `${import.meta.env.VITE_API_URL}/api/${role.toLowerCase()}/login`;
-      
-
+      const url = `${import.meta.env.VITE_API_URL}/api/auth/${role.toLowerCase()}/login`;
       const res = await axios.post(url, form);
 
-      
-
+      // Save token to localStorage
       localStorage.setItem("token", res.data.token);
 
       // Redirect based on role
@@ -64,7 +62,8 @@ function RoleSelection() {
       }
     } catch (err) {
       console.error("Login error: ", err);
-      const errorMessage = err.response?.data?.error || err.message || "Login failed";
+      const errorMessage =
+        err.response?.data?.error || err.message || "Login failed";
       setErrors({ submit: errorMessage });
     } finally {
       setIsLoading(false);
@@ -143,7 +142,9 @@ function RoleSelection() {
             style={inputStyle(errors.username)}
           />
           {errors.username && (
-            <p style={{ color: "#e74c3c", fontSize: "12px" }}>{errors.username}</p>
+            <p style={{ color: "#e74c3c", fontSize: "12px" }}>
+              {errors.username}
+            </p>
           )}
 
           <div style={{ position: "relative" }}>
@@ -168,7 +169,9 @@ function RoleSelection() {
               {showPassword ? <FaEyeSlash /> : <FaEye />}
             </span>
             {errors.password && (
-              <p style={{ color: "#e74c3c", fontSize: "12px" }}>{errors.password}</p>
+              <p style={{ color: "#e74c3c", fontSize: "12px" }}>
+                {errors.password}
+              </p>
             )}
           </div>
 
