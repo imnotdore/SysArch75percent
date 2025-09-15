@@ -7,35 +7,52 @@ export const ScheduleContext = createContext();
 export const ScheduleProvider = ({ children }) => {
   const [schedules, setSchedules] = useState([]);
 
-  // Fetch schedules for the logged-in resident
+  // Fetch schedules for the logged-in resident (userId galing JWT sa backend)
   const fetchSchedules = async () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("User not logged in");
 
-      const res = await axios.get(`${API_URL}/api/resident/schedules`, {
+      const res = await axios.get(`${API_URL}/api/schedules`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       setSchedules(res.data);
-      return res.data; // optional if you want a promise
+      return res.data;
     } catch (err) {
       console.error("Failed to fetch schedules:", err);
       throw err;
     }
   };
 
-  // Optionally, you can add functions to refresh, cancel, or update schedules
+  // Add schedule
+  const addSchedule = async (newSchedule) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("User not logged in");
+
+      const res = await axios.post(`${API_URL}/api/schedules`, newSchedule, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setSchedules((prev) => [...prev, res.data]);
+      return res.data;
+    } catch (err) {
+      console.error("Failed to add schedule:", err);
+      throw err;
+    }
+  };
+
+  // Cancel schedule
   const cancelSchedule = async (scheduleId) => {
     try {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("User not logged in");
 
-      await axios.delete(`${API_URL}/api/resident/schedules/${scheduleId}`, {
+      await axios.delete(`${API_URL}/api/schedules/${scheduleId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      // Remove from local state
       setSchedules((prev) => prev.filter((s) => s.id !== scheduleId));
     } catch (err) {
       console.error("Failed to cancel schedule:", err);
@@ -44,7 +61,9 @@ export const ScheduleProvider = ({ children }) => {
   };
 
   return (
-    <ScheduleContext.Provider value={{ schedules, fetchSchedules, cancelSchedule }}>
+    <ScheduleContext.Provider
+      value={{ schedules, fetchSchedules, addSchedule, cancelSchedule }}
+    >
       {children}
     </ScheduleContext.Provider>
   );

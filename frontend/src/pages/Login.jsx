@@ -37,33 +37,46 @@ function Login() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validateForm()) return;
+  e.preventDefault();
+  if (!validateForm()) return;
 
-    setIsLoading(true);
-    try {
-        const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
-const res = await axios.post(`${API_URL}/api/${role.toLowerCase()}/login`, form);
+  setIsLoading(true);
+  try {
+    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+    const res = await axios.post(
+      `${API_URL}/api/${role.toLowerCase()}/login`,
+      form
+    );
 
-      switch (role.toLowerCase()) {
-        case "resident":
-          navigate("/resident/dashboard");
-          break;
-        case "staff":
-          navigate("/staff/dashboard");
-          break;
-        case "admin":
-          navigate("/admin/dashboard");
-          break;
-        default:
-          navigate("/");
-      }
-    } catch (err) {
-      setErrors({ submit: err.response?.data?.error || "Login failed" });
-    } finally {
-      setIsLoading(false);
+    // ✅ Save token and username
+    localStorage.setItem("token", res.data.token);
+    if (res.data.username) {
+      localStorage.setItem("username", res.data.username);
+    } else if (res.data.user?.username) {
+      localStorage.setItem("username", res.data.user.username);
     }
-  };
+
+    // Redirect based on role
+    switch (role.toLowerCase()) {
+      case "resident":
+        navigate("/resident/dashboard");
+        break;
+      case "staff":
+        navigate("/staff/dashboard");
+        break;
+      case "admin":
+        navigate("/admin/dashboard");
+        break;
+      default:
+        navigate("/");
+    }
+  } catch (err) {
+    setErrors({ submit: err.response?.data?.error || "Login failed" });
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   return (
     <div style={{ display:"flex", justifyContent:"center", alignItems:"center", minHeight:"100vh", backgroundImage:'url("/pic1.jpg")', backgroundSize:"cover", backgroundPosition:"center", padding:"15px" }}>

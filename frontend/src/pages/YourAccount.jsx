@@ -13,10 +13,33 @@ import {
 } from "react-icons/fa";
 import { API_URL } from "../config";
 import { FileContext } from "../context/Filecontext";
+import { ScheduleContext } from "../context/ScheduleContext";
+// Format date as "Sept. 20, 2025"
+const formatDate = (dateStr) => {
+  if (!dateStr) return "";
+  const date = new Date(dateStr);
+  const months = [
+    "Jan.", "Feb.", "Mar.", "Apr.", "May", "Jun.",
+    "Jul.", "Aug.", "Sept.", "Oct.", "Nov.", "Dec."
+  ];
+  return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+};
+
+// Format time as "2:30 PM"
+const formatTime = (timeStr) => {
+  if (!timeStr) return "";
+  const [hour, minute] = timeStr.split(":");
+  const h = parseInt(hour, 10);
+  const m = parseInt(minute, 10);
+  const ampm = h >= 12 ? "PM" : "AM";
+  const formattedHour = h % 12 === 0 ? 12 : h % 12;
+  return `${formattedHour}:${m.toString().padStart(2, "0")} ${ampm}`;
+};
+
 
 export default function YourAccount() {
   const [uploadedFiles, setUploadedFiles] = useState([]);
-  const [mySchedules, setMySchedules] = useState([]);
+  const { schedules, fetchSchedules, cancelSchedule } = useContext(ScheduleContext);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -75,7 +98,24 @@ export default function YourAccount() {
   }, []);
 
   // Fetch schedules
- 
+ useEffect(() => {
+  const token = localStorage.getItem("token");
+  if (!token) return navigate("/login");
+
+  setLoading(true);
+  fetchSchedules()
+    .catch((err) => {
+      console.error(err);
+      if (err.response && [401, 403].includes(err.response.status)) {
+        localStorage.removeItem("token");
+        navigate("/login");
+      } else {
+        setError("Failed to load schedules.");
+      }
+    })
+    .finally(() => setLoading(false));
+}, []);
+
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -178,7 +218,7 @@ export default function YourAccount() {
       textAlign: "center",
       marginBottom: "20px",
       padding: "10px",
-      backgroundColor: "#f9f9f9",
+      backgroundColor: "#ffffffff",
       borderRadius: "8px",
       color: "black",
       cursor: "pointer",
@@ -346,32 +386,61 @@ export default function YourAccount() {
           {/* Schedules */}
           <section style={{ marginTop: "30px" }}>
             <h2 style={{ color: "#28D69F" }}>Your Schedules</h2>
-            {loading ? <p>Loading schedules...</p> :
-              error ? <p style={{ color: "red" }}>{error}</p> :
-                mySchedules.length === 0 ? <p>No schedules yet.</p> :
-                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                    <thead>
-                      <tr style={{ backgroundColor: "#F4BE2A" }}>
-                        <th style={tableCellStyle}>Item</th>
-                        <th style={tableCellStyle}>Date From</th>
-                        <th style={tableCellStyle}>Date To</th>
-                        <th style={tableCellStyle}>Time</th>
-                        <th style={tableCellStyle}>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {mySchedules.map((s) => (
-                        <tr key={s.id} onClick={() => setPreviewSchedule(s)}>
-                          <td style={tableCellStyle}>{s.item}</td>
-                          <td style={tableCellStyle}>{s.dateFrom}</td>
-                          <td style={tableCellStyle}>{s.dateTo}</td>
-                          <td style={tableCellStyle}>{s.time}</td>
-                          <td style={getStatusStyle(s.status)}>{s.status}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-            }
+           {loading ? (
+  <p>Loading schedules...</p>
+) : error ? (
+  <p style={{ color: "red" }}>{error}</p>
+) : schedules.length === 0 ? (
+  <p>No schedules yet.</p>
+) : (
+  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+    <thead>
+      <tr style={{ backgroundColor: "#F4BE2A" }}>
+        <th style={tableCellStyle}>Item</th>
+        <th style={tableCellStyle}>Date From</th>
+        <th style={tableCellStyle}>Date To</th>
+        <th style={tableCellStyle}>Time From</th>
+        <th style={tableCellStyle}>Time To</th>
+        <th style={tableCellStyle}>Quantity</th>
+        <th style={tableCellStyle}>Status</th>
+        <th style={tableCellStyle}>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {schedules.map((s) => (
+        <tr key={s.id}>
+          <td style={tableCellStyle}>{s.item}</td>
+          <td style={tableCellStyle}>{formatDate(s.date_from)}</td>
+<td style={tableCellStyle}>{formatDate(s.date_to)}</td>
+<td style={tableCellStyle}>{formatTime(s.time_from)}</td>
+<td style={tableCellStyle}>{formatTime(s.time_to)}</td>
+
+          <td style={tableCellStyle}>{s.quantity}</td>
+          <td style={getStatusStyle(s.status)}>{s.status}</td>
+          <td style={tableCellStyle}>
+            {s.status.toLowerCase() === "pending" && (
+              <button
+                onClick={() => cancelSchedule(s.id)}
+                style={{
+                  backgroundColor: "#ff4d4f",
+                  color: "#fff",
+                  border: "none",
+                  padding: "5px 10px",
+                  borderRadius: "5px",
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+            )}
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+)}
+
+            
           </section>
         </main>
       </div>

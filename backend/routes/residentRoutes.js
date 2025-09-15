@@ -1,19 +1,20 @@
 const express = require("express");
 const router = express.Router();
-const authMiddleware = require("../middleware/authMiddleware");
-const { registerResident, loginResident } = require("../controllers/authController");
-const { uploadFile, getUserFiles } = require("../controllers/fileController");
+const {
+  createSchedule,
+  getUserSchedules,
+  getAllSchedules,
+  updateScheduleStatus,
+} = require("../controllers/scheduleController");
 
-// Register
-router.post("/register", registerResident);
+const authMiddleware = require("../middlewares/authMiddleware");
 
-// Login
-router.post("/login", loginResident);
+// Residents (lahat ng logged-in users pwede)
+router.post("/", authMiddleware(), createSchedule);
+router.get("/:user_id", authMiddleware(), getUserSchedules);
 
-// Upload file (protected, only resident)
-router.post("/upload", authMiddleware(["resident"]), uploadFile);
-
-// View own files (protected, only resident)
-router.get("/files/:userId", authMiddleware(["resident"]), getUserFiles);
+// Admin/Staff only (may roles check)
+router.get("/", authMiddleware(["admin", "staff"]), getAllSchedules);
+router.put("/:id/status", authMiddleware(["admin", "staff"]), updateScheduleStatus);
 
 module.exports = router;

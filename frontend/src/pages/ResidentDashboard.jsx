@@ -19,7 +19,16 @@ export default function ResidentDashboard() {
   const navigate = useNavigate();
   const sidebarRef = useRef(null);
   const [selectedProject, setSelectedProject] = useState(null);
-  const [user, setUser] = useState(null);
+  const [username, setUsername] = useState("");
+
+// kapag nag-mount, kunin yung username
+useEffect(() => {
+  const storedUsername = localStorage.getItem("username");
+  if (storedUsername) {
+    setUsername(storedUsername);
+  }
+}, []);
+
 
 
 
@@ -153,14 +162,25 @@ export default function ResidentDashboard() {
     </button>
   )}
 
-  {/* Barangay Logo */}
-  <div style={{ display: 'flex', alignItems: 'center' }}>
-    <img
-      src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTuTWGBGqTAFV1r0LROEwfjVxsqs36wmWQqkQ&s"
-      alt="Barangay Logo"
-      style={{ width: '50px', height: '50px', borderRadius: '5px', marginRight: '10px' }}
-    />
-  </div>
+ {/* Barangay Logo + Username */}
+<div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+  <img
+    src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTuTWGBGqTAFV1r0LROEwfjVxsqs36wmWQqkQ&s"
+    alt="Sk Logo"
+    style={{
+      width: '50px',
+      height: '50px',
+      borderRadius: '5px',
+    }}
+  />
+  {username && (
+    <span style={{ fontWeight: 'bold', fontSize: '18px', color: 'black' }}>
+      Welcome, {username}!
+    </span>
+  )}
+</div>
+
+
 
   <h1
   style={{
@@ -200,7 +220,7 @@ export default function ResidentDashboard() {
           }}
         >
  
-        {/* Your Account */}
+       {/* Your Account */}
 <div
   style={{
     textAlign: "center",
@@ -217,13 +237,16 @@ export default function ResidentDashboard() {
   onClick={() => navigate("/resident/youraccount")}
 >
   <FaUserCircle size={50} color="black" />
-  
-  {/* Your Account heading */}
-  <p style={{ fontWeight: "bold", marginTop: "10px" }}>Your Account</p>
 
-  {/* Display logged-in user name below */}
-  <p style={{ fontSize: "14px", fontStyle: "italic", marginTop: "5px" }}></p>
+  {/* Username instead of "Your Account" */}
+  {username ? (
+    <p style={{ fontWeight: "bold", marginTop: "10px" }}>Your Account</p>
+  ) : (
+    <p style={{ fontWeight: "bold", marginTop: "10px" }}></p>
+  )}
 </div>
+
+
 
 
 

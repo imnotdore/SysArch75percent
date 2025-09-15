@@ -65,7 +65,7 @@ export default function RequestPage() {
         },
       });
 
-      alert(`✅ Uploaded: ${res.data.filename}`);
+      
       setSelectedFile(null);
       fetchContextFiles(); // Update context so YourAccount.jsx sees the new file
       navigate("/resident/youraccount");

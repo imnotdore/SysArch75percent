@@ -1,40 +1,119 @@
-const db = require("../db");
+const db = require("../config/db"); // adjust path kung saan yung db connection mo
 
-exports.createSchedule = (req, res) => {
-  const { user_id, item_id, schedule_date } = req.body;
-  const sql = "INSERT INTO schedules (user_id, item_id, schedule_date) VALUES (?, ?, ?)";
-  db.query(sql, [user_id, item_id, schedule_date], (err) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ message: "Schedule request created" });
-  });
+// CREATE schedule
+const createSchedule = async (req, res) => {
+  try {
+    const userId = req.user.id; // galing JWT middleware
+    const { dateFrom, dateTo, timeFrom, timeTo, item, quantity } = req.body;
+
+    if (!dateFrom || !dateTo || !timeFrom || !timeTo || !item) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    const [result] = await db.query(
+      `INSERT INTO schedules 
+        (user_id, item, quantity, date_from, date_to, time_from, time_to, status) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending')`,
+      [userId, item, quantity || 1, dateFrom, dateTo, timeFrom, timeTo]
+    );
+
+    res.json({
+      id: result.insertId,
+      user_id: userId,
+      item,
+      quantity: quantity || 1,
+      dateFrom,
+      dateTo,
+      timeFrom,
+      timeTo,
+      status: "Pending",
+    });
+  } catch (err) {
+    console.error("Error creating schedule:", err);
+    res.status(500).json({ error: "Failed to create schedule" });
+  }
 };
 
-exports.getUserSchedules = (req, res) => {
-  const { user_id } = req.params;
-  const sql = `SELECT s.*, i.item_name FROM schedules s 
-               JOIN items i ON s.item_id = i.id WHERE user_id = ?`;
-  db.query(sql, [user_id], (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(results);
-  });
+// GET all schedules (for admin)
+const getAllSchedules = async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT s.id, s.user_id, u.name AS user, s.item, s.quantity,
+             s.date_from, s.date_to, s.time_from, s.time_to, s.status
+      FROM schedules s
+      JOIN users u ON s.user_id = u.id
+      ORDER BY s.date_from DESC
+    `);
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching schedules:", err);
+    res.status(500).json({ error: "Failed to fetch schedules" });
+  }
 };
 
-exports.getAllSchedules = (req, res) => {
-  const sql = `SELECT s.*, u.full_name, i.item_name FROM schedules s 
-               JOIN users u ON s.user_id = u.id 
-               JOIN items i ON s.item_id = i.id ORDER BY s.schedule_date DESC`;
-  db.query(sql, (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(results);
-  });
+// GET schedules for logged-in resident
+const getUserSchedules = async (req, res) => {
+  try {
+    const userId = req.user.id; // galing JWT, hindi params
+    const [rows] = await db.query(
+      `SELECT s.id, s.item, s.quantity, s.date_from, s.date_to,
+              s.time_from, s.time_to, s.status
+       FROM schedules s
+       WHERE s.user_id = ?
+       ORDER BY s.date_from DESC`,
+      [userId]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching user schedules:", err);
+    res.status(500).json({ error: "Failed to fetch user schedules" });
+  }
 };
 
-exports.updateScheduleStatus = (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body;
-  const sql = "UPDATE schedules SET status = ? WHERE id = ?";
-  db.query(sql, [status, id], (err) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ message: "Schedule status updated" });
-  });
+// UPDATE status (approve/reject) - admin use
+const updateScheduleStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!["Pending", "Approved", "Rejected"].includes(status)) {
+      return res.status(400).json({ error: "Invalid status" });
+    }
+
+    await db.query(`UPDATE schedules SET status = ? WHERE id = ?`, [status, id]);
+    res.json({ id, status });
+  } catch (err) {
+    console.error("Error updating schedule status:", err);
+    res.status(500).json({ error: "Failed to update schedule status" });
+  }
+};
+
+// DELETE schedule (cancel by resident)
+const deleteSchedule = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+
+    const [result] = await db.query(
+      `DELETE FROM schedules WHERE id = ? AND user_id = ?`,
+      [id, userId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Schedule not found or not yours" });
+    }
+
+    res.json({ message: "Schedule cancelled successfully" });
+  } catch (err) {
+    console.error("Error deleting schedule:", err);
+    res.status(500).json({ error: "Failed to delete schedule" });
+  }
+};
+
+module.exports = {
+  createSchedule,
+  getAllSchedules,
+  getUserSchedules,
+  updateScheduleStatus,
+  deleteSchedule,
 };

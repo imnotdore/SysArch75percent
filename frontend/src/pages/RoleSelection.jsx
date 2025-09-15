@@ -43,8 +43,17 @@ function RoleSelection() {
       const url = `${import.meta.env.VITE_API_URL}/api/auth/${role.toLowerCase()}/login`;
       const res = await axios.post(url, form);
 
-      // Save token to localStorage
-      localStorage.setItem("token", res.data.token);
+     // Save token and username to localStorage
+localStorage.setItem("token", res.data.token);
+
+if (res.data.username) {
+  localStorage.setItem("username", res.data.username);
+} else if (res.data.user?.username) {
+  localStorage.setItem("username", res.data.user.username);
+}
+
+
+
 
       // Redirect based on role
       switch (role.toLowerCase()) {
