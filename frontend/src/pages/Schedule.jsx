@@ -1,3 +1,4 @@
+// src/pages/resident/Schedule.jsx
 import { useState, useEffect, useRef, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -8,10 +9,11 @@ import {
   FaBars,
   FaTimes,
   FaFileAlt,
-  FaUserCircle,   // 👉 idinagdag ito
+  FaUserCircle,
 } from "react-icons/fa";
 
-import { ScheduleContext } from "../context/ScheduleContext.jsx";
+import { ScheduleContext } from "../context/ScheduleContext";
+import { API_URL } from "../config";
 
 export default function Schedule() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -28,19 +30,22 @@ export default function Schedule() {
   const sidebarRef = useRef(null);
   const navigate = useNavigate();
 
-  const { schedules, fetchSchedules, addSchedule, cancelSchedule } =
-    useContext(ScheduleContext);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { addSchedule } = useContext(ScheduleContext);
 
-  // Mobile detection
+  // NEW states
+  const [items, setItems] = useState([]);
+  const [itemAvailability, setItemAvailability] = useState([]);
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
+  const [availabilityError, setAvailabilityError] = useState(null);
+
+  // detect mobile
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Close sidebar on outside click
+  // close sidebar on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (
@@ -53,58 +58,106 @@ export default function Schedule() {
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () =>
-      document.removeEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isMobile, sidebarOpen]);
 
-  // Fetch schedules on mount
+  // fetch items once
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) return navigate("/login");
-
-    setLoading(true);
-    fetchSchedules()
-      .catch((err) => {
-        console.error(err);
-        if (err.response && [401, 403].includes(err.response.status)) {
-          localStorage.removeItem("token");
-          navigate("/login");
-        } else {
-          setError("Failed to load schedules.");
-        }
-      })
-      .finally(() => setLoading(false));
+    const fetchItems = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+        const res = await fetch(`${API_URL}/api/items`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error("Failed to load items");
+        const data = await res.json();
+        setItems(data || []);
+      } catch (err) {
+        console.error("Failed to fetch items", err);
+      }
+    };
+    fetchItems();
   }, []);
+
+  // fetch availability when item + dates change
+  useEffect(() => {
+    const fetchAvail = async () => {
+      setAvailabilityError(null);
+      setItemAvailability([]);
+      if (!form.item || !form.dateFrom || !form.dateTo) return;
+      if (new Date(form.dateTo) < new Date(form.dateFrom)) {
+        setAvailabilityError("Date To cannot be before Date From");
+        return;
+      }
+      setCheckingAvailability(true);
+      try {
+        const token = localStorage.getItem("token");
+        const qs = `item=${encodeURIComponent(
+          form.item
+        )}&dateFrom=${form.dateFrom}&dateTo=${form.dateTo}`;
+        const res = await fetch(`${API_URL}/api/items/availability?${qs}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: "Failed" }));
+          throw new Error(err.error || "Failed to fetch availability");
+        }
+        const data = await res.json();
+        setItemAvailability(data.dates || []);
+      } catch (err) {
+        console.error("Availability fetch error:", err);
+        setAvailabilityError(err.message || "Failed to fetch availability");
+      } finally {
+        setCheckingAvailability(false);
+      }
+    };
+    fetchAvail();
+  }, [form.item, form.dateFrom, form.dateTo]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("userId");
     navigate("/");
   };
 
- 
-  
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async () => {
     const { dateFrom, dateTo, timeFrom, timeTo, item, quantity } = form;
+
     if (!dateFrom || !dateTo || !timeFrom || !timeTo || !item) {
       return alert("Please fill out all fields!");
     }
+    if (new Date(dateTo) < new Date(dateFrom))
+      return alert("Date To cannot be before Date From");
 
-    const newSchedule = {
+    const qty = parseInt(quantity) || 1;
+
+    // client-side availability check
+    if (itemAvailability && itemAvailability.length) {
+      const blocked = itemAvailability.filter((a) => a.available < qty);
+      if (blocked.length) {
+        const msgs = blocked
+          .map((b) => `${b.date_needed} (available: ${b.available})`)
+          .join(", ");
+        return alert(
+          `Not enough units on: ${msgs}. Reduce quantity or pick other dates.`
+        );
+      }
+    }
+
+    const payload = {
       dateFrom,
       dateTo,
       timeFrom,
       timeTo,
       item,
-      quantity: parseInt(quantity),
-      status: "Pending",
+      quantity: qty,
     };
-
     try {
-      await addSchedule(newSchedule);
-      
+      await addSchedule(payload);
       setForm({
         dateFrom: "",
         dateTo: "",
@@ -114,10 +167,17 @@ export default function Schedule() {
         quantity: 1,
       });
       navigate("/resident/youraccount");
-    } catch {
-      alert("Failed to submit schedule.");
+    } catch (err) {
+      console.error("Submit error:", err.response?.data || err.message);
+      alert(
+        err.response?.data?.error ||
+          err.message ||
+          "Failed to submit schedule."
+      );
     }
   };
+
+  const today = new Date().toISOString().split("T")[0];
 
   return (
     <div
@@ -161,144 +221,145 @@ export default function Schedule() {
 
       <div style={{ display: "flex", position: "relative" }}>
         {/* Sidebar */}
-                    <aside
-                      ref={sidebarRef}
-                      style={{
-                        position: isMobile ? "fixed" : "relative",
-                        top: 0,
-                        left: sidebarOpen || !isMobile ? 0 : "-240px",
-                        height: "100vh",
-                        width: "220px",
-                        backgroundColor: "#A43259", // match ResidentDashboard
-                        color: "white",
-                        transition: "left 0.3s ease",
-                        zIndex: 1000,
-                        padding: "20px 10px",
-                        display: "flex",
-                        flexDirection: "column",
-                      }}
-                    >
-                      {/* Your Account box */}
-                      <div
-                        style={{
-                          textAlign: "center",
-                          marginBottom: "20px",
-                          padding: "10px",
-                          backgroundColor: "#f9f9f9",
-                          borderRadius: "8px",
-                          color: "black",
-                          cursor: "pointer",
-                          transition: "transform 0.3s ease",
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
-                        onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
-                        onClick={() => navigate("/resident/youraccount")}
-                      >
-                        <FaUserCircle size={50} color="black" />
-                        <p style={{ fontWeight: "bold", marginTop: "10px" }}>Your Account</p>
-                       
-                         
-                        
-                      </div>
-                    
-                      {/* Home */}
-                      <div
-                        style={{
-                          ...menuStyle,
-                          backgroundColor: "#F4BE2A", // same yellow as dashboard
-                          color: "black",
-                          borderRadius: "8px",
-                          padding: "10px",
-                          textAlign: "center",
-                          marginBottom: "10px",
-                          transition: "transform 0.2s ease",
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.transform = "translateX(10px)")}
-                        onMouseLeave={(e) => (e.currentTarget.style.transform = "translateX(0)")}
-                        onClick={() => navigate("/resident/dashboard")}
-                      >
-                        <FaHome style={{ marginRight: "5px" }} /> Home
-                      </div>
-                    
-                      {/* Services */}
-                      <div>
-                        <div
-                          style={{
-                            ...menuStyle,
-                            backgroundColor: "#F4BE2A", // yellow permanent
-                            color: "black",
-                            transition: "transform 0.3s ease",
-                          }}
-                          onMouseEnter={(e) => (e.currentTarget.style.transform = "translateX(10px)")}
-                          onMouseLeave={(e) => (e.currentTarget.style.transform = "translateX(0)")}
-                          onClick={() => setServicesOpen(!servicesOpen)}
-                        >
-                          <FaConciergeBell style={iconStyle} /> Services
-                        </div>
-                    
-                        {servicesOpen && (
-                          <div
-                            style={{
-                              marginLeft: "15px",
-                              display: "flex",
-                              flexDirection: "column",
-                              gap: "5px",
-                              marginTop: "5px",
-                            }}
-                          >
-                            <div
-                              style={{
-                                ...submenuStyle,
-                                backgroundColor: " #1E90FF", // blue permanent
-                                color: "black",
-                                transition: "transform 0.3s ease",
-                              }}
-                              onMouseEnter={(e) => (e.currentTarget.style.transform = "translateX(10px)")}
-                              onMouseLeave={(e) => (e.currentTarget.style.transform = "translateX(0)")}
-                              onClick={() => navigate("/resident/request")}
-                            >
-                              <FaFileAlt style={iconStyle} /> Requests
-                            </div>
-                            <div
-                              style={{
-                                ...submenuStyle,
-                                backgroundColor: "#26ff1eff",
-                                color: "Black",
-                                transition: "transform 0.3s ease",
-                              }}
-                              onMouseEnter={(e) => (e.currentTarget.style.transform = "translateX(10px)")}
-                              onMouseLeave={(e) => (e.currentTarget.style.transform = "translateX(0)")}
-                              onClick={() => navigate("/resident/schedule")}
-                            >
-                              <FaCalendarAlt style={iconStyle} /> Schedule
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    
-                      {/* Logout */}
-                      <div style={{ marginTop: "auto", paddingTop: "20px" }}>
-                        <button
-                          onClick={handleLogout}
-                          style={{
-                            ...menuStyle,
-                            backgroundColor: "#ff0000",
-                            color: "white",
-                            width: "100%",
-                            justifyContent: "center",
-                            fontWeight: "bold",
-                            transition: "transform 0.2s ease",
-                          }}
-                          onMouseEnter={(e) => (e.currentTarget.style.transform = "translateX(5px)")}
-                          onMouseLeave={(e) => (e.currentTarget.style.transform = "translateX(0)")}
-                        >
-                          <FaSignOutAlt style={iconStyle} /> Logout
-                        </button>
-                      </div>
-                    </aside>
-        
+        <aside
+          ref={sidebarRef}
+          style={{
+            position: isMobile ? "fixed" : "relative",
+            top: 0,
+            left: sidebarOpen || !isMobile ? 0 : "-240px",
+            height: "100vh",
+            width: "220px",
+            backgroundColor: "#A43259",
+            color: "white",
+            transition: "left 0.3s ease",
+            zIndex: 1000,
+            padding: "20px 10px",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <div
+            onClick={() => navigate("/resident/youraccount")}
+            style={{
+              textAlign: "center",
+              marginBottom: "20px",
+              padding: "10px",
+              backgroundColor: "#f9f9f9",
+              borderRadius: "8px",
+              color: "black",
+              cursor: "pointer",
+            }}
+          >
+            <FaUserCircle size={50} color="black" />
+            <p style={{ fontWeight: "bold", marginTop: "10px" }}>
+              Your Account
+            </p>
+          </div>
 
-        {/* Main Content */}
+          <div
+            onClick={() => navigate("/resident/dashboard")}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              cursor: "pointer",
+              padding: "10px",
+              fontSize: "15px",
+              borderRadius: "6px",
+              marginBottom: "10px",
+              backgroundColor: "#F4BE2A",
+              color: "black",
+            }}
+          >
+            <FaHome style={{ fontSize: "16px" }} /> Home
+          </div>
+
+          <div>
+            <div
+              onClick={() => setServicesOpen(!servicesOpen)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                cursor: "pointer",
+                padding: "10px",
+                fontSize: "15px",
+                borderRadius: "6px",
+                marginBottom: "10px",
+                backgroundColor: "#F4BE2A",
+                color: "black",
+              }}
+            >
+              <FaConciergeBell style={{ fontSize: "16px" }} /> Services
+            </div>
+            {servicesOpen && (
+              <div
+                style={{
+                  marginLeft: "15px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "5px",
+                  marginTop: "5px",
+                }}
+              >
+                <div
+                  onClick={() => navigate("/resident/request")}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    cursor: "pointer",
+                    padding: "6px",
+                    fontSize: "13px",
+                    borderRadius: "6px",
+                    backgroundColor: "#1E90FF",
+                    color: "white",
+                  }}
+                >
+                  <FaFileAlt style={{ fontSize: "16px" }} /> Requests
+                </div>
+                <div
+                  onClick={() => navigate("/resident/schedule")}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    cursor: "pointer",
+                    padding: "6px",
+                    fontSize: "13px",
+                    borderRadius: "6px",
+                    backgroundColor: "#26ff1eff",
+                    color: "black",
+                  }}
+                >
+                  <FaCalendarAlt style={{ fontSize: "16px" }} /> Schedule
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div style={{ marginTop: "auto", paddingTop: "20px" }}>
+            <button
+              onClick={handleLogout}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: "#ff0000",
+                color: "white",
+                width: "100%",
+                padding: "10px",
+                borderRadius: "6px",
+                cursor: "pointer",
+                fontWeight: "bold",
+              }}
+            >
+              <FaSignOutAlt style={{ fontSize: "16px" }} /> Logout
+            </button>
+          </div>
+        </aside>
+
+        {/* Main */}
         <main
           style={{
             flex: 1,
@@ -307,159 +368,239 @@ export default function Schedule() {
             minHeight: "100vh",
           }}
         >
-         {/* Schedule Form */}
-<section style={formContainer}>
-  <h2 style={{ color: "#28D69F", textAlign: "center", marginBottom: "20px" }}>
-    Submit Schedule
-  </h2>
+          <section
+            style={{
+              marginBottom: "30px",
+              maxWidth: "600px",
+              margin: "20px auto",
+              padding: "20px",
+              backgroundColor: "#fff",
+              borderRadius: "10px",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+            }}
+          >
+            <h2
+              style={{
+                color: "#28D69F",
+                textAlign: "center",
+                marginBottom: "20px",
+              }}
+            >
+              Submit Schedule
+            </h2>
 
-  {/* Date Range */}
-  <div style={{ display: "flex", gap: "30px", marginBottom: "20px" }}>
-    <div style={{ flex: 1 }}>
-      <label style={labelStyle}>Date From</label>
-      <input
-        type="date"
-        name="dateFrom"
-        value={form.dateFrom}
-        onChange={handleChange}
-        style={inputStyle}
-      />
-    </div>
-    <div style={{ flex: 1 }}>
-      <label style={labelStyle}>Date To</label>
-      <input
-        type="date"
-        name="dateTo"
-        value={form.dateTo}
-        onChange={handleChange}
-        style={inputStyle}
-      />
-    </div>
-  </div>
+            {/* Date Range */}
+            <div style={{ display: "flex", gap: "30px", marginBottom: "15px" }}>
+              <div style={{ flex: 1 }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "5px",
+                    fontWeight: "bold",
+                    fontSize: "14px",
+                  }}
+                >
+                  Date From
+                </label>
+                <input
+                  type="date"
+                  name="dateFrom"
+                  value={form.dateFrom}
+                  onChange={handleChange}
+                  style={{
+                    width: "100%",
+                    padding: "8px 10px",
+                    margin: "8px 0",
+                    borderRadius: "6px",
+                    border: "1px solid #ccc",
+                  }}
+                  min={today}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "5px",
+                    fontWeight: "bold",
+                    fontSize: "14px",
+                  }}
+                >
+                  Date To
+                </label>
+                <input
+                  type="date"
+                  name="dateTo"
+                  value={form.dateTo}
+                  onChange={handleChange}
+                  style={{
+                    width: "100%",
+                    padding: "8px 10px",
+                    margin: "8px 0",
+                    borderRadius: "6px",
+                    border: "1px solid #ccc",
+                  }}
+                  min={form.dateFrom || today}
+                />
+              </div>
+            </div>
 
-  {/* Time Range */}
-  <div style={{ display: "flex", gap: "30px", marginBottom: "15px" }}>
-    <div style={{ flex: 1 }}>
-      <label style={labelStyle}>Time From</label>
-      <input
-        type="time"
-        name="timeFrom"
-        value={form.timeFrom}
-        onChange={handleChange}
-        style={inputStyle}
-      />
-    </div>
-    <div style={{ flex: 1 }}>
-      <label style={labelStyle}>Time To</label>
-      <input
-        type="time"
-        name="timeTo"
-        value={form.timeTo}
-        onChange={handleChange}
-        style={inputStyle}
-      />
-    </div>
-  </div>
+            {/* Time Range */}
+            <div style={{ display: "flex", gap: "30px", marginBottom: "15px" }}>
+              <div style={{ flex: 1 }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "5px",
+                    fontWeight: "bold",
+                    fontSize: "14px",
+                  }}
+                >
+                  Time From
+                </label>
+                <input
+                  type="time"
+                  name="timeFrom"
+                  value={form.timeFrom}
+                  onChange={handleChange}
+                  style={{
+                    width: "100%",
+                    padding: "8px 10px",
+                    margin: "8px 0",
+                    borderRadius: "6px",
+                    border: "1px solid #ccc",
+                  }}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "5px",
+                    fontWeight: "bold",
+                    fontSize: "14px",
+                  }}
+                >
+                  Time To
+                </label>
+                <input
+                  type="time"
+                  name="timeTo"
+                  value={form.timeTo}
+                  onChange={handleChange}
+                  style={{
+                    width: "100%",
+                    padding: "8px 10px",
+                    margin: "8px 0",
+                    borderRadius: "6px",
+                    border: "1px solid #ccc",
+                  }}
+                />
+              </div>
+            </div>
 
-  {/* Item */}
-  <div style={{ marginBottom: "15px" }}>
-    <label style={labelStyle}>Item</label>
-    <select
-      name="item"
-      value={form.item}
-      onChange={handleChange}
-      style={inputStyle}
-    >
-      <option value="">-- Select Item --</option>
-      <option value="Projector">Projector</option>
-      <option value="Laptop">Laptop</option>
-      <option value="Chair">Chair</option>
-      <option value="Table">Table</option>
-    </select>
-  </div>
+            {/* Item */}
+            <div style={{ marginBottom: "15px" }}>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "5px",
+                  fontWeight: "bold",
+                  fontSize: "14px",
+                }}
+              >
+                Item
+              </label>
+              <select
+                name="item"
+                value={form.item}
+                onChange={handleChange}
+                style={{
+                  width: "100%",
+                  padding: "8px 10px",
+                  margin: "8px 0",
+                  borderRadius: "6px",
+                  border: "1px solid #ccc",
+                }}
+              >
+                <option value="">-- Select Item --</option>
+                {items.map((i) => (
+                  <option key={i.id} value={i.item_name}>
+                    {i.item_name}
+                    {i.max_quantity ? ` (total ${i.max_quantity})` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-  {/* Quantity */}
-  <div style={{ marginBottom: "15px" }}>
-    <label style={labelStyle}>Quantity</label>
-    <input
-      type="number"
-      name="quantity"
-      min="1"
-      value={form.quantity}
-      onChange={handleChange}
-      style={inputStyle}
-      placeholder="Quantity"
-    />
-  </div>
+            {/* Quantity */}
+            <div style={{ marginBottom: "15px" }}>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "5px",
+                  fontWeight: "bold",
+                  fontSize: "14px",
+                }}
+              >
+                Quantity
+              </label>
+              <input
+                type="number"
+                name="quantity"
+                min="1"
+                value={form.quantity}
+                onChange={handleChange}
+                style={{
+                  width: "100%",
+                  padding: "8px 10px",
+                  margin: "8px 0",
+                  borderRadius: "6px",
+                  border: "1px solid #ccc",
+                }}
+                placeholder="Quantity"
+              />
+            </div>
 
-  <button onClick={handleSubmit} style={buttonStyle}>
-    Submit Schedule
-  </button>
-</section>
+            {/* availability */}
+            {checkingAvailability ? (
+              <p>Checking availability…</p>
+            ) : availabilityError ? (
+              <p style={{ color: "red" }}>{availabilityError}</p>
+            ) : itemAvailability.length > 0 ? (
+              <div style={{ marginBottom: "10px" }}>
+                <strong>Availability for {form.item}:</strong>
+                <ul>
+                  {itemAvailability.map((a) => (
+                    <li key={a.date_needed}>
+                      {a.date_needed}:{" "}
+                      {a.available > 0
+                        ? `${a.available} available`
+                        : "FULLY BOOKED"}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
 
+            <button
+              onClick={handleSubmit}
+              style={{
+                width: "100%",
+                padding: "10px",
+                backgroundColor: "#28D69F",
+                color: "#fff",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+                fontWeight: "bold",
+              }}
+            >
+              Submit Schedule
+            </button>
+          </section>
         </main>
       </div>
     </div>
   );
 }
-
-// Styles
-const menuStyle = {
-  display: "flex",
-  alignItems: "center",
-  gap: "8px",
-  cursor: "pointer",
-  padding: "10px",
-  fontSize: "15px",
-  borderRadius: "6px",
-  marginBottom: "10px",
-};
-const submenuStyle = { ...menuStyle, fontSize: "13px", width: "90%", padding: "6px" };
-const iconStyle = { fontSize: "16px" };
-const tableCellStyle = {
-  border: "1px solid #ccc",
-  padding: "8px",
-  textAlign: "center",
-};
-const inputStyle = {
-  width: "100%",
-  padding: "8px 10px",
-  margin: "8px 0",
-  borderRadius: "6px",
-  border: "1px solid #ccc",
-};
-const buttonStyle = {
-  width: "100%",
-  padding: "10px",
-  backgroundColor: "#28D69F",
-  color: "#fff",
-  border: "none",
-  borderRadius: "6px",
-  cursor: "pointer",
-  fontWeight: "bold",
-};
-const cancelBtnStyle = {
-  backgroundColor: "#ff4d4f",
-  color: "#fff",
-  border: "none",
-  padding: "5px 10px",
-  borderRadius: "5px",
-  cursor: "pointer",
-};
-const formContainer = {
-  marginBottom: "30px",
-  maxWidth: "400px",
-  margin: "20px auto",
-  padding: "20px",
-  backgroundColor: "#fff",
-  borderRadius: "10px",
-  boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
-  
-};
-const labelStyle = {
-  display: "block",
-  marginBottom: "5px",
-  fontWeight: "bold",
-  fontSize: "14px",
-  color: "#333",
-};

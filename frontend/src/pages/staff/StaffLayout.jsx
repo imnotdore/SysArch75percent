@@ -1,73 +1,47 @@
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { FaUserCircle, FaInbox, FaBullhorn, FaCalendarAlt, FaCheckCircle, FaSignOutAlt } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+import "./StaffDashboard.css";
 
-function StaffLayout() {
-  const location = useLocation();
+export default function StaffLayout({ children, activeTab, setActiveTab }) {
+  const navigate = useNavigate();
+  const username = getUsername();
+  const staffId = getStaffId();
+
+  const handleLogout = () => {
+    clearAuth();
+    navigate("/");
+  };
 
   return (
-    <div className="flex h-screen">
-      {/* Sidebar */}
-      <aside className="w-64 bg-gray-900 text-white flex flex-col">
-        <div className="p-4 text-xl font-bold border-b border-gray-700">
-          Staff Panel
+    <div className="dashboard-container">
+      <aside className="sidebar open">
+        <div className="sidebar-header">
+          <FaUserCircle size={50} color="black" />
+          <p>{username || "Staff Account"}</p>
         </div>
-        <nav className="flex-1 p-4 space-y-2">
-          <Link
-            to="/staff/dashboard"
-            className={`block p-2 rounded ${
-              location.pathname === "/staff/dashboard"
-                ? "bg-gray-700"
-                : "hover:bg-gray-800"
-            }`}
-          >
-            Dashboard
-          </Link>
-          <Link
-            to="/staff/requests"
-            className={`block p-2 rounded ${
-              location.pathname === "/staff/requests"
-                ? "bg-gray-700"
-                : "hover:bg-gray-800"
-            }`}
-          >
-            Requests
-          </Link>
-          <Link
-            to="/staff/announcements"
-            className={`block p-2 rounded ${
-              location.pathname === "/staff/announcements"
-                ? "bg-gray-700"
-                : "hover:bg-gray-800"
-            }`}
-          >
-            Announcements
-          </Link>
-          <Link
-            to="/staff/images"
-            className={`block p-2 rounded ${
-              location.pathname === "/staff/images"
-                ? "bg-gray-700"
-                : "hover:bg-gray-800"
-            }`}
-          >
-            Images
-          </Link>
-        </nav>
+
+        <div className={`menu-item ${activeTab === "inbox" ? "active" : ""}`} onClick={() => setActiveTab("inbox")}>
+          <FaInbox /> Inbox
+        </div>
+
+        <div className={`menu-item ${activeTab === "accepted" ? "active" : ""}`} onClick={() => setActiveTab("accepted")}>
+          <FaCheckCircle /> Accepted List
+        </div>
+
+        <div className={`menu-item ${activeTab === "scheduled" ? "active" : ""}`} onClick={() => setActiveTab("scheduled")}>
+          <FaCalendarAlt /> Scheduled Items
+        </div>
+
+        <div className="menu-item" onClick={() => navigate("/staff/announcements")}>
+          <FaBullhorn /> Announcements
+        </div>
+
+        <button className="logout-btn" onClick={handleLogout}>
+          <FaSignOutAlt /> Logout
+        </button>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 bg-gray-100">
-        <header className="p-4 bg-white shadow flex justify-between items-center">
-          <h1 className="text-lg font-semibold">Staff Dashboard</h1>
-          <button className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">
-            Logout
-          </button>
-        </header>
-        <div className="p-6">
-          <Outlet />
-        </div>
-      </main>
+      <main className="dashboard-main">{children}</main>
     </div>
   );
 }
-
-export default StaffLayout;

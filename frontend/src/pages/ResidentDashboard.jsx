@@ -79,38 +79,39 @@ useEffect(() => {
     'https://media.istockphoto.com/id/2191922460/video/mountainous-horizon-in-lipa-city-batangas.mp4?s=mp4-640x640-is&k=20&c=r1kao0Cgr_BE6vEOqm0z2y_R2joO1xjNm00qD4_lUO0=';
 
   const sidePictures = [
-    'https://i.pinimg.com/736x/52/86/5e/52865ed87c040c24e985b8de37f66afe.jpg',
-    'https://i.pinimg.com/736x/9a/82/56/9a825639f9b7f73a9ba7ba2091305b4d.jpg',
-    'https://i.pinimg.com/474x/ae/4c/3b/ae4c3bd955d744880aa3646dd4a842ad.jpg',
+    'https://scontent.fmnl17-3.fna.fbcdn.net/v/t1.15752-9/550698908_773205295619514_8422588768104079046_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=9f807c&_nc_eui2=AeGQk4OPjdkC4xNLVQBR-yb_WMkkOa_kQJNYySQ5r-RAkxpWV9iUMyBEJmMw_ETX2u3r3TueZokfhuoX_p7CMKcH&_nc_ohc=-WiuStroLoYQ7kNvwFw0doi&_nc_oc=Adm-k3g5v65sLmRNucVuxlgDECu3_X97iC4NvhThJi6fUjRVab4J9l4q0UiXjhow1Sk&_nc_zt=23&_nc_ht=scontent.fmnl17-3.fna&oh=03_Q7cD3QG5i4FvopphREY0EN4gjB1GaXzlSJ-tKYgrFMjmumcd8g&oe=68F5F847',
+    'https://scontent.fmnl17-1.fna.fbcdn.net/v/t1.15752-9/525731388_1250045176610704_741930549309933683_n.jpg?_nc_cat=100&ccb=1-7&_nc_sid=9f807c&_nc_eui2=AeEWJ-_-B7Dz-mozz5vUwygyPchZTn38wPE9yFlOffzA8VFglJLqxXmvH5OPeLIdMxZmEMwOeFtj-NCH9iXtXUzb&_nc_ohc=8dZq1ESU4U8Q7kNvwHYN0ra&_nc_oc=Adla1PMVm8SYcxxa2dlFY_HgbmM3yX9QXxqC_p3v8_SD59gXvtFhS2lpLoY1r2aAI0w&_nc_zt=23&_nc_ht=scontent.fmnl17-1.fna&oh=03_Q7cD3QGTji5e1f17D-pKsXym2CXaT0mHhpRyatEVWCqUpjCc4A&oe=68F5EDB1',
+    'https://scontent.fmnl17-3.fna.fbcdn.net/v/t1.15752-9/551037623_798617752618629_8395003703547952576_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=9f807c&_nc_eui2=AeFi6NSuinikBFjqLfKhVFQc2_gCXlitZKbb-AJeWK1kpnp7QgZng3_00nEn2Zsa-G0vimWL_FINSaZeYIC9-cAL&_nc_ohc=J0rhGX8qMkkQ7kNvwG_RPBT&_nc_oc=AdkcXUw41DpHkp99loANkjqzGD0zu4jxocbrWFMLkLYQUv0PrLCevacpbjDmnp1Z4eY&_nc_zt=23&_nc_ht=scontent.fmnl17-3.fna&oh=03_Q7cD3QEQDDkR5Wj7gR4_kitNgw4WrnFaXcn7zQ0NiXxJpNJKxw&oe=68F60AE5',
   ];
 
   const galleryProjects = [
   {
     id: 1,
-    img: 'https://i.pinimg.com/736x/9a/82/56/9a825639f9b7f73a9ba7ba2091305b4d.jpg',
-    name: 'Road Improvement Project',
-    details: 'This project focuses on repairing and improving the main roads of the barangay to ensure safety and smoother transportation.',
+    
+    img: 'https://scontent.fmnl17-2.fna.fbcdn.net/v/t1.15752-9/551026159_1449700266258318_6495996553970093664_n.jpg?_nc_cat=107&ccb=1-7&_nc_sid=9f807c&_nc_eui2=AeHFVB39C49rMbCCGErDfng9lSZd0s6x8J-VJl3SzrHwnw-QYxqMe0pGP3H5-_uRJEIapZqeNm92CBu9FfZvRtHl&_nc_ohc=jRXc4IEiuJQQ7kNvwFW_fbK&_nc_oc=AdkUBYGVXD2N0yVBVLqZkEFpAEPcCDWTFBIJLXhkJ7fQj92bWtUDZX9GlRYKPB9bqFo&_nc_zt=23&_nc_ht=scontent.fmnl17-2.fna&oh=03_Q7cD3QHCdH4_2msAwKs_naLBZBijbCEVFSVWn_vEFfgzuh5YRQ&oe=68F5E81A',
+    name: 'Sto. Domingo Achievers',
+    details: 'Sto. Domingo Achievers',
     date: 'August 15, 2025',
   },
   {
     id: 2,
-    img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcReCX6yHAZubHcIB8Y3pmNlUCa8cxIP2vKETfXaji2nNzVNaf-36e756b5-KyrtpQDm37Y&usqp=CAU',
-    name: 'Community Library',
-    details: 'A newly built community library to provide free access to books and resources for all residents.',
+    img: 'https://scontent.fmnl17-6.fna.fbcdn.net/v/t1.15752-9/550886418_758848446991012_650605514233873867_n.jpg?_nc_cat=109&ccb=1-7&_nc_sid=9f807c&_nc_eui2=AeFl8WDbsR-Dt1B-KJwquEhFlWKmjwd68g6VYqaPB3ryDlunjVaDzz-GtScX8cZopDIkXJPkegVg_HIYbWAjcAVR&_nc_ohc=PcTUVUPiVt4Q7kNvwE7Wbrh&_nc_oc=AdnwCotwboMLDNKyv5IkAPSIFgxq9p7WiXWGFakfZg0HCybsfls6nKM6kC9JbQGD6Q8&_nc_zt=23&_nc_ht=scontent.fmnl17-6.fna&oh=03_Q7cD3QEzkgtqutByMoBZqMMCjats0Wi1bMQKTqvUZS6SoDMTfw&oe=68F5F8AA',
+    name: 'Palarong Lahi',
+    details: 'Palarong Lahi',
     date: 'July 20, 2025',
   },
   {
     id: 3,
-    img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcThxURH9aik0oxxhj4SR5Su48l0ynhMrdpr5g&s',
-    name: 'Barangay Hall Renovation',
-    details: 'Renovation of the barangay hall to improve facilities and service delivery.',
+    img: 'https://scontent.fmnl17-5.fna.fbcdn.net/v/t1.15752-9/551500164_758904716912566_1284618875333881861_n.jpg?_nc_cat=102&ccb=1-7&_nc_sid=9f807c&_nc_eui2=AeH52z5q8n4N4VF-uKjy2BKbRC7k5oSu7SBELuTmhK7tIJJvohlv251Tu_znWou9QfN7q94zlsJWBzlIGcQu15Sv&_nc_ohc=Ag0EYMwDunUQ7kNvwFCfoxo&_nc_oc=AdkGX2NhQIlzLn9DPfmQnxHiVf0qU_wj0JcEAs8KquBEzjHN3azofBtiPjaqPhduwE8&_nc_zt=23&_nc_ht=scontent.fmnl17-5.fna&oh=03_Q7cD3QHrudolb2G31sO9eWfgHiLS_0Aksdj-zbBL3qtBUPwOOQ&oe=68F5D3D4',
+    name: 'KK Night',
+    details: 'KK Night',
     date: 'June 10, 2025',
   },
   {
     id: 4,
-    img: 'https://i.pinimg.com/474x/ae/4c/3b/ae4c3bd955d744880aa3646dd4a842ad.jpg',
-    name: 'Drainage System Upgrade',
-    details: 'Upgrading the drainage system to prevent flooding during heavy rains.',
+    img: 'https://scontent.fmnl17-3.fna.fbcdn.net/v/t1.15752-9/548876698_989859433252712_5875665853928020794_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=9f807c&_nc_eui2=AeHlSxTs8BU1PbfO3LWLe7-h_SCECuuWj9j9IIQK65aP2FiGU_6shOMUnuPKax1J1kH5mspxxh4Iga3SfIDHX5xe&_nc_ohc=5R0AGiUailoQ7kNvwGhMe5g&_nc_oc=Adncz83Y5wZNTclkiGrsQzXgXE3diZGznJ00n_XlvSLK3YKBxHSIe_f9sDkTiCEu1JQ&_nc_zt=23&_nc_ht=scontent.fmnl17-3.fna&oh=03_Q7cD3QEM4YwpQD-8BmsdjnHeOsnKFrcvOMPlfVkN7kkb_XdJlQ&oe=68F5E91F',
+    name: 'Basketball Try out',
+    details: 'Basketball Try out',
     date: 'May 5, 2025',
   },
 ];
@@ -517,7 +518,7 @@ useEffect(() => {
       margin:'30px',
       overflow: 'hidden',
       boxShadow: '0 6px 14px rgba(0,0,0,0.3)',
-      backgroundColor: '#A43259',
+      backgroundColor: '#ea145f79',
       transition: 'transform 0.3s ease, box-shadow 0.3s ease',
     }}
     onMouseEnter={(e) => {

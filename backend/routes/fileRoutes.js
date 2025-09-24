@@ -15,17 +15,40 @@ const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
 });
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype !== "application/pdf") {
+      return cb(new Error("Only PDF files are allowed"), false);
+    }
+    cb(null, true);
+  },
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+});
 
 // ---------------- Resident Routes ---------------- //
+
+// Get files uploaded by the logged-in resident
 router.get("/", authMiddleware(), fileController.getResidentFiles);
-router.post("/upload", authMiddleware(), upload.single("file"), fileController.uploadFile);
+
+// Upload a file
+router.post(
+  "/upload",
+  authMiddleware(),
+  upload.single("file"),
+  (req, res, next) => {
+    if (!req.body.dateNeeded) return res.status(400).json({ error: "dateNeeded is required" });
+    if (req.body.pageCount === undefined) return res.status(400).json({ error: "pageCount is required" });
+    next();
+  },
+  fileController.uploadFile
+);
+
+// Download a file
 router.get("/download/:fileName", authMiddleware(), (req, res) => {
   const { fileName } = req.params;
   const filePath = path.join(uploadDir, fileName);
-
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: "File not found" });
-
   res.download(filePath, fileName, (err) => {
     if (err) {
       console.error("Download error:", err);
@@ -34,8 +57,24 @@ router.get("/download/:fileName", authMiddleware(), (req, res) => {
   });
 });
 
+// Check availability for a single date (resident)
+router.get("/availability/:date", authMiddleware(), fileController.checkAvailability);
+
+// Get all availability for the calendar
+router.get("/availability", authMiddleware(), fileController.getAvailability);
+
+// Get daily total pages for a specific date
+router.get("/daily-total", authMiddleware(), fileController.getDailyTotal);
+
 // ---------------- Staff Routes ---------------- //
-router.get("/all", authMiddleware(), fileController.getAllFilesForStaff);
-router.put("/:id", authMiddleware(), fileController.updateFileStatus);
+
+// Get all resident requests (staff only)
+router.get("/all", authMiddleware(["staff"]), fileController.getAllFilesForStaff);
+
+// Get files by a specific resident (staff only)
+router.get("/resident/:residentId", authMiddleware(["staff"]), fileController.getFilesByResident);
+
+// Update file status (accept/reject) (staff only)
+router.put("/:id", authMiddleware(["staff"]), fileController.updateFileStatus);
 
 module.exports = router;

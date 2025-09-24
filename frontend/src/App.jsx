@@ -14,16 +14,16 @@ import PrivateRoute from "./components/PrivateRoute";
 import { FileProvider } from "./context/Filecontext"; 
 import { ScheduleProvider } from "./context/ScheduleContext";
 
-// 🆕 Staff Pages
+// Staff Pages
 import StaffDashboard from "./pages/staff/StaffDashboard";
 import StaffRequests from "./pages/staff/StaffRequests";
 import StaffAnnouncements from "./pages/staff/StaffAnnouncements";
 import StaffImages from "./pages/staff/StaffImages";
+import AcceptedList from "./pages/staff/AcceptedList";
 
 function App() {
   return (
     <BrowserRouter>
-      {/* Wrap everything with your providers */}
       <FileProvider>
         <ScheduleProvider>
           <Routes>
@@ -34,83 +34,21 @@ function App() {
             <Route path="/:role/login" element={<Login />} />
             <Route path="/:role/register" element={<Register />} />
 
-            {/* Admin / Staff Routes */}
-            <Route
-              path="/staff/dashboard"
-              element={
-                <PrivateRoute>
-                  <StaffDashboard />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/staff/requests"
-              element={
-                <PrivateRoute>
-                  <StaffRequests />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/staff/announcements"
-              element={
-                <PrivateRoute>
-                  <StaffAnnouncements />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/staff/images"
-              element={
-                <PrivateRoute>
-                  <StaffImages />
-                </PrivateRoute>
-              }
-            />
+            {/* Staff Routes */}
+            <Route path="/staff/dashboard" element={<PrivateRoute><StaffDashboard /></PrivateRoute>} />
+            <Route path="/staff/requests" element={<PrivateRoute><StaffRequests /></PrivateRoute>} />
+            <Route path="/staff/announcements" element={<PrivateRoute><StaffAnnouncements /></PrivateRoute>} />
+            <Route path="/staff/images" element={<PrivateRoute><StaffImages /></PrivateRoute>} />
+            <Route path="/staff/accepted" element={<PrivateRoute><AcceptedList /></PrivateRoute>} />
 
-            {/* Resident routes */}
-            <Route
-              path="/resident/dashboard"
-              element={
-                <PrivateRoute>
-                  <ResidentDashboard />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/resident/disclosure-board"
-              element={
-                <PrivateRoute>
-                  <DisclosureBoard />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/resident/request"
-              element={
-                <PrivateRoute>
-                  <Request />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/resident/schedule"
-              element={
-                <PrivateRoute>
-                  <Schedule />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/resident/youraccount"
-              element={
-                <PrivateRoute>
-                  <YourAccount />
-                </PrivateRoute>
-              }
-            />
+            {/* Resident Routes */}
+            <Route path="/resident/dashboard" element={<PrivateRoute><ResidentDashboard /></PrivateRoute>} />
+            <Route path="/resident/disclosure-board" element={<PrivateRoute><DisclosureBoard /></PrivateRoute>} />
+            <Route path="/resident/request" element={<PrivateRoute><Request /></PrivateRoute>} />
+            <Route path="/resident/schedule" element={<PrivateRoute><Schedule /></PrivateRoute>} />
+            <Route path="/resident/youraccount" element={<PrivateRoute><YourAccount /></PrivateRoute>} />
 
-            {/* Legal / Info pages */}
+            {/* Legal Pages */}
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
 

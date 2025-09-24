@@ -10,24 +10,42 @@ import {
   FaSignOutAlt,
   FaSearch,
 } from "react-icons/fa";
+import "./StaffDashboard.css";
 
 export default function StaffDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const sidebarRef = useRef(null);
   const navigate = useNavigate();
+  const [returnedSchedules, setReturnedSchedules] = useState([]);
+  const [releasedSchedules, setReleasedSchedules] = useState([]);
   const [username, setUsername] = useState("");
+  const [staffId, setStaffId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [residents, setResidents] = useState([]);
   const [selectedResident, setSelectedResident] = useState(null);
-  const [files, setFiles] = useState([]);
+  const [selectedResidentRequests, setSelectedResidentRequests] = useState({ files: [], schedules: [] });
   const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedSchedule, setSelectedSchedule] = useState(null);
+  const [acceptedFiles, setAcceptedFiles] = useState([]);
+  const [acceptedSchedules, setAcceptedSchedules] = useState([]);
+  const [activeTab, setActiveTab] = useState("inbox"); // inbox, accepted, scheduled, returned, released
 
-  // Get username
+  const token = localStorage.getItem("token");
+
+  const axiosAuth = axios.create({
+    baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  // Redirect if not logged in
   useEffect(() => {
+    if (!token) navigate("/");
     const storedUsername = localStorage.getItem("username");
+    const storedStaffId = localStorage.getItem("staffId");
     if (storedUsername) setUsername(storedUsername);
-  }, []);
+    if (storedStaffId) setStaffId(Number(storedStaffId));
+  }, [navigate, token]);
 
   // Responsive
   useEffect(() => {
@@ -39,12 +57,7 @@ export default function StaffDashboard() {
   // Close sidebar when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (
-        isMobile &&
-        sidebarOpen &&
-        sidebarRef.current &&
-        !sidebarRef.current.contains(e.target)
-      ) {
+      if (isMobile && sidebarOpen && sidebarRef.current && !sidebarRef.current.contains(e.target)) {
         setSidebarOpen(false);
       }
     };
@@ -52,461 +65,551 @@ export default function StaffDashboard() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isMobile, sidebarOpen]);
 
-  // Fetch all residents
+  // Fetch residents with pending requests
   useEffect(() => {
-    async function fetchResidents() {
+    const fetchResidents = async () => {
+      if (!token) return;
       try {
-        const token = localStorage.getItem("token");
-        const res = await axios.get(
-          "http://localhost:3000/api/staff/residents",
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
+        const res = await axiosAuth.get("/api/staff/residents/pending");
         setResidents(res.data);
       } catch (err) {
-        console.error("Error fetching residents:", err);
+        console.error("Error fetching residents:", err.response?.data || err.message);
       }
-    }
+    };
     fetchResidents();
-  }, []);
+  }, [token]);
 
-  const fetchFiles = async (residentId) => {
+  // Fetch accepted requests (files & schedules)
+  const fetchAcceptedRequests = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const res = await axios.get(
-        `http://localhost:3000/api/staff/files/resident/${residentId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+      const [filesRes, schedulesRes] = await Promise.all([
+        axiosAuth.get("/api/staff/accepted"),
+        axiosAuth.get("/api/staff/accepted-schedules"),
+      ]);
+
+      setAcceptedFiles(
+        Array.isArray(filesRes.data)
+          ? filesRes.data.map((f) => ({
+              ...f,
+              id: f.request_id,
+              approved_at: f.approved_at ? new Date(f.approved_at) : null,
+              staff_username: f.staff_username || `Staff#${f.approved_by}`,
+            }))
+          : []
       );
-      setFiles(res.data);
+
+      setAcceptedSchedules(
+        Array.isArray(schedulesRes.data)
+          ? schedulesRes.data.map((s, idx) => ({
+              ...s,
+              id: s.id ?? s.schedule_id ?? idx,
+              approved_at: s.approved_at ? new Date(s.approved_at) : null,
+              staff_username: s.staff_username || `Staff#${s.approved_by}`,
+            }))
+          : []
+      );
     } catch (err) {
-      console.error("Error fetching files:", err);
+      console.error("Error fetching accepted requests:", err.response?.data || err.message);
+      setAcceptedFiles([]);
+      setAcceptedSchedules([]);
+    }
+  };
+
+  useEffect(() => {
+    if (["accepted", "scheduled", "released"].includes(activeTab)) fetchAcceptedRequests();
+    if (activeTab === "returned") fetchReturnedSchedules();
+    if (activeTab === "released") fetchReleasedSchedules();
+  }, [activeTab]);
+
+  // Fetch returned schedules
+  const fetchReturnedSchedules = async () => {
+    try {
+      const res = await axiosAuth.get("/api/staff/returned-schedules");
+      setReturnedSchedules(
+        Array.isArray(res.data)
+          ? res.data.map((s, idx) => ({
+              ...s,
+              id: s.id ?? idx,
+              returned_at: s.returned_at ? new Date(s.returned_at) : null,
+              staff_username: s.staff_username || `Staff#${s.approved_by}`,
+            }))
+          : []
+      );
+    } catch (err) {
+      console.error("Error fetching returned schedules:", err.response?.data || err.message);
+      setReturnedSchedules([]);
+    }
+  };
+
+  // Fetch released schedules
+  const fetchReleasedSchedules = async () => {
+    try {
+      const res = await axiosAuth.get("/api/staff/released-schedules");
+      setReleasedSchedules(
+        Array.isArray(res.data)
+          ? res.data.map((s, idx) => ({
+              ...s,
+              id: s.id ?? idx,
+              released_at: s.released_at ? new Date(s.released_at) : null,
+              released_by_username: s.released_by_username || `Staff#${s.released_by}`,
+            }))
+          : []
+      );
+    } catch (err) {
+      console.error("Error fetching released schedules:", err.response?.data || err.message);
+      setReleasedSchedules([]);
     }
   };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("username");
+    localStorage.removeItem("staffId");
     navigate("/");
   };
 
-  const handleAccept = async (id) => {
-    try {
-      const token = localStorage.getItem("token");
-      await axios.put(
-        `http://localhost:3000/api/staff/files/${id}`,
-        { status: "accepted" },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setFiles((prev) =>
-        prev.map((f) => (f.id === id ? { ...f, status: "accepted" } : f))
-      );
-      setSelectedFile(null);
-    } catch (err) {
-      console.error(err);
+  const updateInboxIfNoPending = (residentId, updatedFiles, updatedSchedules) => {
+    const hasPending = updatedFiles.length > 0 || updatedSchedules.length > 0;
+    if (!hasPending) {
+      setResidents((prev) => prev.filter((r) => r.id !== residentId));
+      setSelectedResident(null);
+      setSelectedResidentRequests({ files: [], schedules: [] });
+    } else {
+      setSelectedResidentRequests({ files: updatedFiles, schedules: updatedSchedules });
     }
   };
 
-  const handleReject = async (id) => {
+  const handleFileStatusChange = async (fileId, status) => {
+    if (!staffId || !selectedResident) return;
     try {
-      const token = localStorage.getItem("token");
-      await axios.put(
-        `http://localhost:3000/api/staff/files/${id}`,
-        { status: "rejected" },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setFiles((prev) =>
-        prev.map((f) => (f.id === id ? { ...f, status: "rejected" } : f))
-      );
+      const payload = { status };
+      if (status.toLowerCase() === "approved") payload.approved_by = staffId;
+
+      await axiosAuth.put(`/api/staff/files/${fileId}`, payload);
+
+      const updatedFiles = selectedResidentRequests.files.filter((f) => f.id !== fileId);
+      const updatedSchedules = selectedResidentRequests.schedules;
+
+      updateInboxIfNoPending(selectedResident.id, updatedFiles, updatedSchedules);
+      fetchAcceptedRequests();
       setSelectedFile(null);
     } catch (err) {
-      console.error(err);
+      console.error("Error updating file status:", err.response?.data || err.message);
+      alert(err.response?.data?.error || "Failed to update file status");
     }
   };
+
+  const handleScheduleStatusChange = async (scheduleId, status) => {
+    if (!staffId || !selectedResident) return;
+    const normalizedStatus = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+    try {
+      await axiosAuth.put(`/api/staff/schedules/${scheduleId}/status`, {
+        status: normalizedStatus,
+        approved_by: staffId,
+      });
+
+      const updatedSchedules = selectedResidentRequests.schedules.filter((s) => s.id !== scheduleId);
+      const updatedFiles = selectedResidentRequests.files;
+
+      updateInboxIfNoPending(selectedResident.id, updatedFiles, updatedSchedules);
+      fetchAcceptedRequests();
+      setSelectedSchedule(null);
+    } catch (err) {
+      console.error("Error updating schedule status:", err.response?.data || err.message);
+      alert(err.response?.data?.error || "Failed to update schedule status");
+    }
+  };
+
+  const handleReleaseSchedule = async (scheduleId) => {
+    if (!staffId) return;
+    try {
+      await axiosAuth.put(`/api/staff/schedules/${scheduleId}/release`, { released_by: staffId });
+      fetchAcceptedRequests();
+      if (activeTab === "released") fetchReleasedSchedules();
+    } catch (err) {
+      console.error("Error releasing schedule:", err.response?.data || err.message);
+      alert(err.response?.data?.error || "Failed to release schedule");
+    }
+  };
+
+  const fetchResidentRequests = async (residentId) => {
+    try {
+      const [filesRes, schedulesRes] = await Promise.all([
+        axiosAuth.get(`/api/staff/files/resident/${residentId}`),
+        axiosAuth.get(`/api/staff/schedules/resident/${residentId}`),
+      ]);
+
+      setSelectedResidentRequests({
+        files: Array.isArray(filesRes.data) ? filesRes.data.filter((f) => f.status !== "approved") : [],
+        schedules: Array.isArray(schedulesRes.data) ? schedulesRes.data.filter((s) => s.status === "Pending") : [],
+      });
+    } catch (err) {
+      console.error("Error fetching resident requests:", err.response?.data || err.message);
+      setSelectedResidentRequests({ files: [], schedules: [] });
+    }
+  };
+
+  const filteredResidents = residents.filter((r) =>
+    (r.username || "").toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <div
-      style={{
-        fontFamily: '"Lexend", sans-serif',
-        width: "100%",
-        minHeight: "100vh",
-        backgroundColor: "#f5f5f5",
-      }}
-    >
+    <div className="dashboard-container">
       {/* Header */}
-      <header
-        style={{
-          backgroundColor: "#F4BE2A",
-          color: "black",
-          padding: "15px 20px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          position: "sticky",
-          top: 0,
-          zIndex: 999,
-          boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
-        }}
-      >
-        {isMobile && (
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            style={{
-              background: "none",
-              border: "none",
-              fontSize: "24px",
-              cursor: "pointer",
-              color: "black",
-              marginRight: "10px",
-            }}
-          >
-            ☰
-          </button>
-        )}
-
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+      <header className="dashboard-header">
+        {isMobile && <button className="hamburger" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>}
+        <div className="staff-info">
           <FaUserCircle size={40} />
-          {username && (
-            <span style={{ fontWeight: "bold", fontSize: "18px" }}>
-              Staff: {username}
-            </span>
-          )}
+          {username && <span className="staff-name">Staff: {username}</span>}
         </div>
-
-        <h1
-          style={{
-            margin: 0,
-            textAlign: "center",
-            flex: 1,
-            fontSize: isMobile ? "16px" : "clamp(18px, 2vw, 28px)",
-            fontWeight: "bold",
-          }}
-        >
-          Staff Dashboard
-        </h1>
-
+        <h1 className="dashboard-title">Staff Dashboard</h1>
         <div style={{ width: "34px" }} />
       </header>
 
       {/* Layout */}
-      <div style={{ display: "flex" }}>
+      <div className="dashboard-layout">
         {/* Sidebar */}
-        <aside
-          ref={sidebarRef}
-          style={{
-            position: isMobile ? "fixed" : "relative",
-            top: 0,
-            left: sidebarOpen || !isMobile ? 0 : "-240px",
-            height: "100vh",
-            width: "220px",
-            backgroundColor: "#A43259",
-            color: "white",
-            transition: "left 0.3s ease",
-            zIndex: 1000,
-            padding: "20px 10px",
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          <div
-            style={{
-              textAlign: "center",
-              marginBottom: "20px",
-              padding: "10px",
-              backgroundColor: "#f9f9f9",
-              borderRadius: "8px",
-              color: "black",
-              cursor: "pointer",
-            }}
-          >
+        <aside ref={sidebarRef} className={`sidebar ${sidebarOpen || !isMobile ? "open" : ""}`}>
+          <div className="sidebar-header">
             <FaUserCircle size={50} color="black" />
-            <p style={{ fontWeight: "bold", marginTop: "10px" }}>
-              {username || "Staff Account"}
-            </p>
+            <p>{username || "Staff Account"}</p>
           </div>
 
-          <div style={menuStyle} onClick={() => navigate("/staff/dashboard")}>
-            <FaInbox style={iconStyle} /> Inbox
-          </div>
-          <div style={menuStyle} onClick={() => navigate("/staff/announcements")}>
-            <FaBullhorn style={iconStyle} /> Announcements
-          </div>
-          <div style={menuStyle} onClick={() => navigate("/staff/scheduled")}>
-            <FaCalendarAlt style={iconStyle} /> Scheduled Items
-          </div>
-          <div style={menuStyle} onClick={() => navigate("/staff/accepted")}>
-            <FaCheckCircle style={iconStyle} /> Accepted List
+          <div className={`menu-item ${activeTab === "inbox" ? "active" : ""}`} onClick={() => setActiveTab("inbox")}>
+            <FaInbox /> Inbox
+            {residents.some((r) => r.pending_count > 0) && (
+              <span className="notification-badge">
+                {residents.reduce((acc, r) => acc + r.pending_count, 0)}
+              </span>
+            )}
           </div>
 
-          <div style={{ marginTop: "auto" }}>
-            <button
-              onClick={handleLogout}
-              style={{
-                ...menuStyle,
-                backgroundColor: "#ff0000",
-                color: "white",
-                width: "100%",
-                justifyContent: "center",
-                fontWeight: "bold",
-              }}
-            >
-              <FaSignOutAlt style={iconStyle} /> Logout
-            </button>
+          <div className={`menu-item ${activeTab === "accepted" ? "active" : ""}`} onClick={() => setActiveTab("accepted")}>
+            <FaCheckCircle /> Accepted List
           </div>
+
+          <div className={`menu-item ${activeTab === "scheduled" ? "active" : ""}`} onClick={() => setActiveTab("scheduled")}>
+            <FaCalendarAlt /> Scheduled Items
+          </div>
+
+          <div className={`menu-item ${activeTab === "released" ? "active" : ""}`} onClick={() => setActiveTab("released")}>
+            <FaCheckCircle /> Released Items
+          </div>
+
+          <div className={`menu-item ${activeTab === "returned" ? "active" : ""}`} onClick={() => setActiveTab("returned")}>
+            <FaCheckCircle /> Returned Items
+          </div>
+
+          <div className="menu-item" onClick={() => navigate("/staff/announcements")}>
+            <FaBullhorn /> Announcements
+          </div>
+
+          <button className="logout-btn" onClick={handleLogout}>
+            <FaSignOutAlt /> Logout
+          </button>
         </aside>
 
-        {/* Main Content */}
-        <main
-          style={{
-            flex: 1,
-            padding: isMobile ? "15px 10px" : "20px",
-            overflowY: "auto",
-            boxSizing: "border-box",
-          }}
-        >
-          {/* Search bar */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              marginBottom: "20px",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                border: "2px solid #A43259",
-                borderRadius: "30px",
-                padding: "5px 15px",
-                width: "80%",
-                maxWidth: "600px",
-                backgroundColor: "white",
-              }}
-            >
-              <FaSearch style={{ marginRight: "10px", color: "#A43259" }} />
-              <input
-                type="text"
-                placeholder="Search resident..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={{
-                  border: "none",
-                  outline: "none",
-                  flex: 1,
-                  fontSize: "16px",
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Resident List */}
-          {!selectedResident && (
-            <section
-              style={{
-                backgroundColor: "white",
-                borderRadius: "10px",
-                padding: "20px",
-                boxShadow: "0 0 5px #999",
-              }}
-            >
-              <h2>Residents</h2>
-              {residents
-  .filter((r) => {
-    const name = r.fullname || ""; // default to empty string if undefined
-    const term = searchTerm || "";
-    return name.toLowerCase().includes(term.toLowerCase());
-  })
-  .map((r) => (
-    <div
-      key={r.id}
-      style={{
-        padding: "10px",
-        borderBottom: "1px solid #ccc",
-        cursor: "pointer",
-      }}
-      onClick={() => {
-        setSelectedResident(r);
-        fetchFiles(r.id);
-      }}
-    >
-      {r.fullname || r.username || "Unnamed Resident"}
-    </div>
-  ))}
-
-              
-            </section>
-          )}
-
-          {/* Resident Files */}
-          {selectedResident && (
-            <section
-              style={{
-                backgroundColor: "white",
-                borderRadius: "10px",
-                padding: "20px",
-                boxShadow: "0 0 5px #999",
-              }}
-            >
-              <h2>{selectedResident.fullname}Resident's Requests</h2>
-              {files.map((f) => (
-                <div
-                  key={f.id}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    padding: "10px",
-                    borderBottom: "1px solid #ccc",
-                    cursor: "pointer",
-                  }}
-                  onClick={() => setSelectedFile(f)}
-                >
-                  <span>{f.filename}</span>
-                  <span>{f.status}</span>
-                </div>
-              ))}
-
-              <button
-                onClick={() => {
-                  setSelectedResident(null);
-                  setFiles([]);
-                }}
-                style={{
-                  marginTop: "10px",
-                  padding: "8px 12px",
-                  borderRadius: "6px",
-                  backgroundColor: "#6c757d",
-                  color: "white",
-                  border: "none",
-                  cursor: "pointer",
-                }}
-              >
-                Back to Residents
-              </button>
-            </section>
-          )}
-
-          {/* File Modal */}
-          {selectedFile && (
-            <div
-              style={{
-                position: "fixed",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: "100%",
-                backgroundColor: "rgba(0,0,0,0.6)",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                zIndex: 2000,
-              }}
-              onClick={() => setSelectedFile(null)}
-            >
-              <div
-                style={{
-                  position: "relative",
-                  background: "white",
-                  borderRadius: "12px",
-                  padding: "20px",
-                  maxWidth: "500px",
-                  width: "90%",
-                  maxHeight: "90vh",
-                  overflowY: "auto",
-                  textAlign: "center",
-                }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <h2>{selectedFile.filename}</h2>
-                <iframe
-                  src={`http://localhost:3000/uploads/${selectedFile.filename}`}
-                  title={selectedFile.filename}
-                  style={{ width: "100%", height: "400px", border: "1px solid #ccc" }}
+        {/* Main */}
+        <main className="dashboard-main">
+          {/* INBOX */}
+          {activeTab === "inbox" && (
+            <>
+              <div className="search-bar">
+                <FaSearch />
+                <input
+                  type="text"
+                  placeholder="Search resident..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 />
-                <div
-                  style={{
-                    marginTop: "15px",
-                    display: "flex",
-                    gap: "10px",
-                    justifyContent: "center",
-                  }}
-                >
-                  <button
-                    onClick={() => handleAccept(selectedFile.id)}
-                    style={{
-                      backgroundColor: "#28a745",
-                      color: "white",
-                      border: "none",
-                      padding: "8px 16px",
-                      borderRadius: "6px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Accept
-                  </button>
-                  <button
-                    onClick={() => handleReject(selectedFile.id)}
-                    style={{
-                      backgroundColor: "#dc3545",
-                      color: "white",
-                      border: "none",
-                      padding: "8px 16px",
-                      borderRadius: "6px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Reject
-                  </button>
-                  <button
-                    onClick={() => setSelectedFile(null)}
-                    style={{
-                      backgroundColor: "#6c757d",
-                      color: "white",
-                      border: "none",
-                      padding: "8px 16px",
-                      borderRadius: "6px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Close
-                  </button>
+              </div>
+
+              {!selectedResident ? (
+                <section className="resident-list">
+                  <h2>Residents with Requests</h2>
+                  {filteredResidents.map((r) => (
+                    <div key={`resident-${r.id}`} className="resident-item" onClick={() => { setSelectedResident(r); fetchResidentRequests(r.id); }}>
+                      <span>{r.username || "Unnamed Resident"}</span>
+                      <span className="pending-count">{r.pending_count}</span>
+                    </div>
+                  ))}
+                </section>
+              ) : (
+                <section className="resident-requests">
+                  <h2>{selectedResident.username}'s Requests</h2>
+
+                  {/* FILES */}
+                  {selectedResidentRequests.files.length > 0 && (
+                    <div className="resident-files">
+                      <h3>File Requests</h3>
+                      {selectedResidentRequests.files.map((f) => (
+                        <div key={`file-${f.id}`} className="file-item" onClick={() => setSelectedFile(f)}>
+                          <span>{f.filename}</span>
+                          <span className="file-status">{f.status}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* SCHEDULES */}
+                  {selectedResidentRequests.schedules.length > 0 && (
+                    <div className="resident-schedules">
+                      <h3>Schedule Requests</h3>
+                      {selectedResidentRequests.schedules.map((s) => (
+                        <div key={s.id} className="schedule-item" onClick={() => setSelectedSchedule(s)}>
+                          <span>{s.item} (x{s.quantity})</span>
+                          <span>{s.date_from} → {s.date_to}</span>
+                          <span className={`status ${s.status.toLowerCase()}`}>{s.status}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <button className="back-btn" onClick={() => { setSelectedResident(null); setSelectedResidentRequests({ files: [], schedules: [] }); }}>Back</button>
+                </section>
+              )}
+            </>
+          )}
+
+          {/* ACCEPTED LIST */}
+          {activeTab === "accepted" && (
+            <section className="accepted-list">
+              <h2>Accepted Requests</h2>
+              {(acceptedFiles.length === 0 && acceptedSchedules.length === 0) ? (
+                <p>No accepted requests yet.</p>
+              ) : (
+                <>
+                  <h3>Files</h3>
+                  {acceptedFiles.length === 0 ? <p>No accepted files.</p> : (
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Resident</th>
+                          <th>File Name</th>
+                          <th>Approved By</th>
+                          <th>Date Approved</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {acceptedFiles.map((f, idx) => (
+                          <tr key={`accepted-file-${f.id ?? idx}`}>
+                            <td>{f.resident_username || `Resident#${f.resident_id}`}</td>
+                            <td>{f.filename}</td>
+                            <td>{f.staff_username}</td>
+                            <td>{f.approved_at?.toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" }) || "N/A"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+
+                  <h3>Schedules</h3>
+                  {acceptedSchedules.length === 0 ? <p>No accepted schedules.</p> : (
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Resident</th>
+                          <th>Item</th>
+                          <th>Quantity</th>
+                          <th>Approved By</th>
+                          <th>Date Approved</th>
+                          <th>Release</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {acceptedSchedules.map((s, idx) => (
+                          <tr key={`accepted-schedule-${s.id ?? idx}`}>
+                            <td>{s.resident_username || `Resident#${s.user_id}`}</td>
+                            <td>{s.item}</td>
+                            <td>{s.quantity}</td>
+                            <td>{s.staff_username}</td>
+                            <td>{s.approved_at?.toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" }) || "N/A"}</td>
+                            <td>
+                              <button className="btn-blue" onClick={() => handleReleaseSchedule(s.id)}>Release</button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </>
+              )}
+            </section>
+          )}
+
+          {/* SCHEDULED ITEMS */}
+          {activeTab === "scheduled" && (
+            <section className="scheduled-list">
+              <h2>Scheduled Items</h2>
+              {acceptedSchedules.length === 0 ? <p>No scheduled items.</p> : (
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Resident</th>
+                      <th>Item</th>
+                      <th>Quantity</th>
+                      <th>Approved By</th>
+                      <th>Date Approved</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {acceptedSchedules.map((s) => (
+                      <tr key={`scheduled-${s.id}`}>
+                        <td>{s.resident_username || `Resident#${s.user_id}`}</td>
+                        <td>{s.item}</td>
+                        <td>{s.quantity}</td>
+                        <td>{s.staff_username}</td>
+                        <td>{s.approved_at ? new Date(s.approved_at).toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" }) : "N/A"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </section>
+          )}
+
+          {/* RELEASED ITEMS */}
+          {activeTab === "released" && (
+            <section className="released-list">
+              <h2>Released Items</h2>
+              {releasedSchedules.length === 0 ? <p>No released schedules yet.</p> : (
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Resident</th>
+                      <th>Item</th>
+                      <th>Quantity</th>
+                      <th>Approved By</th>
+                      <th>Date Approved</th>
+                      <th>Released By</th>
+                      <th>Date Released</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {releasedSchedules.map((s) => (
+                      <tr key={`released-${s.id}`}>
+                        <td>{s.resident_username || `Resident#${s.user_id}`}</td>
+                        <td>{s.item}</td>
+                        <td>{s.quantity}</td>
+                        <td>{s.staff_username}</td>
+                        <td>{s.approved_at ? new Date(s.approved_at).toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" }) : "N/A"}</td>
+                        <td>{s.released_by_username}</td>
+                        <td>{s.released_at ? new Date(s.released_at).toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" }) : "N/A"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </section>
+          )}
+
+          {/* RETURNED ITEMS */}
+          {activeTab === "returned" && (
+            <section className="returned-list">
+              <h2>Returned Items</h2>
+              {returnedSchedules.length === 0 ? <p>No returned items.</p> : (
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Resident</th>
+                      <th>Item</th>
+                      <th>Quantity</th>
+                      <th>Returned By</th>
+                      <th>Date Returned</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {returnedSchedules.map((s) => (
+                      <tr key={`returned-${s.id}`}>
+                        <td>{s.resident_username || `Resident#${s.user_id}`}</td>
+                        <td>{s.item}</td>
+                        <td>{s.quantity}</td>
+                        <td>{s.staff_username}</td>
+                        <td>{s.returned_at ? new Date(s.returned_at).toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" }) : "N/A"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </section>
+          )}
+    
+
+
+          {/* FILE MODAL */}
+          {selectedFile && (
+            <div className="modal-overlay" onClick={() => setSelectedFile(null)}>
+              <div className="modal" onClick={(e) => e.stopPropagation()}>
+                <h2>{selectedFile.filename}</h2>
+                <iframe src={`${import.meta.env.VITE_API_URL}/uploads/${selectedFile.filename}`} title={selectedFile.filename}></iframe>
+                <div className="modal-buttons">
+                  <button className="btn-green" onClick={() => handleFileStatusChange(selectedFile.id, "approved")}>Accept</button>
+                  <button className="btn-red" onClick={() => handleFileStatusChange(selectedFile.id, "rejected")}>Reject</button>
+                  <button className="btn-gray" onClick={() => setSelectedFile(null)}>Close</button>
+                </div>
+              </div>
+            </div>
+          )}
+        {activeTab === "released" && (
+  <section className="released-list">
+    <h2>Released Items</h2>
+    {releasedSchedules.length === 0 ? (
+      <p>No released schedules yet.</p>
+    ) : (
+      <table>
+        <thead>
+          <tr>
+            <th>Resident</th>
+            <th>Item</th>
+            <th>Quantity</th>
+            <th>Approved By</th>
+            <th>Date Approved</th>
+            <th>Released By</th>
+            <th>Date Released</th>
+          </tr>
+        </thead>
+        <tbody>
+          {releasedSchedules.map(s => (
+            <tr key={s.id}>
+              <td>{s.resident_username || `Resident#${s.user_id}`}</td>
+              <td>{s.item}</td>
+              <td>{s.quantity}</td>
+              <td>{s.staff_username}</td>
+              <td>{s.approved_at ? new Date(s.approved_at).toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" }) : "N/A"}</td>
+              <td>{s.released_by_username}</td>
+              <td>{s.released_at ? new Date(s.released_at).toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" }) : "N/A"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+  </section>
+)}
+
+          {/* SCHEDULE MODAL */}
+          {selectedSchedule && (
+            <div className="modal-overlay" onClick={() => setSelectedSchedule(null)}>
+              <div className="modal" onClick={(e) => e.stopPropagation()}>
+                <h2>{selectedSchedule.item}</h2>
+                <p>Quantity: {selectedSchedule.quantity}</p>
+                <p>Date: {selectedSchedule.date_from} → {selectedSchedule.date_to}</p>
+                <div className="modal-buttons">
+                  <button className="btn-green" onClick={() => handleScheduleStatusChange(selectedSchedule.id, "Approved")}>Approve</button>
+                  <button className="btn-red" onClick={() => handleScheduleStatusChange(selectedSchedule.id, "Rejected")}>Reject</button>
+                  <button className="btn-gray" onClick={() => setSelectedSchedule(null)}>Close</button>
                 </div>
               </div>
             </div>
           )}
         </main>
       </div>
+  
 
       {/* Footer */}
-      <footer
-        style={{
-          backgroundColor: "#28D69F",
-          color: "black",
-          padding: isMobile ? "10px 15px" : "15px 40px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexDirection: isMobile ? "column" : "row",
-          textAlign: "center",
-          gap: isMobile ? "10px" : "0",
-        }}
-      >
-        <div style={{ fontWeight: "bold" }}>🌿 Barangay Logo</div>
+      <footer className="dashboard-footer">
+        <div>🌿 Barangay Logo</div>
         <div>📞 0917-123-4567</div>
       </footer>
     </div>
   );
 }
-
-const menuStyle = {
-  display: "flex",
-  alignItems: "center",
-  gap: "8px",
-  cursor: "pointer",
-  padding: "10px",
-  fontSize: "15px",
-  borderRadius: "6px",
-  marginBottom: "10px",
-  transition: "background 0.3s",
-};
-
-const iconStyle = { fontSize: "16px" };

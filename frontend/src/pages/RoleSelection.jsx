@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { FaUserCircle, FaEye, FaEyeSlash } from "react-icons/fa";
 
-function RoleSelection() {
+export default function RoleSelection() {
   const navigate = useNavigate();
   const [role, setRole] = useState("");
   const [form, setForm] = useState({ username: "", password: "" });
@@ -11,14 +11,14 @@ function RoleSelection() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Handle input changes
+  const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
     if (errors[name]) setErrors({ ...errors, [name]: "" });
   };
 
-  // Validate form fields
   const validateForm = () => {
     const newErrors = {};
     if (!role) newErrors.role = "Please select a role";
@@ -31,7 +31,6 @@ function RoleSelection() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -40,20 +39,25 @@ function RoleSelection() {
     setErrors({});
 
     try {
-      const url = `${import.meta.env.VITE_API_URL}/api/auth/${role.toLowerCase()}/login`;
-      const res = await axios.post(url, form);
+      const loginUrl = `${baseUrl}/api/auth/${role.toLowerCase()}/login`;
+      const res = await axios.post(loginUrl, form);
 
-     // Save token and username to localStorage
-localStorage.setItem("token", res.data.token);
+      const { token, user } = res.data;
+      if (!token) throw new Error("No token received from server");
 
-if (res.data.username) {
-  localStorage.setItem("username", res.data.username);
-} else if (res.data.user?.username) {
-  localStorage.setItem("username", res.data.user.username);
-}
+      // Save common items
+      localStorage.setItem("token", token);
+      localStorage.setItem("username", user?.username || "Unknown");
+      localStorage.setItem("role", role.toLowerCase());
 
-
-
+      // Save role-specific IDs directly from user object
+      if (role.toLowerCase() === "staff") {
+        localStorage.setItem("staffId", user.id);
+      } else if (role.toLowerCase() === "admin") {
+        localStorage.setItem("adminId", user.id);
+      } else if (role.toLowerCase() === "resident") {
+        localStorage.setItem("residentId", user.id);
+      }
 
       // Redirect based on role
       switch (role.toLowerCase()) {
@@ -71,15 +75,17 @@ if (res.data.username) {
       }
     } catch (err) {
       console.error("Login error: ", err);
-      const errorMessage =
-        err.response?.data?.error || err.message || "Login failed";
-      setErrors({ submit: errorMessage });
+      const message =
+        err.response?.data?.error ||
+        (err.response?.status === 404
+          ? "Login route not found. Check backend URL."
+          : err.message || "Login failed. Please try again.");
+      setErrors({ submit: message });
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Navigate to register page
   const handleRegister = () => {
     if (role) navigate(`/${role.toLowerCase()}/register`);
     else setErrors({ role: "Please select a role to register" });
@@ -231,5 +237,3 @@ if (res.data.username) {
     </div>
   );
 }
-
-export default RoleSelection;

@@ -1,4 +1,22 @@
-const db = require("../config/db"); // adjust path kung saan yung db connection mo
+const db = require("../config/db"); // just db
+
+// Get pending schedules for staff inbox
+const getPendingSchedules = async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT s.id, s.user_id, u.name AS resident_name, s.item, s.quantity,
+              s.date_from, s.date_to, s.time_from, s.time_to, s.status
+       FROM schedules s
+       JOIN users u ON s.user_id = u.id
+       WHERE s.status = 'Pending'
+       ORDER BY s.created_at DESC`
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching pending schedules:", err);
+    res.status(500).json({ error: "Failed to fetch pending schedules" });
+  }
+};
 
 // CREATE schedule
 const createSchedule = async (req, res) => {
@@ -74,19 +92,31 @@ const getUserSchedules = async (req, res) => {
 const updateScheduleStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, approved_by } = req.body; // <- accept staff ID
 
     if (!["Pending", "Approved", "Rejected"].includes(status)) {
       return res.status(400).json({ error: "Invalid status" });
     }
 
-    await db.query(`UPDATE schedules SET status = ? WHERE id = ?`, [status, id]);
+    if (status === "Approved") {
+      await db.query(
+        "UPDATE schedules SET status = ?, approved_at = NOW(), approved_by = ? WHERE id = ?",
+        [status, approved_by || null, id]
+      );
+    } else {
+      await db.query(
+        "UPDATE schedules SET status = ?, approved_by = NULL WHERE id = ?",
+        [status, id]
+      );
+    }
+
     res.json({ id, status });
   } catch (err) {
     console.error("Error updating schedule status:", err);
     res.status(500).json({ error: "Failed to update schedule status" });
   }
 };
+
 
 // DELETE schedule (cancel by resident)
 const deleteSchedule = async (req, res) => {
@@ -110,10 +140,12 @@ const deleteSchedule = async (req, res) => {
   }
 };
 
+
 module.exports = {
   createSchedule,
   getAllSchedules,
   getUserSchedules,
   updateScheduleStatus,
   deleteSchedule,
+  getPendingSchedules, 
 };

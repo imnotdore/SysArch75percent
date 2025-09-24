@@ -1,0 +1,280 @@
+/* General */
+.request-page {
+  font-family: "Lexend", sans-serif;
+  min-height: 100vh;
+  background-color: #f0f2f5;
+}
+
+/* Header */
+.header {
+  background-color: #F4BE2A;
+  color: #000;
+  padding: 15px;
+  display: flex;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 999;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.header h1 {
+  margin: 0;
+  font-weight: bold;
+  font-size: clamp(18px, 2vw, 28px);
+}
+
+/* Layout */
+.main-layout {
+  display: flex;
+}
+
+/* Sidebar */
+.sidebar {
+  position: relative;
+  top: 0;
+  height: 100vh;
+  width: 220px;
+  background-color: #A43259;
+  color: #fff;
+  transition: left 0.3s;
+  z-index: 1000;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.account-box {
+  text-align: center;
+  margin-bottom: 20px;
+  padding: 10px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  color: #000;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+
+.submenu-item {
+  font-size: 13px;
+  width: 90%;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.sidebar-item:hover {
+  transform: scale(1.05);
+  transition: all 0.2s;
+  background-color: rgba(255,255,255,0.2);
+  border-radius: 6px;
+}
+
+/* Main card */
+.main-card {
+  background-color: #fff;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.main-card h2 {
+  color: #28D69F;
+  margin-bottom: 20px;
+}
+
+/* Buttons */
+.upload-btn {
+  width: 100%;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: bold;
+  color: #fff;
+  margin-top: 20px;
+  cursor: pointer;
+  background-color: #28D69F;
+  transition: background-color 0.2s ease;
+}
+
+.upload-btn:hover:not(.disabled) {
+  background-color: #1db88a;
+}
+
+.upload-btn.disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.logout-btn {
+  width: 100%;
+  background-color: #ff4d4d;
+  color: #fff;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.logout-btn:hover {
+  background-color: #e04343;
+}
+
+/* ============================= */
+/* Calendar & Day Number Styles  */
+/* ============================= */
+
+.day-number {
+  font-weight: bold;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+/* Slot bar under each day */
+.day-slot-bar {
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(to right, #28a745, #ffc107, #d32f2f);
+  width: 100%;
+}
+
+/* Day backgrounds */
+.available .day-number {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.partially-booked .day-number {
+  background-color: #ffc107; /* bright amber */
+  color: #842029;
+  font-weight: bold;
+}
+
+.fully-booked .day-number,
+.resident-full .day-number {
+  background-color: #f8d7da !important;
+  color: #721c24 !important;
+  font-weight: bold;
+  opacity: 0.85;
+}
+
+/* Today highlight */
+.today .day-number {
+  border: 2px solid #007bff;
+  background-color: transparent;
+  color: #007bff;
+}
+
+/* Past dates */
+.past-date .day-number {
+  background-color: #e2e3e5;
+  color: #6c757d;
+  cursor: not-allowed;
+}
+
+/* React Datepicker Integration */
+.react-datepicker__day.available {
+  background-color: #d4edda;
+  color: #155724;
+  border-radius: 50%;
+  position: relative;
+}
+
+.react-datepicker__day.partially-booked {
+  background-color: #ffc107;
+  color: #842029;
+  font-weight: bold;
+  border-radius: 50%;
+  position: relative;
+}
+
+.react-datepicker__day.fully-booked,
+.react-datepicker__day.resident-full {
+  background-color: #f8d7da !important;
+  color: #721c24 !important;
+  border-radius: 50%;
+  opacity: 0.85;
+  position: relative;
+}
+
+.react-datepicker__day.today {
+  border: 2px solid #007bff;
+  background-color: transparent;
+  font-weight: bold;
+  border-radius: 50%;
+}
+
+.react-datepicker__day.past-date {
+  background-color: #e2e3e5;
+  color: #6c757d;
+  cursor: not-allowed;
+  border-radius: 50%;
+}
+
+.custom-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.custom-modal {
+  background-color: #fff;
+  padding: 20px 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  text-align: center;
+  max-width: 400px;
+}
+
+.custom-modal p {
+  margin-bottom: 20px;
+  font-weight: bold;
+  color: #721c24;
+}
+
+.custom-modal button {
+  padding: 10px 20px;
+  border: none;
+  background-color: #28d69f;
+  color: #fff;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.custom-modal button:hover {
+  background-color: #1db88a;
+}

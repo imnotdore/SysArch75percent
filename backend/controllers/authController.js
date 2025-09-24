@@ -1,3 +1,4 @@
+// controllers/authController.js
 const db = require("../config/db");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -5,12 +6,12 @@ const jwt = require("jsonwebtoken");
 const generateToken = (user, role) => {
   return jwt.sign(
     { id: user.id, username: user.username, role },
-    process.env.JWT_SECRET || "supersecretkey", // fallback para di mag-crash pag wala sa .env
+    process.env.JWT_SECRET || "supersecretkey", 
     { expiresIn: "1d" }
   );
 };
 
-// Helper function para DRY code (avoid repetition)
+// Generic register
 const registerUser = async (table, username, password, res) => {
   try {
     const hashed = await bcrypt.hash(password, 10);
@@ -25,6 +26,7 @@ const registerUser = async (table, username, password, res) => {
   }
 };
 
+// Generic login
 const loginUser = async (table, role, username, password, res) => {
   try {
     const [rows] = await db.query(
@@ -38,8 +40,6 @@ const loginUser = async (table, role, username, password, res) => {
     if (!match) return res.status(400).json({ error: "Invalid credentials" });
 
     const token = generateToken(user, role);
-
-    // Para hindi ibalik yung password sa frontend
     const { password: _, ...safeUser } = user;
 
     res.json({ token, user: safeUser });
@@ -49,7 +49,7 @@ const loginUser = async (table, role, username, password, res) => {
   }
 };
 
-// ========== RESIDENT ==========
+// ================= RESIDENT =================
 exports.registerResident = (req, res) => {
   const { username, password } = req.body;
   registerUser("residents", username, password, res);
@@ -60,7 +60,7 @@ exports.loginResident = (req, res) => {
   loginUser("residents", "resident", username, password, res);
 };
 
-// ========== STAFF ==========
+// ================= STAFF =================
 exports.registerStaff = (req, res) => {
   const { username, password } = req.body;
   registerUser("staff", username, password, res);
@@ -71,7 +71,7 @@ exports.loginStaff = (req, res) => {
   loginUser("staff", "staff", username, password, res);
 };
 
-// ========== ADMIN ==========
+// ================= ADMIN =================
 exports.registerAdmin = (req, res) => {
   const { username, password } = req.body;
   registerUser("admins", username, password, res);

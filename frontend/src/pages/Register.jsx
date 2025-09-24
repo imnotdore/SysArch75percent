@@ -19,6 +19,8 @@ function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState('');
 
+  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
   const inputStyle = (error) => ({
     width: '100%',
     padding: '12px',
@@ -57,46 +59,45 @@ function Register() {
     return Object.keys(newErrors).length === 0;
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  if (!validateForm()) return;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
 
-  setIsLoading(true);
-  setMessage("");
-  setErrors({});
+    setIsLoading(true);
+    setMessage('');
+    setErrors({});
 
-  try {
-    const url = `${import.meta.env.VITE_API_URL}/api/auth/${role}/register`;
+    try {
+      const registerUrl = `${baseUrl}/api/auth/${role.toLowerCase()}/register`;
 
-    const res = await axios.post(url, form);
+      const res = await axios.post(registerUrl, form);
 
-    setMessage(`${role.charAt(0).toUpperCase() + role.slice(1)} registered successfully!`);
+      setMessage(`${role.charAt(0).toUpperCase() + role.slice(1)} registered successfully!`);
 
-    // Clear form
-    setForm({
-      username: '',
-      password: '',
-      ...(role === 'staff' && { staff_id: '', name: '', contact: '' }),
-      ...(role === 'resident' && { full_name: '', address: '', age: '', gender: 'male', contact: '' }),
-    });
+      // Clear form
+      setForm({
+        username: '',
+        password: '',
+        ...(role === 'staff' && { staff_id: '', name: '', contact: '' }),
+        ...(role === 'resident' && { full_name: '', address: '', age: '', gender: 'male', contact: '' }),
+      });
 
-    // Redirect to login after 2 seconds
-    setTimeout(() => navigate('/'), 2000);
-  } catch (err) {
-    console.error("Registration error:", err);
+      // Redirect to login after 2 seconds
+      setTimeout(() => navigate('/'), 2000);
+    } catch (err) {
+      console.error('Registration error:', err);
 
-    if (err.response) {
-      setErrors({ submit: err.response.data.error || 'Registration failed' });
-    } else if (err.request) {
-      setErrors({ submit: 'No response from server' });
-    } else {
-      setErrors({ submit: err.message });
+      if (err.response) {
+        setErrors({ submit: err.response.data.error || 'Registration failed' });
+      } else if (err.request) {
+        setErrors({ submit: 'No response from server' });
+      } else {
+        setErrors({ submit: err.message });
+      }
+    } finally {
+      setIsLoading(false);
     }
-  } finally {
-    setIsLoading(false);
-  }
-};
-
+  };
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundImage: 'url("/pic1.jpg")', backgroundSize: 'cover', backgroundPosition: 'center', padding: '15px' }}>
