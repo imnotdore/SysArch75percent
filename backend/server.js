@@ -1,12 +1,9 @@
-// server.js
 require("dotenv").config();
 const express = require("express");
-const app = express();
 const cors = require("cors");
 const path = require("path");
-const itemRoutes = require("./routes/itemRoutes");
-app.use("/api/items", itemRoutes);
 
+const app = express();
 
 // ---------------- Middleware ---------------- //
 app.use(cors({ origin: "http://localhost:5173", credentials: true }));

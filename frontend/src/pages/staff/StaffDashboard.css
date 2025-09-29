@@ -68,6 +68,7 @@ body {
   flex: 1;
 }
 
+
 /* Sidebar */
 .sidebar {
   position: relative;
@@ -78,9 +79,10 @@ body {
   padding: 12px 0;
   display: flex;
   flex-direction: column;
-  transition: all 0.3s ease;
   font-size: 14px;
   box-shadow: inset -1px 0 0 rgba(60,64,67,0.1);
+  transition: all 0.3s ease;
+  left: -240px;
 }
 
 .sidebar.open {
@@ -96,24 +98,23 @@ body {
   color: #202124;
 }
 
-/* Sidebar menu items with gradient hover */
+/* Sidebar menu items */
 .menu-item {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 16px;
   padding: 12px 20px;
   font-size: 14px;
   color: #202124;
   cursor: pointer;
-  transition: all 0.3s ease;
   border-radius: 24px 0 0 24px;
   margin-bottom: 6px;
-  position: relative;
-  overflow: hidden;
+  transition: background 0.2s, font-weight 0.2s, transform 0.2s;
 }
 
 .menu-item:hover {
-  background: linear-gradient(90deg, #e8f0fe 0%, #d2e3fc 100%);
+  background-color: #f1f3f4;
   font-weight: 500;
   transform: translateX(4px);
 }
@@ -122,7 +123,6 @@ body {
   background-color: #e8f0fe;
   font-weight: 600;
   border-left: 4px solid #1a73e8;
-  box-shadow: inset 2px 0 4px rgba(26,115,232,0.2);
 }
 
 .menu-item svg {
@@ -166,7 +166,7 @@ body {
   position: relative;
 }
 
-/* Scrollbar styling (modern) */
+/* Scrollbar */
 .dashboard-main::-webkit-scrollbar {
   width: 8px;
 }
@@ -181,6 +181,7 @@ body {
   background-color: rgba(60,64,67,0.5);
 }
 
+/* Search bar */
 .search-bar {
   display: flex;
   align-items: center;
@@ -201,13 +202,13 @@ body {
   background: none;
 }
 
-/* Lists with hover shadows */
+/* Lists */
 .resident-list, .resident-files, .accepted-list {
   background-color: #ffffff;
   border-radius: 8px;
   padding: 20px;
-  box-shadow: 0 2px 4px rgba(60,64,67,0.1);
   margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(60,64,67,0.1);
   transition: all 0.3s ease;
 }
 
@@ -221,24 +222,35 @@ body {
   padding: 12px 14px;
   border-radius: 6px;
   cursor: pointer;
-  transition: background 0.2s, transform 0.2s;
+  transition: all 0.25s ease;
 }
 
 .resident-item:hover, .file-item:hover {
   background-color: #f1f3f4;
   transform: translateX(2px);
+  box-shadow: 0 2px 6px rgba(60,64,67,0.1);
 }
 
-.pending-count {
+/* Pending count & notification badges */
+.pending-count, .notification-badge {
   background-color: #d93025;
   color: white;
   border-radius: 12px;
   padding: 2px 8px;
   font-size: 12px;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
 }
 
-/* Floating Action Button (FAB) */
+.notification-badge:hover {
+  transform: scale(1.2);
+  background-color: #b71c1c;
+}
+
+/* Floating Action Button */
 .fab {
   position: fixed;
   bottom: 30px;
@@ -346,10 +358,15 @@ th {
 @media (max-width: 768px) {
   .sidebar { left: -240px; }
   .sidebar.open { left: 0; }
-  .dashboard-footer { flex-direction: column; gap: 10px; text-align: center; padding: 12px 16px; }
+  .dashboard-footer {
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+    padding: 12px 16px;
+  }
 }
 
-/* Color-coded labels (like Gmail labels) */
+/* Labels */
 .label {
   display: inline-block;
   padding: 2px 8px;
@@ -360,111 +377,282 @@ th {
   margin-right: 6px;
 }
 
-.label.pending { background-color: #d93025; }      /* Red */
-.label.in-progress { background-color: #fbbc04; } /* Yellow */
-.label.approved { background-color: #34a853; }    /* Green */
-.label.rejected { background-color: #5f6368; }    /* Gray */
+.label.pending { background-color: #d93025; }
+.label.in-progress { background-color: #fbbc04; }
+.label.approved { background-color: #34a853; }
+.label.rejected { background-color: #5f6368; }
 
-/* Resident item hover with subtle label pop */
-.resident-item:hover .label {
-  transform: scale(1.1);
-  transition: transform 0.2s ease;
+/* Schedule Cards */
+.schedule-card, .file-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(60,64,67,0.08);
 }
 
-/* Notification badges */
-.notification-badge {
-  background-color: #d93025;
-  color: white;
-  border-radius: 50%;
-  min-width: 20px;
-  height: 20px;
+.schedule-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(26,115,232,0.2);
+}
+
+.file-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(227,116,0,0.2);
+}
+
+.schedule-icon, .file-icon {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+}
+
+.schedule-icon { background: #e8f0fe; }
+.file-icon { background: #fef3e7; }
+
+.schedule-info, .file-info { flex: 1; }
+
+.schedule-title, .file-title {
+  font-size: 16px;
   font-weight: 600;
-  padding: 0 6px;
-  margin-left: auto;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
-  transition: all 0.2s ease;
+  margin: 0 0 6px 0;
+  color: #202124;
 }
 
-.notification-badge:hover {
-  transform: scale(1.2);
-  background-color: #b71c1c;
+.schedule-info p, .file-info p {
+  margin: 2px 0;
+  font-size: 14px;
+  color: #5f6368;
 }
 
-/* File status badges */
-.file-status {
-  font-size: 12px;
-  font-weight: 500;
-  padding: 2px 8px;
-  border-radius: 12px;
-  color: white;
+.schedule-status, .file-status {
+  align-self: center;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
   text-transform: capitalize;
 }
 
-.file-status.pending { background-color: #d93025; }
-.file-status.approved { background-color: #34a853; }
-.file-status.rejected { background-color: #5f6368; }
-.file-status.in-progress { background-color: #fbbc04; }
-
-/* Apply subtle hover shadow for resident and file items */
-.resident-item, .file-item {
-  transition: all 0.25s ease;
+.schedule-status.pending, .file-status.pending {
+  background: #fef3c7; color: #b45309;
 }
 
-.resident-item:hover, .file-item:hover {
-  background-color: #f1f3f4;
-  transform: translateX(2px);
-  box-shadow: 0 2px 6px rgba(60,64,67,0.1);
+.schedule-status.approved, .file-status.approved {
+  background: #dcfce7; color: #15803d;
 }
 
-/* Floating labels in inbox table (optional) */
-table td .label {
-  display: inline-block;
-  margin-left: 6px;
+.schedule-status.rejected, .file-status.rejected {
+  background: #fee2e2; color: #b91c1c;
 }
-.menu-item {
+
+/* Schedule modal */
+.schedule-modal {
+  max-width: 500px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 12px 20px;
-  font-size: 14px;
-  color: #202124;
-  cursor: pointer;
-  transition: background 0.2s, font-weight 0.2s;
-  border-radius: 24px 0 0 24px;
-  margin-bottom: 6px;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-.menu-item:hover {
-  background-color: #f1f3f4;
-  font-weight: 500;
+.schedule-modal-header {
+  display: flex;
+  gap: 1rem;
 }
 
-.menu-item.active {
-  background-color: #e8f0fe;
-  font-weight: 600;
-  border-left: 4px solid #1a73e8;
-}
-
-.menu-item svg {
-  min-width: 20px;
-  color: #5f6368;
-  transition: color 0.2s;
-}
-
-.menu-item:hover svg {
-  color: #1a73e8;
-}
-
-.notification-badge {
-  background-color: #d93025;
+.date-box {
+  width: 80px;
+  background: #1a73e8;
   color: white;
+  text-align: center;
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+
+.date-box span { font-size: 0.8rem; }
+.date-box h3 { margin: 0; }
+
+.details-box { flex: 1; }
+
+.status-badge {
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-weight: bold;
+  margin-left: 0.5rem;
+}
+
+.status-badge.approved { background-color: #28a745; color: white; }
+.status-badge.pending { background-color: #ffc107; color: black; }
+.status-badge.rejected { background-color: #dc3545; color: white; }
+
+
+.back-btn {
+  background-color: #1a73e8;
+  color: white;
+  font-weight: 500;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(26,115,232,0.3);
+  overflow: hidden;
+  position: relative;
+}
+
+/* Hover scale + glow */
+.back-btn:hover {
+  background-color: #1669c1;
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(26,115,232,0.5);
+}
+
+/* Active click effect */
+.back-btn:active {
+  transform: scale(0.98);
+  box-shadow: 0 2px 6px rgba(26,115,232,0.3);
+}
+
+/* Arrow slide */
+.back-arrow {
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+
+.back-btn:hover .back-arrow {
+  transform: translateX(-6px);
+}
+
+/* Glow pulse animation */
+@keyframes pulse-glow {
+  0% {
+    box-shadow: 0 0 6px rgba(26,115,232,0.4);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(26,115,232,0.6);
+  }
+  100% {
+    box-shadow: 0 0 6px rgba(26,115,232,0.4);
+  }
+}
+
+/* Apply glow pulse on hover */
+.back-btn:hover {
+  animation: pulse-glow 1.2s infinite;
+}
+/* Accepted List Table Styling */
+.accepted-list table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.accepted-list th, .accepted-list td {
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.accepted-list th {
+  background-color: #1a73e8;
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.accepted-list tbody tr {
+  border-bottom: 1px solid #e0e0e0;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  cursor: default;
+}
+
+.accepted-list tbody tr:hover {
+  background-color: #e8f0fe;
+  transform: translateY(-1px);
+}
+
+/* Buttons inside table */
+.accepted-list .btn-blue {
+  background-color: #1a73e8;
+  color: #fff;
+  border: none;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.accepted-list .btn-blue:hover {
+  background-color: #1669c1;
+  box-shadow: 0 2px 6px rgba(26,115,232,0.4);
+  transform: scale(1.05);
+}
+
+/* Empty state message */
+.accepted-list p {
+  font-style: italic;
+  color: #555;
+  margin-top: 1rem;
+}
+
+/* Table scroll for smaller screens */
+@media (max-width: 768px) {
+  .accepted-list table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
+
+/* Headings in accepted list */
+.accepted-list h2, .accepted-list h3 {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  color: #1a73e8;
+  font-weight: 600;
+}
+
+.accepted-list h3 {
+  font-size: 16px;
+}
+
+/* Status badges in table (optional) */
+.accepted-list td .status-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 6px;
   font-size: 12px;
   font-weight: 500;
-  border-radius: 12px;
-  padding: 2px 8px;
+  text-transform: capitalize;
+}
+
+.accepted-list td .status-badge.approved {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.accepted-list td .status-badge.rejected {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+.accepted-list td .status-badge.pending {
+  background-color: #fff3cd;
+  color: #856404;
 }

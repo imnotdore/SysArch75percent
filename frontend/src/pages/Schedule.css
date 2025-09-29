@@ -1,0 +1,57 @@
+/* Schedule.css */
+
+/* Base react-calendar tweaks */
+.react-calendar {
+  width: 100%;
+  max-width: 100%;
+  background: white;
+  border: none;
+  border-radius: 10px;
+  font-family: "Lexend", sans-serif;
+  line-height: 1.5em;
+}
+
+.react-calendar__tile {
+  max-width: 100%;
+  padding: 10px 0;
+  text-align: center;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+}
+
+/* Available dates = green */
+.react-calendar__tile.available {
+  background-color: #e6f9ed;
+  color: #1e7e34;
+  font-weight: bold;
+  border: 1px solid #28d69f;
+}
+
+/* Hover effect for available */
+.react-calendar__tile.available:hover {
+  background-color: #c8f5da;
+  cursor: pointer;
+}
+
+/* Fully booked / unavailable = red */
+.react-calendar__tile.fully-booked {
+  background-color: #fbeaea;
+  color: #c82333;
+  border: 1px solid #dc3545;
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Selected date highlight */
+.react-calendar__tile--active {
+  background: #28d69f !important;
+  color: white !important;
+  border-radius: 8px;
+}
+
+/* Today's date styling */
+.react-calendar__tile--now {
+  border: 2px solid #f4be2a;
+  background: #fffbe6;
+  font-weight: bold;
+}

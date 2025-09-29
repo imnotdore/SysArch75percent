@@ -19,12 +19,13 @@ const getPendingSchedules = async (req, res) => {
 };
 
 // CREATE schedule
+// CREATE schedule
 const createSchedule = async (req, res) => {
   try {
     const userId = req.user.id; // galing JWT middleware
-    const { dateFrom, dateTo, timeFrom, timeTo, item, quantity } = req.body;
+    const { date_from, date_to, time_from, time_to, item, quantity } = req.body;
 
-    if (!dateFrom || !dateTo || !timeFrom || !timeTo || !item) {
+    if (!date_from || !date_to || !time_from || !time_to || !item) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
@@ -32,7 +33,7 @@ const createSchedule = async (req, res) => {
       `INSERT INTO schedules 
         (user_id, item, quantity, date_from, date_to, time_from, time_to, status) 
        VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending')`,
-      [userId, item, quantity || 1, dateFrom, dateTo, timeFrom, timeTo]
+      [userId, item, quantity || 1, date_from, date_to, time_from, time_to]
     );
 
     res.json({
@@ -40,10 +41,10 @@ const createSchedule = async (req, res) => {
       user_id: userId,
       item,
       quantity: quantity || 1,
-      dateFrom,
-      dateTo,
-      timeFrom,
-      timeTo,
+      date_from,
+      date_to,
+      time_from,
+      time_to,
       status: "Pending",
     });
   } catch (err) {
@@ -51,6 +52,7 @@ const createSchedule = async (req, res) => {
     res.status(500).json({ error: "Failed to create schedule" });
   }
 };
+
 
 // GET all schedules (for admin)
 const getAllSchedules = async (req, res) => {

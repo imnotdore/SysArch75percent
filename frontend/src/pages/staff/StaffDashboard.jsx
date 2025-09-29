@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
   FaUserCircle,
+  FaFileAlt,
   FaInbox,
   FaBullhorn,
   FaCalendarAlt,
@@ -325,49 +326,84 @@ export default function StaffDashboard() {
               </div>
 
               {!selectedResident ? (
-                <section className="resident-list">
-                  <h2>Residents with Requests</h2>
-                  {filteredResidents.map((r) => (
-                    <div key={`resident-${r.id}`} className="resident-item" onClick={() => { setSelectedResident(r); fetchResidentRequests(r.id); }}>
-                      <span>{r.username || "Unnamed Resident"}</span>
-                      <span className="pending-count">{r.pending_count}</span>
-                    </div>
-                  ))}
-                </section>
-              ) : (
-                <section className="resident-requests">
-                  <h2>{selectedResident.username}'s Requests</h2>
+  <section className="resident-list">
+    <h2>Residents with Requests</h2>
+    {filteredResidents.map((r) => (
+      <div
+        key={`resident-${r.id}`}
+        className="resident-item"
+        onClick={() => {
+          setSelectedResident(r);
+          fetchResidentRequests(r.id);
+        }}
+      >
+        <span>{r.username || "Unnamed Resident"}</span>
+        <span className="pending-count">{r.pending_count}</span>
+      </div>
+    ))}
+  </section>
+) : (
+  <section className="resident-requests">
+    <button
+      className="back-btn"
+      onClick={() => {
+        setSelectedResident(null);
+        setSelectedResidentRequests({ files: [], schedules: [] });
+      }}
+      style={{ marginBottom: "0.5rem" }} // optional spacing
+    >
+      ← Back
+    </button>
 
-                  {/* FILES */}
-                  {selectedResidentRequests.files.length > 0 && (
-                    <div className="resident-files">
-                      <h3>File Requests</h3>
-                      {selectedResidentRequests.files.map((f) => (
-                        <div key={`file-${f.id}`} className="file-item" onClick={() => setSelectedFile(f)}>
-                          <span>{f.filename}</span>
-                          <span className="file-status">{f.status}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+    <h2>{selectedResident.username}'s Requests</h2>
 
-                  {/* SCHEDULES */}
-                  {selectedResidentRequests.schedules.length > 0 && (
-                    <div className="resident-schedules">
-                      <h3>Schedule Requests</h3>
-                      {selectedResidentRequests.schedules.map((s) => (
-                        <div key={s.id} className="schedule-item" onClick={() => setSelectedSchedule(s)}>
-                          <span>{s.item} (x{s.quantity})</span>
-                          <span>{s.date_from} → {s.date_to}</span>
-                          <span className={`status ${s.status.toLowerCase()}`}>{s.status}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+    {/* FILES */}
+    {selectedResidentRequests.files.length > 0 && (
+      <div className="resident-files">
+        <h3>File Requests</h3>
+        {selectedResidentRequests.files.map((f) => (
+          <div key={f.id} className="file-card">
+            <div className="file-icon">
+              <FaFileAlt size={28} color="#e37400" />
+            </div>
+            <div className="file-info" onClick={() => setSelectedFile(f)}>
+              <h4 className="file-title">{f.filename}</h4>
+              <p><strong>Pages:</strong> {f.page_count}</p>
+              <p><strong>Date Needed:</strong> {new Date(f.date_needed).toLocaleDateString("en-PH")}</p>
+              <p><strong>Uploaded:</strong> {new Date(f.created_at).toLocaleString("en-PH")}</p>
+            </div>
+            <div className={`file-status ${f.status.toLowerCase()}`}>
+              {f.status}
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
 
-                  <button className="back-btn" onClick={() => { setSelectedResident(null); setSelectedResidentRequests({ files: [], schedules: [] }); }}>Back</button>
-                </section>
-              )}
+    {/* SCHEDULES */}
+    {selectedResidentRequests.schedules.length > 0 && (
+      <div className="resident-schedules">
+        <h3>Schedule Requests</h3>
+        {selectedResidentRequests.schedules.map((s) => (
+          <div key={s.id} className="schedule-card" onClick={() => setSelectedSchedule(s)}>
+            <div className="schedule-icon">
+              <FaCalendarAlt size={28} color="#1a73e8" />
+            </div>
+            <div className="schedule-info">
+              <h4 className="schedule-title">{s.item}</h4>
+              <p><strong>Quantity:</strong> {s.quantity}</p>
+              <p><strong>Date:</strong> {new Date(s.date_from).toLocaleString("en-PH")} → {new Date(s.date_to).toLocaleString("en-PH")}</p>
+            </div>
+            <div className={`schedule-status ${s.status.toLowerCase()}`}>
+              {s.status}
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </section>
+)}
+
             </>
           )}
 
@@ -587,20 +623,34 @@ export default function StaffDashboard() {
 )}
 
           {/* SCHEDULE MODAL */}
-          {selectedSchedule && (
-            <div className="modal-overlay" onClick={() => setSelectedSchedule(null)}>
-              <div className="modal" onClick={(e) => e.stopPropagation()}>
-                <h2>{selectedSchedule.item}</h2>
-                <p>Quantity: {selectedSchedule.quantity}</p>
-                <p>Date: {selectedSchedule.date_from} → {selectedSchedule.date_to}</p>
-                <div className="modal-buttons">
-                  <button className="btn-green" onClick={() => handleScheduleStatusChange(selectedSchedule.id, "Approved")}>Approve</button>
-                  <button className="btn-red" onClick={() => handleScheduleStatusChange(selectedSchedule.id, "Rejected")}>Reject</button>
-                  <button className="btn-gray" onClick={() => setSelectedSchedule(null)}>Close</button>
-                </div>
-              </div>
-            </div>
-          )}
+{selectedSchedule && (
+  <div className="modal-overlay" onClick={() => setSelectedSchedule(null)}>
+    <div className="modal schedule-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="schedule-modal-header">
+        <div className="date-box">
+          <span>{new Date(selectedSchedule.date_from).toLocaleDateString("en-PH", { weekday: "short" })}</span>
+          <h3>{new Date(selectedSchedule.date_from).toLocaleDateString("en-PH", { day: "numeric", month: "short" })}</h3>
+        </div>
+        <div className="details-box">
+          <h2>{selectedSchedule.item}</h2>
+          <p><strong>Quantity:</strong> {selectedSchedule.quantity}</p>
+          <p><strong>Date:</strong> {new Date(selectedSchedule.date_from).toLocaleString("en-PH")} → {new Date(selectedSchedule.date_to).toLocaleString("en-PH")}</p>
+          <p><strong>Status:</strong> 
+            <span className={`status-badge ${selectedSchedule.status.toLowerCase()}`}>
+              {selectedSchedule.status}
+            </span>
+          </p>
+        </div>
+      </div>
+      <div className="modal-buttons">
+        <button className="btn-green" onClick={() => handleScheduleStatusChange(selectedSchedule.id, "Approved")}>Approve</button>
+        <button className="btn-red" onClick={() => handleScheduleStatusChange(selectedSchedule.id, "Rejected")}>Reject</button>
+        <button className="btn-gray" onClick={() => setSelectedSchedule(null)}>Close</button>
+      </div>
+    </div>
+  </div>
+)}
+
         </main>
       </div>
   

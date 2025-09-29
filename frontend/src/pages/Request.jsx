@@ -1,6 +1,6 @@
+// src/pages/resident/RequestPage.jsx
 import { useState, useEffect, useRef, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import {
   FaFileAlt,
   FaSignOutAlt,
@@ -11,13 +11,13 @@ import {
   FaTimes,
   FaUserCircle,
 } from "react-icons/fa";
-
-import { FileContext } from "../context/Filecontext";
+import axios from "axios";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker?url";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import "./Request.css";
+import { FileContext } from "../context/Filecontext";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -26,33 +26,30 @@ export default function RequestPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const sidebarRef = useRef(null);
+  const navigate = useNavigate();
+
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+  const MAX_PAGES_PER_FILE = 30;
+  const today = new Date();
+
   const [selectedFile, setSelectedFile] = useState(null);
   const [dateNeeded, setDateNeeded] = useState(null);
   const [pageLimit, setPageLimit] = useState(0);
+  const [purpose, setPurpose] = useState("");
   const [unavailableDates, setUnavailableDates] = useState([]);
   const [limits, setLimits] = useState({ resident: 10, global: 100 });
-  const [modalMessage, setModalMessage] = useState("");
-  const [showModal, setShowModal] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false); // ✅ modal
 
-  const sidebarRef = useRef(null);
-  const navigate = useNavigate();
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
-
-  const MAX_PAGES_PER_FILE = 20;
-  const today = new Date();
-
-  const isSameDay = (d1, d2) =>
-    d1.getFullYear() === d2.getFullYear() &&
-    d1.getMonth() === d2.getMonth() &&
-    d1.getDate() === d2.getDate();
-
+  // --- utils ---
   const formatDate = (date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
   };
 
+  // --- fetch availability ---
   const fetchAvailability = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -63,16 +60,13 @@ export default function RequestPage() {
       });
 
       setLimits(data.limits || { resident: 10, global: 100 });
-
-      const unavailable = data.dates.map((d) => ({
-        date: new Date(d.date_needed),
-        totalPages: d.totalPages,
-        residentPages: d.residentPages,
-        residentFull: d.residentPages >= (data.limits.resident || 10),
-        globalFull: d.totalPages >= (data.limits.global || 100),
-      }));
-
-      setUnavailableDates(unavailable);
+      setUnavailableDates(
+        data.dates.map((d) => ({
+          date: new Date(d.date_needed),
+          totalPages: d.totalPages,
+          residentPages: d.residentPages,
+        }))
+      );
     } catch (err) {
       console.error("Error fetching availability:", err);
     }
@@ -88,54 +82,38 @@ export default function RequestPage() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const uploadedPagesForDate = () => {
-    if (!dateNeeded) return 0;
-    const dayInfo = unavailableDates.find((d) => isSameDay(d.date, dateNeeded));
-    return dayInfo?.residentPages || 0;
-  };
-
-  const remainingResidentPages = () => Math.max(limits.resident - uploadedPagesForDate(), 0);
-
+  // --- file change ---
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     setSelectedFile(file);
 
-    if (file && file.type === "application/pdf") {
-      try {
-        const pdfData = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
-        setPageLimit(pdf.numPages);
+    if (file && (file.type === "application/pdf" || file.type.includes("word"))) {
+      if (file.type === "application/pdf") {
+        try {
+          const pdfData = await file.arrayBuffer();
+          const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
+          setPageLimit(pdf.numPages);
 
-        if (pdf.numPages > MAX_PAGES_PER_FILE) {
-          alert(`❌ Maximum ${MAX_PAGES_PER_FILE} pages allowed per file. Your file has ${pdf.numPages} pages.`);
-          setSelectedFile(null);
+          if (pdf.numPages > MAX_PAGES_PER_FILE) {
+            alert(`❌ Max ${MAX_PAGES_PER_FILE} pages allowed.`);
+            setSelectedFile(null);
+            setPageLimit(0);
+          }
+        } catch {
+          alert("Failed to read file.");
           setPageLimit(0);
-          return;
         }
-
-        if (pdf.numPages > remainingResidentPages()) {
-          alert(`❌ You can only upload ${remainingResidentPages()} more pages for ${formatDate(dateNeeded)}.`);
-          setSelectedFile(null);
-          setPageLimit(0);
-          return;
-        }
-      } catch (err) {
-        console.error(err);
-        alert("Failed to read PDF file.");
-        setPageLimit(0);
       }
     } else {
+      alert("❌ Only PDF or Word files are accepted.");
       setPageLimit(0);
+      setSelectedFile(null);
     }
   };
 
-  const handleUpload = async () => {
+  // --- upload ---
+  const confirmUpload = async () => {
     try {
-      if (!selectedFile) return alert("Please select a file");
-      if (!dateNeeded) return alert("Please select a date");
-      if (pageLimit > MAX_PAGES_PER_FILE) return alert(`File exceeds ${MAX_PAGES_PER_FILE}-page limit`);
-      if (pageLimit > remainingResidentPages()) return alert(`❌ You can only upload ${remainingResidentPages()} pages for ${formatDate(dateNeeded)}.`);
-
       const token = localStorage.getItem("token");
       if (!token) return navigate("/");
 
@@ -143,6 +121,7 @@ export default function RequestPage() {
       formData.append("file", selectedFile);
       formData.append("dateNeeded", formatDate(dateNeeded));
       formData.append("pageCount", pageLimit.toString());
+      formData.append("purpose", purpose);
 
       await axios.post(`${API_URL}/api/files/upload`, formData, {
         headers: { Authorization: `Bearer ${token}` },
@@ -152,12 +131,14 @@ export default function RequestPage() {
       setSelectedFile(null);
       setDateNeeded(null);
       setPageLimit(0);
+      setPurpose("");
       fetchContextFiles();
       fetchAvailability();
       navigate("/resident/youraccount");
     } catch (err) {
-      console.error("Upload error:", err.response?.data || err.message);
       alert(`❌ Upload failed: ${err.response?.data?.error || "Server error"}`);
+    } finally {
+      setShowConfirm(false);
     }
   };
 
@@ -166,138 +147,95 @@ export default function RequestPage() {
     navigate("/");
   };
 
-  const isUploadDisabled = !selectedFile || !dateNeeded || pageLimit > remainingResidentPages() || dateNeeded < today;
-  const now = new Date();
-  const isTodaySelected = dateNeeded && isSameDay(dateNeeded, now);
-  const showTimeWarning = isTodaySelected && now.getHours() >= 22;
-
-  const getSlotsLeft = (day) => {
-    const dayInfo = unavailableDates.find((d) => isSameDay(d.date, day));
-    const residentPages = dayInfo?.residentPages || 0;
-    const totalPages = dayInfo?.totalPages || 0;
-    const extraPages = day && dateNeeded && isSameDay(day, dateNeeded) ? pageLimit : 0;
-
-    const residentUsed = residentPages + extraPages;
-    const globalUsed = totalPages + extraPages;
-
-    return {
-      resident: Math.max(limits.resident - residentUsed, 0),
-      totalPages: totalPages,
-      fillRatio: residentUsed / limits.resident,
-      isResidentFull: residentUsed >= limits.resident,
-      isGlobalFull: globalUsed >= limits.global,
-    };
-  };
-
-  const openModal = (message) => {
-    setModalMessage(message);
-    setShowModal(true);
-  };
-
-  const closeModal = () => setShowModal(false);
+  const isUploadDisabled = !purpose || !selectedFile || !dateNeeded;
 
   return (
     <div className="request-page">
+      {/* Header */}
       <header className="header">
         {isMobile && (
           <div onClick={() => setSidebarOpen(!sidebarOpen)} style={{ cursor: "pointer", marginRight: 10 }}>
             {sidebarOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
           </div>
         )}
-        <h1>UPLOAD REQUEST FILE</h1>
+        <h1>REQUEST PRINTING</h1>
       </header>
 
       <div className="main-layout">
-        <aside ref={sidebarRef} className="sidebar" style={{ left: sidebarOpen || !isMobile ? 0 : "-240px" }}>
+        {/* Sidebar */}
+        <aside className="sidebar" ref={sidebarRef} style={{ left: sidebarOpen || !isMobile ? 0 : "-240px" }}>
           <div className="account-box" onClick={() => navigate("/resident/youraccount")}>
-            <FaUserCircle size={50} color="#333" />
+            <FaUserCircle size={50} color="black" />
             <p>Your Account</p>
           </div>
-          <div className="menu-item" onClick={() => navigate("/resident/dashboard")}>
+
+          <div className="menu-item" style={{ background: "#F4BE2A", color: "#000" }} onClick={() => navigate("/resident/dashboard")}>
             <FaHome /> Home
           </div>
+
           <div>
-            <div className="menu-item" onClick={() => setServicesOpen(!servicesOpen)}>
+            <div
+              className="menu-item"
+              style={{ background: "#F4BE2A", color: "#000" }}
+              onClick={() => setServicesOpen(!servicesOpen)}
+            >
               <FaConciergeBell /> Services
             </div>
             {servicesOpen && (
-              <div style={{ marginLeft: 15, display: "flex", flexDirection: "column", gap: 5 }}>
-                <div className="submenu-item" onClick={() => navigate("/resident/request")}>
+              <div style={{ marginLeft: 15 }}>
+                <div
+                  className="submenu-item"
+                  style={{ background: "#1E90FF", color: "#fff", borderRadius: "6px", marginBottom: "5px" }}
+                  onClick={() => navigate("/resident/request")}
+                >
                   <FaFileAlt /> Requests
                 </div>
-                <div className="submenu-item" onClick={() => navigate("/resident/schedule")}>
+                <div
+                  className="submenu-item"
+                  style={{ background: "#26ff1e", color: "#000", borderRadius: "6px" }}
+                  onClick={() => navigate("/resident/schedule")}
+                >
                   <FaCalendarAlt /> Schedule
                 </div>
               </div>
             )}
           </div>
-          <div style={{ marginTop: "auto", paddingTop: 20 }}>
-            <button onClick={handleLogout} className="logout-btn">
-              <FaSignOutAlt /> Logout
-            </button>
-          </div>
+
+          <button className="logout-btn" onClick={handleLogout}>
+            <FaSignOutAlt /> Logout
+          </button>
         </aside>
 
-        <main style={{ flex: 1, padding: isMobile ? 15 : 30 }}>
-          <div className="main-card">
-            <h2>Upload File for Printing</h2>
+        {/* Main Card */}
+        <main style={{ flex: 1, padding: "20px" }}>
+          <section className="main-card">
+            <h2>Libreng Print para sa kabarangay ng Sto. Domingo</h2>
 
-            <label>When do you need it?</label>
+            <ul style={{ fontSize: "14px", marginBottom: "20px" }}>
+              <li>✅ PDF and Word files only</li>
+              <li>✅ Max {MAX_PAGES_PER_FILE} pages per file</li>
+              <li>✅ Purpose must be school or work related</li>
+              <li>⚠ Claiming requires plastic bottles</li>
+            </ul>
+
+            <label>Purpose</label>
+            <select value={purpose} onChange={(e) => setPurpose(e.target.value)} style={{ width: "100%", marginBottom: "15px" }}>
+              <option value="">-- Select Purpose --</option>
+              <option value="School Purposes">School Purposes</option>
+              <option value="Barangay Requirement">Barangay Requirement</option>
+              <option value="Job Application">Job Application</option>
+            </select>
+
+            <label>Date Needed</label>
             <DatePicker
               selected={dateNeeded}
               onChange={setDateNeeded}
               minDate={today}
               placeholderText="Select a date"
               dateFormat="yyyy-MM-dd"
-              filterDate={(date) => {
-                const slots = getSlotsLeft(date);
-                if (date < today) return false;
-                return !slots.isResidentFull && !slots.isGlobalFull;
-              }}
-              onSelect={(date) => {
-                const slots = getSlotsLeft(date);
-                if (slots.isGlobalFull || slots.isResidentFull) {
-                  openModal("❌ Sorry, this date is fully booked. Please choose another date.");
-                  return;
-                }
-                setDateNeeded(date);
-              }}
-              renderDayContents={(day, date) => {
-                const slots = getSlotsLeft(date);
-                let className = "available";
-                if (slots.isGlobalFull || slots.isResidentFull) className = "fully-booked";
-                else if (slots.fillRatio >= 0.5) className = "partially-booked";
-                if (isSameDay(date, today)) className += " today";
-                if (date < today) className = "past-date";
-
-                return (
-                  <div
-                    title={`Pages to upload ${slots.resident} / ${limits.resident}`}
-                    className={className}
-                    style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
-                  >
-                    <span className="day-number">{day}</span>
-                    {!slots.isResidentFull && (
-                      <span style={{ fontSize: 10, color: "#555" }}> </span>
-                    )}
-                  </div>
-                );
-              }}
             />
 
-            {dateNeeded && (
-              <p style={{ marginTop: 5 }}>
-                You can upload up to <strong>{remainingResidentPages()}</strong> pages for {formatDate(dateNeeded)}.
-              </p>
-            )}
-
-            {showTimeWarning && (
-              <p style={{ color: "red", marginTop: 5 }}>
-                ⚠ Cannot schedule for today after 10 PM. Please choose a future date.
-              </p>
-            )}
-
-            <input type="file" accept=".pdf" onChange={handleFileChange} style={{ marginTop: 20 }} />
+            <input type="file" accept=".pdf,.doc,.docx" onChange={handleFileChange} style={{ marginTop: 15 }} />
             {selectedFile && (
               <p>
                 <strong>{selectedFile.name}</strong> {pageLimit > 0 && `📄 Pages: ${pageLimit}`}
@@ -305,21 +243,32 @@ export default function RequestPage() {
             )}
 
             <button
-              onClick={handleUpload}
-              disabled={isUploadDisabled || showTimeWarning}
-              className={`upload-btn ${isUploadDisabled || showTimeWarning ? "disabled" : ""}`}
+              className={`upload-btn ${isUploadDisabled ? "disabled" : ""}`}
+              onClick={() => setShowConfirm(true)}
+              disabled={isUploadDisabled}
             >
               Upload
             </button>
-          </div>
+          </section>
         </main>
       </div>
 
-      {showModal && (
-        <div className="custom-modal-overlay" onClick={closeModal}>
-          <div className="custom-modal" onClick={(e) => e.stopPropagation()}>
-            <p>{modalMessage}</p>
-            <button onClick={closeModal}>OK</button>
+      {/* Confirmation Modal */}
+      {showConfirm && (
+        <div className="custom-modal-overlay">
+          <div className="custom-modal">
+            <h3>Confirm Your Request</h3>
+            <p>📌 Purpose: {purpose}</p>
+            <p>📄 File: {selectedFile?.name} ({pageLimit} pages)</p>
+            <p>📅 Date Needed: {dateNeeded ? formatDate(dateNeeded) : "Not set"}</p>
+            <p>⚠ Reminder: Bring plastic bottles to claim your print.</p>
+
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: "20px" }}>
+              <button onClick={confirmUpload}>Confirm</button>
+              <button style={{ backgroundColor: "#ccc", color: "#000" }} onClick={() => setShowConfirm(false)}>
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}

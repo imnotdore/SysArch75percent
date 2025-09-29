@@ -56,8 +56,9 @@ exports.uploadFile = async (req, res) => {
     const [limitRows] = await db.query("SELECT type, value FROM upload_limits");
     const limits = Object.fromEntries(limitRows.map(r => [r.type, r.value]));
 
-    const MAX_RESIDENT_DAILY = limits.resident || 10;
-    const MAX_TOTAL_DAILY = limits.global || 10;
+    // Defaults updated to 30 per resident, 100 global
+    const MAX_RESIDENT_DAILY = limits.resident || 30;
+    const MAX_TOTAL_DAILY = limits.global || 100;
 
     // Check resident daily total
     const [residentRows] = await db.query(
@@ -120,8 +121,8 @@ exports.checkAvailability = async (req, res) => {
     const [limitRows] = await db.query("SELECT type, value FROM upload_limits");
     const limits = Object.fromEntries(limitRows.map(r => [r.type, r.value]));
 
-    const MAX_TOTAL_DAILY = limits.global || 10;
-    const MAX_RESIDENT_DAILY = limits.resident || 10;
+    const MAX_TOTAL_DAILY = limits.global || 100;
+    const MAX_RESIDENT_DAILY = limits.resident || 30;
 
     const [globalRows] = await db.query(
       `SELECT SUM(page_count) AS total FROM resident_requests
@@ -166,8 +167,8 @@ exports.getAvailability = async (req, res) => {
     const [limitRows] = await db.query("SELECT type, value FROM upload_limits");
     const limits = Object.fromEntries(limitRows.map(r => [r.type, r.value]));
 
-    const MAX_TOTAL_DAILY = limits.global || 10;
-    const MAX_RESIDENT_DAILY = limits.resident || 10;
+    const MAX_TOTAL_DAILY = limits.global || 100;
+    const MAX_RESIDENT_DAILY = limits.resident || 30;
 
     const availability = rows.map(r => ({
       date_needed: r.date_needed,
@@ -185,6 +186,7 @@ exports.getAvailability = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch availability" });
   }
 };
+
 
 // ---------------- Staff Routes ---------------- //
 
