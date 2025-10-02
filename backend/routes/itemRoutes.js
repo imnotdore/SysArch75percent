@@ -4,21 +4,13 @@ const router = express.Router();
 const authMiddleware = require("../middlewares/authMiddleware");
 const itemController = require("../controllers/itemController");
 
-// ✅ Get all items with availability (public)
+// Public: Get all items with overall availability
 router.get("/", itemController.getItems);
 
-
-
-// routes/itemRoutes.js
+// Public: Get overall availability (global stock)
 router.get("/overall-availability", itemController.getOverallAvailability);
 
-
-
-// ✅ Check availability by date range (requires login)
-router.get(
-  "/availability",
-  authMiddleware(),
-  itemController.getAvailability
-);
+// Protected: Check availability per date and per time slot (requires login)
+router.get("/availability", authMiddleware(), itemController.getAvailability);
 
 module.exports = router;

@@ -7,6 +7,27 @@ const app = express();
 
 // ---------------- Middleware ---------------- //
 app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+
+
+
+// basta pang testing to sa mobile view
+/*const allowedOrigins = [
+  "http://localhost:5173",       // desktop
+  "http://192.168.100.12:5173"  // phone
+];
+
+app.use(cors({
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true); // allow non-browser tools like Postman
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("CORS not allowed"));
+    }
+  },
+  credentials: true
+}));*/
+
 app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 

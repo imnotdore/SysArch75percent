@@ -3,39 +3,42 @@ const db = require("../config/db");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
+// ================= JWT TOKEN GENERATOR =================
 const generateToken = (user, role) => {
   return jwt.sign(
     { id: user.id, username: user.username, role },
-    process.env.JWT_SECRET || "supersecretkey", 
+    process.env.JWT_SECRET || "supersecretkey",
     { expiresIn: "1d" }
   );
 };
 
-// Generic register
-const registerUser = async (table, username, password, res) => {
+// ================= GENERIC FUNCTIONS =================
+const registerUser = async (table, username, password, res, extraFields = {}) => {
   try {
     const hashed = await bcrypt.hash(password, 10);
-    await db.query(`INSERT INTO ${table} (username, password) VALUES (?, ?)`, [
-      username,
-      hashed,
-    ]);
+    const fields = ["username", "password", ...Object.keys(extraFields)];
+    const values = [username, hashed, ...Object.values(extraFields)];
+    const placeholders = fields.map(() => "?").join(", ");
+
+    await db.query(
+      `INSERT INTO ${table} (${fields.join(", ")}) VALUES (${placeholders})`,
+      values
+    );
+
     res.json({ message: `${table} registered successfully` });
   } catch (err) {
-    console.error(err);
+    console.error(`Register error (${table}):`, err.sqlMessage || err);
     res.status(500).json({ error: "Registration failed" });
   }
 };
 
-// Generic login
 const loginUser = async (table, role, username, password, res) => {
   try {
-    const [rows] = await db.query(
-      `SELECT * FROM ${table} WHERE username = ?`,
-      [username]
-    );
+    const [rows] = await db.query(`SELECT * FROM ${table} WHERE username = ?`, [username]);
     if (!rows.length) return res.status(400).json({ error: "User not found" });
 
     const user = rows[0];
+
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(400).json({ error: "Invalid credentials" });
 
@@ -44,15 +47,76 @@ const loginUser = async (table, role, username, password, res) => {
 
     res.json({ token, user: safeUser });
   } catch (err) {
-    console.error(err);
+    console.error(`Login error (${table}):`, err.sqlMessage || err);
     res.status(500).json({ error: "Login failed" });
   }
 };
 
 // ================= RESIDENT =================
-exports.registerResident = (req, res) => {
-  const { username, password } = req.body;
-  registerUser("residents", username, password, res);
+exports.registerResident = async (req, res) => {
+  try {
+    const {
+      username,
+      password,
+      full_name,
+      address,
+      age,
+      gender,
+      contact,
+      civil_status,
+      youth_classification,
+      education,
+      registered_sk,
+      registered_national,
+    } = req.body;
+
+    if (!username || !password || !full_name) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    const hashed = await bcrypt.hash(password, 10);
+
+    const fields = [
+      "username",
+      "password",
+      "full_name",
+      "age",
+      "address",
+      "gender",
+      "contact",
+      "civil_status",
+      "youth_classification",
+      "education",
+      "registered_sk",
+      "registered_national",
+      "status",
+    ];
+
+    const values = [
+      username,
+      hashed,
+      full_name,
+      age || 0,
+      address || "",
+      gender || "male",
+      contact || "",
+      civil_status || "Single",
+      youth_classification || "In School Youth",
+      education || "",
+      registered_sk || "No",
+      registered_national || "No",
+      "pending",
+    ];
+
+    const placeholders = fields.map(() => "?").join(", ");
+
+    await db.query(`INSERT INTO residents (${fields.join(", ")}) VALUES (${placeholders})`, values);
+
+    res.json({ message: "Resident registered successfully" });
+  } catch (err) {
+    console.error("Resident register error:", err.sqlMessage || err);
+    res.status(500).json({ error: "Resident registration failed" });
+  }
 };
 
 exports.loginResident = (req, res) => {
@@ -61,9 +125,27 @@ exports.loginResident = (req, res) => {
 };
 
 // ================= STAFF =================
-exports.registerStaff = (req, res) => {
-  const { username, password } = req.body;
-  registerUser("staff", username, password, res);
+exports.registerStaff = async (req, res) => {
+  try {
+    const { username, password, staff_id, name, contact } = req.body;
+
+    if (!username || !password || !staff_id || !name) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    const hashed = await bcrypt.hash(password, 10);
+
+    const fields = ["username", "password", "staff_id", "name", "contact", "status"];
+    const values = [username, hashed, staff_id, name, contact || "", "active"];
+    const placeholders = fields.map(() => "?").join(", ");
+
+    await db.query(`INSERT INTO staff (${fields.join(", ")}) VALUES (${placeholders})`, values);
+
+    res.json({ message: "Staff registered successfully" });
+  } catch (err) {
+    console.error("Staff register error:", err.sqlMessage || err);
+    res.status(500).json({ error: "Staff registration failed" });
+  }
 };
 
 exports.loginStaff = (req, res) => {

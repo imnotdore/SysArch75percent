@@ -1,35 +1,44 @@
-// backend/routes/scheduleRoutes.js
 const express = require("express");
 const router = express.Router();
+const db = require("../config/db");
 const authMiddleware = require("../middlewares/authMiddleware");
 const {
   createSchedule,
-  getAllSchedules,
   getUserSchedules,
-  updateScheduleStatus,
   deleteSchedule,
-  getPendingSchedules, 
+  getAllSchedules,
+  updateScheduleStatus,
+  getPendingSchedules,
+  staffCancelSchedule,
 } = require("../controllers/scheduleController");
 
-// Resident routes
-router.post("/", authMiddleware(["resident"]), createSchedule); // create schedule
-router.get("/", authMiddleware(["resident"]), getUserSchedules); // get logged-in resident schedules
-router.delete("/:id", authMiddleware(["resident"]), deleteSchedule); // cancel schedule
+// ------------------- Resident -------------------
+// Create a new schedule
+router.post("/", authMiddleware(["resident"]), createSchedule);
+// Get schedules of logged-in resident
+router.get("/", authMiddleware(["resident"]), getUserSchedules);
+// Cancel a pending schedule
+router.delete("/:id", authMiddleware(["resident"]), deleteSchedule);
 
-// Admin routes
-router.get("/all", authMiddleware(["admin"]), getAllSchedules); // admin: get all schedules
-router.put("/:id/status", authMiddleware(["admin"]), updateScheduleStatus); // admin: approve/reject
-// Staff route to get pending schedules
+// ------------------- Admin -------------------
+// Get all schedules
+router.get("/all", authMiddleware(["admin"]), getAllSchedules);
+// Update schedule status (approve/reject/cancel)
+router.put("/:id/status", authMiddleware(["admin"]), updateScheduleStatus);
+
+// ------------------- Staff -------------------
+// Get all pending schedules (inbox)
 router.get("/pending", authMiddleware(["staff"]), getPendingSchedules);
-// GET pending schedules of a specific resident (for staff)
-router.get("/schedules/resident/:id", authMiddleware(["staff"]), async (req, res) => {
+
+// Get pending schedules of a specific resident
+router.get("/resident/:id", authMiddleware(["staff"]), async (req, res) => {
   const residentId = req.params.id;
   try {
     const [rows] = await db.query(
-      `SELECT s.id, s.item, s.quantity, s.date_from, s.date_to, s.time_from, s.time_to, s.status
-       FROM schedules s
-       WHERE s.user_id = ? AND s.status = 'Pending'
-       ORDER BY s.date_from DESC`,
+      `SELECT id, item, quantity, date_from, date_to, time_from, time_to, status, reason
+       FROM schedules
+       WHERE user_id = ? AND status = 'Pending'
+       ORDER BY date_from DESC`,
       [residentId]
     );
     res.json(rows);
@@ -39,6 +48,7 @@ router.get("/schedules/resident/:id", authMiddleware(["staff"]), async (req, res
   }
 });
 
-
+// Staff/Admin cancel schedule (soft cancel with reason)
+router.put("/:id/cancel", authMiddleware(["staff", "admin"]), staffCancelSchedule);
 
 module.exports = router;

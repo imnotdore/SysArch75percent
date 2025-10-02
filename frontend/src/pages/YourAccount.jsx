@@ -1,5 +1,5 @@
 import { useContext, useState, useEffect, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
   FaFileAlt,
@@ -9,45 +9,16 @@ import {
   FaConciergeBell,
   FaBars,
   FaUserCircle,
-  FaDownload,
 } from "react-icons/fa";
 import { API_URL } from "../config";
 import { FileContext } from "../context/Filecontext";
 import { ScheduleContext } from "../context/ScheduleContext";
 
-// Format date as "Sept. 20, 2025"
-const formatDate = (dateStr) => {
-  if (!dateStr) return "";
-  const date = new Date(dateStr);
-  const months = [
-    "Jan.", "Feb.", "Mar.", "Apr.", "May", "Jun.",
-    "Jul.", "Aug.", "Sept.", "Oct.", "Nov.", "Dec."
-  ];
-  return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
-};
-
-// Format time as "2:30 PM"
-const formatTime = (timeStr) => {
-  if (!timeStr) return "";
-  const [hour, minute] = timeStr.split(":");
-  const h = parseInt(hour, 10);
-  const m = parseInt(minute, 10);
-  const ampm = h >= 12 ? "PM" : "AM";
-  const formattedHour = h % 12 === 0 ? 12 : h % 12;
-  return `${formattedHour}:${m.toString().padStart(2, "0")} ${ampm}`;
-};
-
-// Normalize date to midnight for comparison
-const normalizeDate = (dateStr) => {
-  const d = new Date(dateStr);
-  d.setHours(0, 0, 0, 0);
-  return d;
-};
-
 export default function YourAccount() {
   const [uploadedFiles, setUploadedFiles] = useState([]);
-  const [availability, setAvailability] = useState({});
   const { schedules, fetchSchedules, cancelSchedule } = useContext(ScheduleContext);
+  const { fetchFiles: fetchContextFiles } = useContext(FileContext);
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -56,10 +27,8 @@ export default function YourAccount() {
   const [error, setError] = useState(null);
   const [user, setUser] = useState(null);
 
-  const { fetchFiles: fetchContextFiles } = useContext(FileContext);
   const sidebarRef = useRef(null);
   const navigate = useNavigate();
-  const location = useLocation();
 
   // Load logged-in user info
   useEffect(() => {
@@ -67,7 +36,7 @@ export default function YourAccount() {
     if (storedUser) setUser(storedUser);
   }, []);
 
-  // Mobile detection
+  // Handle mobile resize
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
     window.addEventListener("resize", handleResize);
@@ -89,7 +58,7 @@ export default function YourAccount() {
   const fetchFiles = async () => {
     try {
       const token = localStorage.getItem("token");
-      if (!token) return navigate("/");
+      if (!token) return navigate("/login");
       const res = await axios.get(`${API_URL}/api/files`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -100,27 +69,8 @@ export default function YourAccount() {
     }
   };
 
-  // Fetch availability per date
-  const fetchAvailability = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await axios.get(`${API_URL}/api/files/availability`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      // Map like { '2025-09-21': { isFull: true, residentFull: false, slotsLeft: 2 } }
-      const map = {};
-      res.data.dates.forEach(d => {
-        map[d.date_needed] = d;
-      });
-      setAvailability(map);
-    } catch (err) {
-      console.error("Failed to fetch availability:", err);
-    }
-  };
-
   useEffect(() => {
     fetchFiles();
-    fetchAvailability();
   }, []);
 
   // Fetch schedules
@@ -142,12 +92,14 @@ export default function YourAccount() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Logout
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     navigate("/");
   };
 
+  // Download file
   const handleDownload = async (fileName) => {
     try {
       const token = localStorage.getItem("token");
@@ -168,26 +120,23 @@ export default function YourAccount() {
     }
   };
 
-  const today = new Date();
-  today.setHours(0,0,0,0);
-
-  const getDateStyle = (dateStr) => {
-    const date = normalizeDate(dateStr);
-    const avail = availability[dateStr];
-    if (date < today) {
-      return { ...tableCellStyle, backgroundColor: "#ccc", color: "#666", fontWeight: "bold" };
-    }
-    if (avail?.isFull) {
-      return { ...tableCellStyle, backgroundColor: "#f8d7da", color: "red", fontWeight: "bold" };
-    }
-    return tableCellStyle;
+  // Helpers
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "";
+    const date = new Date(dateStr);
+    const months = ["Jan.", "Feb.", "Mar.", "Apr.", "May", "Jun.", "Jul.", "Aug.", "Sept.", "Oct.", "Nov.", "Dec."];
+    return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
   };
 
-  const getMenuStyle = (path) => ({
-    ...menuStyle,
-    backgroundColor: location.pathname === path ? "#FFC107" : "transparent",
-    color: location.pathname === path ? "black" : "white",
-  });
+  const formatTime = (timeStr) => {
+    if (!timeStr) return "";
+    const [hour, minute] = timeStr.split(":");
+    const h = parseInt(hour, 10);
+    const m = parseInt(minute, 10);
+    const ampm = h >= 12 ? "PM" : "AM";
+    const formattedHour = h % 12 === 0 ? 12 : h % 12;
+    return `${formattedHour}:${m.toString().padStart(2, "0")} ${ampm}`;
+  };
 
   const getStatusStyle = (status) => {
     let color = "#000";
@@ -202,31 +151,18 @@ export default function YourAccount() {
       color = "red";
       bgColor = "#f8d7da";
     }
-    return { ...tableCellStyle, color, backgroundColor: bgColor, fontWeight: "bold" };
+    return { ...styles.tableCell, color, backgroundColor: bgColor, fontWeight: "bold" };
   };
 
   return (
-    <div style={{ fontFamily: '"Lexend", sans-serif', width: "100%", minHeight: "100%", backgroundColor: "#f5f6fa", color: "#333" }}>
+    <div style={styles.container}>
       {/* Header */}
-      <header style={{
-        backgroundColor: "#FFC107",
-        color: "#000",
-        padding: "20px 30px",
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        position: "sticky",
-        top: 0,
-        zIndex: 999,
-        boxShadow: "0 3px 8px rgba(0,0,0,0.1)",
-        borderBottomLeftRadius: "8px",
-        borderBottomRightRadius: "8px"
-      }}>
+      <header style={styles.header}>
         {isMobile && (
           <FaBars size={24} style={{ cursor: "pointer", marginRight: "15px" }} onClick={() => setSidebarOpen(!sidebarOpen)} />
         )}
         <div style={{ flex: 1, textAlign: "center" }}>
-          <h1 style={{ margin: 0, fontSize: isMobile ? "18px" : "clamp(20px, 2vw, 30px)", fontWeight: "800", letterSpacing: "1px" }}>
+          <h1 style={{ margin: 0, fontSize: isMobile ? "18px" : "clamp(20px, 2vw, 30px)", fontWeight: 800, letterSpacing: "1px" }}>
             YOUR ACCOUNT
           </h1>
           {user && <p style={{ margin: 0, fontStyle: "italic", fontSize: "14px", color: "#555" }}>Welcome, {user.username}</p>}
@@ -235,167 +171,44 @@ export default function YourAccount() {
 
       <div style={{ display: "flex", position: "relative" }}>
         {/* Sidebar */}
-        <aside
-          ref={sidebarRef}
-          style={{
-            position: isMobile ? "fixed" : "relative",
-            top: 0,
-            left: sidebarOpen || !isMobile ? 0 : "-240px",
-            height: "100vh",
-            width: "220px",
-            backgroundColor: "#A43259",
-            color: "white",
-            transition: "left 0.3s ease",
-            zIndex: 1000,
-            padding: "20px 10px",
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          {/* Account Box */}
-          <div
-            style={{
-              textAlign: "center",
-              marginBottom: "20px",
-              padding: "10px",
-              backgroundColor: "#fff",
-              borderRadius: "8px",
-              color: "black",
-              cursor: "pointer",
-              transition: "transform 0.3s ease",
-            }}
-            onClick={() => navigate("/resident/youraccount")}
-          >
+        <aside ref={sidebarRef} style={{ ...styles.sidebar, left: sidebarOpen || !isMobile ? 0 : "-240px", position: isMobile ? "fixed" : "relative" }}>
+          <div style={styles.accountBox} onClick={() => navigate("/resident/youraccount")}>
             <FaUserCircle size={50} color="black" />
-            <p style={{ fontWeight: "bold", marginTop: "10px" }}>Your Account</p>
-            {user && (
-              <p style={{ fontSize: "14px", fontStyle: "italic", marginTop: "5px" }}>
-                Welcome, {user.username}
-              </p>
-            )}
+            <p style={{ fontWeight: "bold", marginTop: 10 }}>Your Account</p>
+            {user && <p style={{ fontSize: 14, fontStyle: "italic", marginTop: 5 }}>Welcome, {user.username}</p>}
           </div>
 
-          {/* Home */}
-          <div
-            style={{
-              ...menuStyle,
-              backgroundColor: "#F4BE2A",
-              color: "black",
-              borderRadius: "8px",
-              padding: "10px",
-              textAlign: "center",
-              marginBottom: "10px",
-            }}
-            onClick={() => navigate("/resident/dashboard")}
-          >
-            <FaHome style={{ marginRight: "5px" }} /> Home
+          <div style={{ ...styles.menuItem, backgroundColor: "#F4BE2A", color: "black" }} onClick={() => navigate("/resident/dashboard")}>
+            <FaHome style={styles.icon} /> Home
           </div>
 
-          {/* Services */}
           <div>
-            <div
-              style={{
-                ...menuStyle,
-                backgroundColor: "#F4BE2A",
-                color: "black",
-              }}
-              onClick={() => setServicesOpen(!servicesOpen)}
-            >
-              <FaConciergeBell style={iconStyle} /> Services
+            <div style={{ ...styles.menuItem, backgroundColor: "#F4BE2A", color: "black" }} onClick={() => setServicesOpen(!servicesOpen)}>
+              <FaConciergeBell style={styles.icon} /> Services
             </div>
-
             {servicesOpen && (
-              <div
-                style={{
-                  marginLeft: "15px",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "5px",
-                  marginTop: "5px",
-                }}
-              >
-                <div
-                  style={{
-                    ...submenuStyle,
-                    backgroundColor: "#1E90FF",
-                    color: "white",
-                  }}
-                  onClick={() => navigate("/resident/request")}
-                >
-                  <FaFileAlt style={iconStyle} /> Requests
+              <div style={{ marginLeft: 15, display: "flex", flexDirection: "column", gap: 5, marginTop: 5 }}>
+                <div style={{ ...styles.submenu, backgroundColor: "#1E90FF", color: "white" }} onClick={() => navigate("/resident/request")}>
+                  <FaFileAlt style={styles.icon} /> Requests
                 </div>
-                <div
-                  style={{
-                    ...submenuStyle,
-                    backgroundColor: "#1E90FF",
-                    color: "white",
-                  }}
-                  onClick={() => navigate("/resident/schedule")}
-                >
-                  <FaCalendarAlt style={iconStyle} /> Schedule
+                <div style={{ ...styles.submenu, backgroundColor: "#1E90FF", color: "white" }} onClick={() => navigate("/resident/schedule")}>
+                  <FaCalendarAlt style={styles.icon} /> Schedule
                 </div>
               </div>
             )}
           </div>
 
-          {/* Logout */}
-          <div style={{ marginTop: "auto", paddingTop: "20px" }}>
-            <button
-              onClick={handleLogout}
-              style={{
-                ...menuStyle,
-                backgroundColor: "#ff0000",
-                color: "white",
-                width: "100%",
-                justifyContent: "center",
-                fontWeight: "bold",
-              }}
-            >
-              <FaSignOutAlt style={iconStyle} /> Logout
+          <div style={{ marginTop: "auto", paddingTop: 20 }}>
+            <button onClick={handleLogout} style={{ ...styles.menuItem, backgroundColor: "#ff0000", color: "white", width: "100%", justifyContent: "center", fontWeight: "bold" }}>
+              <FaSignOutAlt style={styles.icon} /> Logout
             </button>
           </div>
         </aside>
 
         {/* Main Content */}
-        <main style={{ flex: 1, padding: isMobile ? "15px 10px" : "20px", overflowY: "auto", minHeight: "100vh", boxSizing: "border-box" }}>
-          {/* Uploaded Files */}
-          <section style={{ marginTop: "20px" }}>
-            <h2 style={{ color: "#28D69F" }}>Uploaded Requests</h2>
-            {uploadedFiles.length === 0 ? (
-              <p>No uploaded requests yet.</p>
-            ) : (
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr style={{ backgroundColor: "#F4BE2A" }}>
-                    <th style={tableCellStyle}>File Name</th>
-                    <th style={tableCellStyle}>Date Needed</th>
-                    <th style={tableCellStyle}>Page Count</th>
-                    <th style={tableCellStyle}>Uploaded At</th>
-                    <th style={tableCellStyle}>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {uploadedFiles.map((file) => (
-                    <tr key={file.id}>
-                      <td
-                        style={{ ...tableCellStyle, color: "#007bff", cursor: "pointer" }}
-                        onClick={() => setPreviewFile(file)}
-                      >
-                        {file.filename}
-                      </td>
-                      <td style={getDateStyle(file.date_needed)}>{formatDate(file.date_needed)}</td>
-                      <td style={tableCellStyle}>{file.page_count}</td>
-                      <td style={tableCellStyle}>{formatDate(file.created_at)}</td>
-                      <td style={getStatusStyle(file.status)}>{file.status}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </section>
-
+        <main style={{ ...styles.mainContent, padding: isMobile ? "15px 10px" : "20px" }}>
           {/* Schedules */}
-          <section style={{ marginTop: "30px" }}>
+          <section style={{ marginTop: 30 }}>
             <h2 style={{ color: "#28D69F" }}>Your Schedules</h2>
             {loading ? (
               <p>Loading schedules...</p>
@@ -404,93 +217,66 @@ export default function YourAccount() {
             ) : schedules.length === 0 ? (
               <p>No schedules yet.</p>
             ) : (
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <table style={styles.table}>
                 <thead>
                   <tr style={{ backgroundColor: "#F4BE2A" }}>
-                    <th style={tableCellStyle}>Item</th>
-                    <th style={tableCellStyle}>Date From</th>
-                    <th style={tableCellStyle}>Date To</th>
-                    <th style={tableCellStyle}>Time From</th>
-                    <th style={tableCellStyle}>Time To</th>
-                    <th style={tableCellStyle}>Quantity</th>
-                    <th style={tableCellStyle}>Status</th>
-                    <th style={tableCellStyle}>Action</th>
+                    <th style={styles.tableCell}>Item</th>
+                    <th style={styles.tableCell}>Date Issued</th>
+                    <th style={styles.tableCell}>Due Date</th>
+                    <th style={styles.tableCell}>Time</th>
+                    <th style={styles.tableCell}>Quantity</th>
+                    <th style={styles.tableCell}>Status</th>
+                    <th style={styles.tableCell}>Reason</th>
+                    <th style={styles.tableCell}>Action</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {schedules.map((s) => (
-                    <tr key={s.id}>
-                      <td style={tableCellStyle}>{s.item}</td>
-                      <td style={tableCellStyle}>{formatDate(s.date_from)}</td>
-                      <td style={tableCellStyle}>{formatDate(s.date_to)}</td>
-                      <td style={tableCellStyle}>{formatTime(s.time_from)}</td>
-                      <td style={tableCellStyle}>{formatTime(s.time_to)}</td>
-                      <td style={tableCellStyle}>{s.quantity}</td>
-                      <td style={getStatusStyle(s.status)}>{s.status}</td>
-                      <td style={tableCellStyle}>
-                        {s.status.toLowerCase() === "pending" && (
-                          <button
-                            onClick={() => cancelSchedule(s.id)}
-                            style={{
-                              backgroundColor: "#ff4d4f",
-                              color: "#fff",
-                              border: "none",
-                              padding: "5px 10px",
-                              borderRadius: "5px",
-                              cursor: "pointer",
-                            }}
-                          >
-                            Cancel
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                  {schedules.map((s) => {
+                    const dateIssued = new Date(s.date_from);
+                    const durationDays = s.duration ?? 2;
+                    const dueDate = new Date(dateIssued);
+                    dueDate.setDate(dueDate.getDate() + durationDays);
+
+                    return (
+                      <tr key={s.id}>
+                        <td style={styles.tableCell}>{s.item}</td>
+                        <td style={styles.tableCell}>{formatDate(dateIssued)}</td>
+                        <td style={styles.tableCell}>{formatDate(dueDate)}</td>
+                        <td style={styles.tableCell}>{`${formatTime(s.time_from)} - ${formatTime(s.time_to)}`}</td>
+                        <td style={styles.tableCell}>{s.quantity}</td>
+                        <td style={getStatusStyle(s.status)}>{s.status}</td>
+                        <td style={styles.tableCell}>{s.reason || "-"}</td>
+                        <td style={styles.tableCell}>
+                          {s.status.toLowerCase() === "pending" && (
+                            <button onClick={() => cancelSchedule(s.id)} style={styles.cancelBtn}>
+                              Cancel
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             )}
           </section>
         </main>
       </div>
-
-      {/* File Preview Modal */}
-      {previewFile && (
-        <div style={modalOverlay}>
-          <div style={modalContent}>
-            <h3>Preview: {previewFile.filename}</h3>
-            {previewFile.filename.endsWith(".pdf") ? (
-              <iframe
-                src={`${API_URL}/uploads/${previewFile.filename}`}
-                width="100%"
-                height="600px"
-                title="PDF Preview"
-              />
-            ) : previewFile.filename.match(/\.(jpg|jpeg|png|gif)$/i) ? (
-              <img
-                src={`${API_URL}/uploads/${previewFile.filename}`}
-                alt={previewFile.filename}
-                style={{ width: "100%", maxHeight: "600px", objectFit: "contain" }}
-              />
-            ) : (
-              <p>Preview not available for this file type.</p>
-            )}
-            <button
-              onClick={() => setPreviewFile(null)}
-              style={modalCloseBtn}
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
 
-const menuStyle = { display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", padding: "10px", fontSize: "15px", borderRadius: "6px", marginBottom: "10px", transition: "all 0.3s" };
-const submenuStyle = { ...menuStyle, fontSize: "13px", width: "90%", padding: "6px" };
-const iconStyle = { fontSize: "16px" };
-const tableCellStyle = { border: "1px solid #ccc", padding: "8px", textAlign: "center" };
-const modalOverlay = { position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 2000 };
-const modalContent = { backgroundColor: "#fff", padding: "20px", borderRadius: "8px", maxWidth: "800px", width: "90%", maxHeight: "90%", overflowY: "auto" };
-const modalCloseBtn = { marginTop: "15px", padding: "8px 12px", borderRadius: "5px", border: "none", backgroundColor: "#A43259", color: "#fff", fontWeight: "bold", cursor: "pointer" };
+// Styles (same as before)
+const styles = {
+  container: { fontFamily: '"Lexend", sans-serif', width: "100%", minHeight: "100%", backgroundColor: "#f5f6fa", color: "#333" },
+  header: { backgroundColor: "#FFC107", color: "#000", padding: "20px 30px", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, zIndex: 999, boxShadow: "0 3px 8px rgba(0,0,0,0.1)", borderBottomLeftRadius: 8, borderBottomRightRadius: 8 },
+  sidebar: { height: "100vh", width: 220, backgroundColor: "#A43259", color: "white", transition: "left 0.3s ease", zIndex: 1000, padding: "20px 10px", display: "flex", flexDirection: "column" },
+  accountBox: { textAlign: "center", marginBottom: 20, padding: 10, backgroundColor: "#fff", borderRadius: 8, color: "black", cursor: "pointer" },
+  menuItem: { display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: 10, fontSize: 15, borderRadius: 6, marginBottom: 10, transition: "all 0.3s" },
+  submenu: { display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: 6, fontSize: 13, borderRadius: 6, width: "90%" },
+  icon: { fontSize: 16 },
+  mainContent: { flex: 1, overflowY: "auto", minHeight: "100vh", boxSizing: "border-box" },
+  table: { width: "100%", borderCollapse: "collapse" },
+  tableCell: { border: "1px solid #ccc", padding: 8, textAlign: "center" },
+  cancelBtn: { backgroundColor: "#ff4d4f", color: "#fff", border: "none", padding: "5px 10px", borderRadius: 5, cursor: "pointer" },
+};

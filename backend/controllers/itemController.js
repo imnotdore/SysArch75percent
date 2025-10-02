@@ -1,7 +1,8 @@
 // controllers/itemController.js
 const db = require("../config/db");
 
-// ✅ Get all items with current availability
+
+// GET all items with overall availability (stock reduced globally)
 exports.getItems = async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -10,13 +11,20 @@ exports.getItems = async (req, res) => {
         i.item_name,
         i.description,
         i.max_quantity,
-        COALESCE(i.max_quantity - SUM(
+        IFNULL(SUM(
           CASE 
             WHEN s.status = 'Approved' AND s.returned_at IS NULL 
             THEN s.quantity 
             ELSE 0 
           END
-        ), i.max_quantity) AS available
+        ), 0) AS total_booked,
+        i.max_quantity - IFNULL(SUM(
+          CASE 
+            WHEN s.status = 'Approved' AND s.returned_at IS NULL 
+            THEN s.quantity 
+            ELSE 0 
+          END
+        ), 0) AS available
       FROM items i
       LEFT JOIN schedules s 
         ON s.item = i.item_name
@@ -24,20 +32,27 @@ exports.getItems = async (req, res) => {
       ORDER BY i.item_name ASC
     `);
 
-    res.json(rows);
+    // Ensure availability is not negative
+    const updatedRows = rows.map(item => ({
+      ...item,
+      available: Math.max(0, item.available)
+    }));
+
+    res.json(updatedRows);
   } catch (err) {
-    console.error("Error fetching items with availability:", err);
+    console.error("Error fetching items:", err);
     res.status(500).json({ error: "Failed to fetch items" });
   }
 };
 
-// ✅ Get availability per item (consider full booking range)
-// ✅ Get availability per item (future dates)
+
+// GET availability per day for a specific item (90 days)
 exports.getAvailability = async (req, res) => {
   try {
     const { item } = req.query;
     if (!item) return res.status(400).json({ error: "Missing item parameter" });
 
+    // Get the item and max quantity
     const [itemRows] = await db.query(
       "SELECT id, item_name, IFNULL(max_quantity,0) AS max_quantity FROM items WHERE item_name=?",
       [item]
@@ -46,40 +61,33 @@ exports.getAvailability = async (req, res) => {
 
     const max_quantity = itemRows[0].max_quantity;
 
-    // Get all bookings (approved and pending) that affect availability
-    const [rows] = await db.query(
-      `SELECT date_from, SUM(quantity) AS booked
+    // Sum of all approved bookings for this item (returned_at IS NULL)
+    const [bookedRows] = await db.query(
+      `SELECT IFNULL(SUM(quantity), 0) AS total_booked
        FROM schedules
-       WHERE item=? AND date_from >= CURDATE()
-       AND status IN ('Pending', 'Approved') AND returned_at IS NULL
-       GROUP BY date_from`,
+       WHERE item = ? AND status = 'Approved' AND returned_at IS NULL`,
       [item]
     );
+    const totalBooked = bookedRows[0].total_booked;
 
-    const availability = [];
+    // Generate availability for next 90 days
     const today = new Date();
     const end = new Date();
     end.setDate(today.getDate() + 90);
 
-    while (today <= end) {
-      const iso = today.toISOString().split("T")[0];
-      const bookedRow = rows.find((r) => r.date_from.toISOString().split("T")[0] === iso);
-      const booked = bookedRow ? bookedRow.booked : 0;
-
-      availability.push({
-        date: iso,
-        available: Math.max(0, max_quantity - booked),
-      });
-
-      today.setDate(today.getDate() + 1);
+    const availability = [];
+    for (let d = new Date(today); d <= end; d.setDate(d.getDate() + 1)) {
+      const iso = d.toISOString().split("T")[0];
+      availability.push({ date: iso, available: Math.max(0, max_quantity - totalBooked) });
     }
 
     res.json({ max_quantity, dates: availability });
   } catch (err) {
-    console.error(err);
+    console.error("getAvailability error:", err);
     res.status(500).json({ error: "Failed to get availability" });
   }
 };
+
 
 
 // ✅ Get overall availability of items

@@ -40,6 +40,15 @@ export default function RoleSelection() {
 
     try {
       const loginUrl = `${baseUrl}/api/auth/${role.toLowerCase()}/login`;
+      
+      // Pangtesting sa mobile view (use your computer's local IP address)
+      /*const res = await axios.post(
+  loginUrl.replace("localhost", "192.168.100.100"), // palitan ng computer IP mo
+  form,
+  { withCredentials: true }
+);*/
+
+
       const res = await axios.post(loginUrl, form);
 
       const { token, user } = res.data;

@@ -14,6 +14,7 @@ import {
 import "./StaffDashboard.css";
 
 export default function StaffDashboard() {
+  const [pendingAccounts, setPendingAccounts] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const sidebarRef = useRef(null);
@@ -38,6 +39,32 @@ export default function StaffDashboard() {
     baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000",
     headers: { Authorization: `Bearer ${token}` },
   });
+
+
+  //fetch pending accounts
+  useEffect(() => {
+  if (activeTab === "accounts") {
+    const fetchPendingAccounts = async () => {
+      try {
+        const res = await axiosAuth.get("/api/staff/residents/accounts");
+        setPendingAccounts(res.data);
+      } catch (err) {
+        console.error("Error fetching accounts:", err.response?.data || err.message);
+      }
+    };
+    fetchPendingAccounts();
+  }
+}, [activeTab]);
+
+
+const handleAccountAction = async (id, action) => {
+  try {
+    await axiosAuth.put(`/api/staff/residents/${id}/status`, { status: action });
+    setPendingAccounts(prev => prev.filter(acc => acc.id !== id));
+  } catch (err) {
+    console.error("Error updating account status:", err.response?.data || err.message);
+  }
+};
 
   // Redirect if not logged in
   useEffect(() => {
@@ -304,6 +331,12 @@ export default function StaffDashboard() {
           <div className="menu-item" onClick={() => navigate("/staff/announcements")}>
             <FaBullhorn /> Announcements
           </div>
+          <div
+  className={`menu-item ${activeTab === "accounts" ? "active" : ""}`}
+  onClick={() => setActiveTab("accounts")}
+>
+  <FaUserCircle /> Resident Accounts
+</div>
 
           <button className="logout-btn" onClick={handleLogout}>
             <FaSignOutAlt /> Logout
@@ -379,6 +412,55 @@ export default function StaffDashboard() {
         ))}
       </div>
     )}
+
+    {/* Pending Accounts */}
+    {activeTab === "accounts" && (
+  <section className="accounts-list">
+    <h2>Pending Resident Accounts</h2>
+    {pendingAccounts.length === 0 ? (
+      <p>No pending accounts.</p>
+    ) : (
+      <table>
+        <thead>
+          <tr>
+            <th>Full Name</th>
+            <th>Username</th>
+            <th>Address</th>
+            <th>Age</th>
+            <th>Gender</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {pendingAccounts.map((r) => (
+            <tr key={r.id}>
+              <td>{r.full_name}</td>
+              <td>{r.username}</td>
+              <td>{r.address}</td>
+              <td>{r.age}</td>
+              <td>{r.gender}</td>
+              <td>
+                <button
+                  className="btn-green"
+                  onClick={() => handleAccountAction(r.id, "approved")}
+                >
+                  Approve
+                </button>
+                <button
+                  className="btn-red"
+                  onClick={() => handleAccountAction(r.id, "rejected")}
+                >
+                  Reject
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+  </section>
+)}
+
 
     {/* SCHEDULES */}
     {selectedResidentRequests.schedules.length > 0 && (

@@ -1,5 +1,3 @@
-/* Schedule.css */
-
 /* Base react-calendar tweaks */
 .react-calendar {
   width: 100%;
@@ -27,7 +25,6 @@
   border: 1px solid #28d69f;
 }
 
-/* Hover effect for available */
 .react-calendar__tile.available:hover {
   background-color: #c8f5da;
   cursor: pointer;
@@ -54,4 +51,227 @@
   border: 2px solid #f4be2a;
   background: #fffbe6;
   font-weight: bold;
+}
+
+/* Highlight the auto-selected 2-day range */
+.react-calendar__tile.selected-range {
+  border: 2px solid #28d69f;
+  background-color: #d1f7e7 !important;
+  color: #155724;
+  font-weight: bold;
+}
+
+.react-calendar__tile.selected-range:hover {
+  background-color: #b3f0dd !important;
+  cursor: pointer;
+}
+
+/* Month and navigation styling */
+.react-calendar__navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+  border-radius: 10px 10px 0 0;
+}
+
+.react-calendar__navigation button {
+  background: none;
+  border: none;
+  color: #007bff;
+  font-size: 1.2em;
+  cursor: pointer;
+}
+
+.react-calendar__navigation button:disabled {
+  color: #6c757d;
+  cursor: not-allowed;
+}
+
+.react-calendar__navigation button:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.react-calendar__navigation__label {
+  font-weight: bold;
+  font-size: 1.1em;
+}
+
+/* Weekday header styling */
+.react-calendar__month-view__weekdays {
+  background-color: #f1f3f5;
+  border-bottom: 1px solid #dee2e6;
+  border-radius: 0 0 10px 10px;
+}
+
+.react-calendar__month-view__weekdays__weekday {
+  text-align: center;
+  padding: 10px 0;
+  font-weight: bold;
+  color: #495057;
+  font-size: 0.9em;
+}
+
+/* Header */
+.schedule-header {
+  background-color: #f8f9fa;
+  color: black;
+  padding: 15px 20px;
+  display: flex;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 999;
+  font-weight: bold;
+  border-radius: 10px 10px 0 0;
+  justify-content: space-between;
+}
+
+.schedule-header h1 {
+  margin: 0;
+  font-size: 18px;
+}
+
+/* Sidebar */
+.schedule-container {
+  display: flex;
+  position: relative;
+}
+
+.sidebar {
+  height: 100vh;
+  width: 220px;
+  background-color: #f8f9fa;
+  color: #000;
+  padding: 20px 10px;
+  display: flex;
+  flex-direction: column;
+  transition: left 0.3s ease;
+  border-radius: 0 0 10px 10px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
+  position: relative;
+  z-index: 1000;
+}
+
+.sidebar.open {
+  left: 0;
+}
+
+.account-box {
+  text-align: center;
+  margin-bottom: 20px;
+  padding: 10px;
+  background-color: white;
+  border-radius: 8px;
+  color: black;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.account-box p {
+  margin-top: 10px;
+  font-weight: bold;
+}
+
+/* Menu Items */
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 10px;
+  font-size: 15px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  background-color: #f4be2a;
+  color: black;
+  transition: all 0.3s;
+}
+
+.menu-item:hover {
+  background-color: #28d69f;
+  color: white;
+}
+
+.submenu-group {
+  margin-left: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.submenu {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 6px;
+  font-size: 13px;
+  border-radius: 6px;
+  background-color: #1e90ff;
+  color: white;
+}
+
+.submenu:hover {
+  background-color: #007bff;
+}
+
+/* Logout */
+.logout-section {
+  margin-top: auto;
+  padding-top: 20px;
+}
+
+.logout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #fbeaea;
+  color: #c82333;
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.logout-btn:hover {
+  opacity: 0.9;
+}
+
+/* Main content */
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  min-height: 100vh;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    left: -240px;
+    top: 0;
+  }
+
+  .sidebar.open {
+    left: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .schedule-header h1 {
+    font-size: 16px;
+  }
+
+  .menu-item {
+    font-size: 14px;
+  }
+
+  .submenu {
+    font-size: 12px;
+  }
 }
