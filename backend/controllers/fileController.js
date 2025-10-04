@@ -274,7 +274,7 @@ exports.getAcceptedFiles = async (req, res) => {
               s.username AS staff_username
        FROM resident_requests r
        JOIN residents res ON r.resident_id = res.id
-       LEFT JOIN staff s ON r.approved_by = s.id
+       LEFT JOIN staff s ON r.approved_by = s.id  -- siguraduhing approved_by ang column ng staff ID
        WHERE r.status = 'approved'
        ORDER BY r.approved_at DESC`
     );

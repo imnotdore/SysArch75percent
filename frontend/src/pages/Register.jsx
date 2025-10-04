@@ -10,7 +10,7 @@ function Register() {
   const [form, setForm] = useState({
     username: "",
     password: "",
-    ...(role === "staff" && { staff_id: "", name: "", contact: "" }),
+    ...(role === "staff" && { name: "", contact: "" }),
     ...(role === "resident" && {
       full_name: "",
       age: "",
@@ -57,7 +57,6 @@ function Register() {
       newErrors.password = "Password must be at least 6 characters";
 
     if (role === "staff") {
-      if (!form.staff_id.trim()) newErrors.staff_id = "Staff ID is required";
       if (!form.name.trim()) newErrors.name = "Name is required";
     }
 
@@ -97,7 +96,7 @@ function Register() {
       setForm({
         username: "",
         password: "",
-        ...(role === "staff" && { staff_id: "", name: "", contact: "" }),
+        ...(role === "staff" && { name: "", contact: "" }),
         ...(role === "resident" && {
           full_name: "",
           age: "",
@@ -159,26 +158,13 @@ function Register() {
           {role === "staff" && (
             <>
               <input
-                name="staff_id"
-                placeholder="Staff ID"
-                value={form.staff_id}
-                onChange={handleChange}
-                style={inputStyle(errors.staff_id)}
-              />
-              {errors.staff_id && (
-                <p style={{ color: "#e74c3c", fontSize: "12px" }}>{errors.staff_id}</p>
-              )}
-
-              <input
                 name="name"
                 placeholder="Name"
                 value={form.name}
                 onChange={handleChange}
                 style={inputStyle(errors.name)}
               />
-              {errors.name && (
-                <p style={{ color: "#e74c3c", fontSize: "12px" }}>{errors.name}</p>
-              )}
+              {errors.name && <p style={{ color: "#e74c3c", fontSize: "12px" }}>{errors.name}</p>}
 
               <input
                 name="contact"
@@ -190,66 +176,48 @@ function Register() {
             </>
           )}
 
-        
+          {role === "resident" && (
+            <>
+              <input
+                name="full_name"
+                placeholder="Full Name"
+                value={form.full_name}
+                onChange={handleChange}
+                style={inputStyle(errors.full_name)}
+              />
+              {errors.full_name && <p style={{ color: "#e74c3c", fontSize: "12px" }}>{errors.full_name}</p>}
 
-{role === "resident" && (
-  <>
-    <input
-      name="full_name"
-      placeholder="Full Name"
-      value={form.full_name}
-      onChange={handleChange}
-      style={inputStyle(errors.full_name)}
-    />
-    {errors.full_name && (
-      <p style={{ color: "#e74c3c", fontSize: "12px" }}>{errors.full_name}</p>
-    )}
+              <input
+                type="date"
+                name="birthday"
+                value={form.birthday || ""}
+                onChange={(e) => {
+                  handleChange(e);
+                  const birthDate = new Date(e.target.value);
+                  const today = new Date();
+                  let age = today.getFullYear() - birthDate.getFullYear();
+                  const m = today.getMonth() - birthDate.getMonth();
+                  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+                  if (age > 30) {
+                    setErrors((prev) => ({ ...prev, birthday: "You must be 30 years old or younger" }));
+                  } else {
+                    setErrors((prev) => ({ ...prev, birthday: "" }));
+                  }
+                  setForm((prev) => ({ ...prev, age }));
+                }}
+                style={inputStyle(errors.birthday)}
+              />
+              {errors.birthday && <p style={{ color: "#e74c3c", fontSize: "12px" }}>{errors.birthday}</p>}
 
-    <input
-      type="date"
-      name="birthday"
-      placeholder="Birthday"
-      value={form.birthday || ""}
-      onChange={(e) => {
-        handleChange(e);
-        const birthDate = new Date(e.target.value);
-        const today = new Date();
-        let age = today.getFullYear() - birthDate.getFullYear();
-        const m = today.getMonth() - birthDate.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
-        if (age > 30) {
-          setErrors((prev) => ({
-            ...prev,
-            birthday: "You must be 30 years old or younger to register",
-          }));
-        } else {
-          setErrors((prev) => ({ ...prev, birthday: "" }));
-        }
-        setForm((prev) => ({ ...prev, age })); // store computed age
-      }}
-      style={inputStyle(errors.birthday)}
-    />
-    {errors.birthday && (
-      <p style={{ color: "#e74c3c", fontSize: "12px" }}>{errors.birthday}</p>
-    )}
-
-    <input
-      name="address"
-      placeholder="Address"
-      value={form.address}
-      onChange={handleChange}
-      style={inputStyle()}
-    />
-
-   
-
-
-              <select
-                name="gender"
-                value={form.gender}
+              <input
+                name="address"
+                placeholder="Address"
+                value={form.address}
                 onChange={handleChange}
                 style={inputStyle()}
-              >
+              />
+
+              <select name="gender" value={form.gender} onChange={handleChange} style={inputStyle()}>
                 <option value="male">Male</option>
                 <option value="female">Female</option>
               </select>
@@ -262,12 +230,7 @@ function Register() {
                 style={inputStyle()}
               />
 
-              <select
-                name="civil_status"
-                value={form.civil_status}
-                onChange={handleChange}
-                style={inputStyle()}
-              >
+              <select name="civil_status" value={form.civil_status} onChange={handleChange} style={inputStyle()}>
                 <option value="">Civil Status</option>
                 <option>Single</option>
                 <option>Married</option>
@@ -275,12 +238,7 @@ function Register() {
                 <option>Divorced</option>
               </select>
 
-              <select
-                name="youth_classification"
-                value={form.youth_classification}
-                onChange={handleChange}
-                style={inputStyle()}
-              >
+              <select name="youth_classification" value={form.youth_classification} onChange={handleChange} style={inputStyle()}>
                 <option value="">Youth Classification</option>
                 <option>In School Youth</option>
                 <option>Out of School Youth</option>
@@ -291,12 +249,7 @@ function Register() {
                 <option>Person with Disability</option>
               </select>
 
-              <select
-                name="education"
-                value={form.education}
-                onChange={handleChange}
-                style={inputStyle()}
-              >
+              <select name="education" value={form.education} onChange={handleChange} style={inputStyle()}>
                 <option value="">Educational Background</option>
                 <option>Elementary Level</option>
                 <option>Elementary Graduate</option>
@@ -309,23 +262,13 @@ function Register() {
                 <option>Doctorate</option>
               </select>
 
-              <select
-                name="registered_sk"
-                value={form.registered_sk}
-                onChange={handleChange}
-                style={inputStyle()}
-              >
+              <select name="registered_sk" value={form.registered_sk} onChange={handleChange} style={inputStyle()}>
                 <option value="">Registered SK Voter?</option>
                 <option>Yes</option>
                 <option>No</option>
               </select>
 
-              <select
-                name="registered_national"
-                value={form.registered_national}
-                onChange={handleChange}
-                style={inputStyle()}
-              >
+              <select name="registered_national" value={form.registered_national} onChange={handleChange} style={inputStyle()}>
                 <option value="">Registered National Voter?</option>
                 <option>Yes</option>
                 <option>No</option>
@@ -340,9 +283,7 @@ function Register() {
             onChange={handleChange}
             style={inputStyle(errors.username)}
           />
-          {errors.username && (
-            <p style={{ color: "#e74c3c", fontSize: "12px" }}>{errors.username}</p>
-          )}
+          {errors.username && <p style={{ color: "#e74c3c", fontSize: "12px" }}>{errors.username}</p>}
 
           <div style={{ position: "relative", marginBottom: "15px" }}>
             <input
@@ -359,22 +300,11 @@ function Register() {
             >
               {showPassword ? <FaEyeSlash /> : <FaEye />}
             </span>
-            {errors.password && (
-              <p style={{ color: "#e74c3c", fontSize: "12px" }}>{errors.password}</p>
-            )}
+            {errors.password && <p style={{ color: "#e74c3c", fontSize: "12px" }}>{errors.password}</p>}
           </div>
 
           {errors.submit && (
-            <div
-              style={{
-                color: "#e74c3c",
-                fontSize: "14px",
-                marginBottom: "15px",
-                padding: "10px",
-                backgroundColor: "#fadbd8",
-                borderRadius: "5px",
-              }}
-            >
+            <div style={{ color: "#e74c3c", fontSize: "14px", marginBottom: "15px", padding: "10px", backgroundColor: "#fadbd8", borderRadius: "5px" }}>
               {errors.submit}
             </div>
           )}
@@ -405,4 +335,3 @@ function Register() {
 }
 
 export default Register;
-      

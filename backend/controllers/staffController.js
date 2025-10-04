@@ -119,10 +119,159 @@ const getReleasedSchedules = async (req, res) => {
   }
 };
 
+// ---------------- Mark File as Printed ----------------
+const markFileAsPrinted = async (req, res) => {
+  const fileId = req.params.id;
+
+  if (!req.user || req.user.role !== "staff") {
+    return res.status(403).json({ error: "Access denied" });
+  }
+
+  try {
+    const [result] = await db.query(
+      `UPDATE resident_requests
+       SET status = 'Printed',
+           approved_by = ?,
+           approved_at = NOW()
+       WHERE id = ?`,
+      [req.user.id, fileId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "File not found" });
+    }
+
+    res.json({ message: "File marked as printed successfully." });
+  } catch (err) {
+    console.error("Error marking file as printed:", err);
+    res.status(500).json({ error: "Failed to mark as printed" });
+  }
+};
+
+// ---------------- Mark File as Claimed ----------------
+const markFileAsClaimed = async (req, res) => {
+  const fileId = req.params.id;
+
+  if (!req.user || req.user.role !== "staff") {
+    return res.status(403).json({ error: "Access denied" });
+  }
+
+  try {
+    const [result] = await db.query(
+      `UPDATE resident_requests
+       SET status = 'claimed',
+           claimed_at = NOW(),
+           claimed_by = ?
+       WHERE id = ? AND status = 'go_to_pickup'`,
+      [req.user.id, fileId]
+    );
+
+    if (result.affectedRows === 0)
+      return res.status(404).json({ error: "File not found or not ready for claim" });
+
+    res.json({ message: "File marked as claimed successfully." });
+  } catch (err) {
+    console.error("Error marking file as claimed:", err);
+    res.status(500).json({ error: "Failed to mark file as claimed" });
+  }
+};
+
+
+// ---------------- Get Printed Files ----------------
+const getPrintedFiles = async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT 
+        rr.id,
+        rr.filename,
+        rr.original_name,
+        rr.status,
+        rr.approved_at AS printed_at,
+        r.username AS resident_username,
+        s.username AS staff_username
+      FROM resident_requests rr
+      JOIN residents r ON rr.resident_id = r.id
+      LEFT JOIN staff s ON rr.approved_by = s.id
+      WHERE rr.status = 'Printed'
+      ORDER BY rr.approved_at DESC
+    `);
+
+    const formatted = rows.map(row => ({
+      ...row,
+      printed_at: row.printed_at
+        ? new Date(row.printed_at).toLocaleString("en-PH", { hour12: true })
+        : "N/A",
+    }));
+
+    res.json(formatted);
+  } catch (err) {
+    console.error("Error fetching printed files:", err);
+    res.status(500).json({ error: "Failed to fetch printed files" });
+  }
+};
+// ---------------- Notify Resident ----------------
+const notifyResident = async (req, res) => {
+  const fileId = req.params.id;
+
+  if (!req.user || req.user.role !== "staff") {
+    return res.status(403).json({ error: "Access denied" });
+  }
+
+  try {
+    const [result] = await db.query(
+      `UPDATE resident_requests
+       SET status = 'go_to_pickup', notified_at = NOW(), notified_by = ?
+       WHERE id = ? AND status = 'Printed'`,
+      [req.user.id, fileId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "File not found or not ready to notify" });
+    }
+
+    res.json({ message: "Resident notified successfully." });
+  } catch (err) {
+    console.error("Error notifying resident:", err);
+    res.status(500).json({ error: "Failed to notify resident" });
+  }
+};
+
+// ---------------- Cancel File Request ----------------
+const cancelFileRequest = async (req, res) => {
+  const fileId = req.params.id;
+
+  if (!req.user || req.user.role !== "resident") {
+    return res.status(403).json({ error: "Access denied" });
+  }
+
+  try {
+    const [result] = await db.query(
+      `UPDATE resident_requests
+       SET status = 'Cancelled', cancelled_at = NOW()
+       WHERE id = ? AND status = 'Pending'`,
+      [fileId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "File not found or cannot be cancelled" });
+    }
+
+    res.json({ message: "Request cancelled successfully." });
+  } catch (err) {
+    console.error("Error cancelling file request:", err);
+    res.status(500).json({ error: "Failed to cancel request" });
+  }
+};
+
 module.exports = {
   getStaffInbox,
   releaseSchedule,
   returnSchedule,
   getReleasedSchedules,
   getReturnedSchedules,
+  markFileAsPrinted,
+  markFileAsClaimed,
+  getPrintedFiles,
+  notifyResident,
+  cancelFileRequest,
 };

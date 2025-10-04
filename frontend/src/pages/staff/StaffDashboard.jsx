@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -13,7 +14,10 @@ import {
 } from "react-icons/fa";
 import "./StaffDashboard.css";
 
+
+
 export default function StaffDashboard() {
+  const [printedFiles, setPrintedFiles] = useState([]);
   const [pendingAccounts, setPendingAccounts] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -32,13 +36,41 @@ export default function StaffDashboard() {
   const [acceptedFiles, setAcceptedFiles] = useState([]);
   const [acceptedSchedules, setAcceptedSchedules] = useState([]);
   const [activeTab, setActiveTab] = useState("inbox"); // inbox, accepted, scheduled, returned, released
+  const [selectedAccepted, setSelectedAccepted] = useState(null);
 
   const token = localStorage.getItem("token");
-
+  const statusMap = {
+  'Pending': 'Pending',
+  'Printed': 'Printed',
+  'Claimed': 'Claimed',
+  'go_to_pickup': 'To Pick Up',
+  'Ready': 'Ready',
+};
   const axiosAuth = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000",
+    baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000",
     headers: { Authorization: `Bearer ${token}` },
   });
+
+const fetchPrintedFiles = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    const res = await axios.get("http://localhost:3000/api/staff/printed-files", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      withCredentials: true,
+    });
+    setPrintedFiles(res.data);
+  } catch (err) {
+    console.error("Error fetching printed files:", err.response?.data || err);
+  }
+};
+
+
+
+useEffect(() => {
+  fetchPrintedFiles();
+}, []);
 
 
   //fetch pending accounts
@@ -227,26 +259,29 @@ const handleAccountAction = async (id, action) => {
     }
   };
 
-  const handleScheduleStatusChange = async (scheduleId, status) => {
-    if (!staffId || !selectedResident) return;
-    const normalizedStatus = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
-    try {
-      await axiosAuth.put(`/api/staff/schedules/${scheduleId}/status`, {
-        status: normalizedStatus,
-        approved_by: staffId,
-      });
+ // Function to update schedule status
+const handleScheduleStatusChange = async (scheduleId, status) => {
+  if (!staffId || !selectedResident) return;
 
-      const updatedSchedules = selectedResidentRequests.schedules.filter((s) => s.id !== scheduleId);
-      const updatedFiles = selectedResidentRequests.files;
+  // Convert to lowercase for backend
+  const payload = { status: status.toLowerCase(), approved_by: staffId };
 
-      updateInboxIfNoPending(selectedResident.id, updatedFiles, updatedSchedules);
-      fetchAcceptedRequests();
-      setSelectedSchedule(null);
-    } catch (err) {
-      console.error("Error updating schedule status:", err.response?.data || err.message);
-      alert(err.response?.data?.error || "Failed to update schedule status");
-    }
-  };
+  try {
+    await axiosAuth.put(`/api/staff/schedules/${scheduleId}/status`, payload);
+
+    // Remove the updated schedule from pending requests
+    const updatedSchedules = selectedResidentRequests.schedules.filter(s => s.id !== scheduleId);
+    const updatedFiles = selectedResidentRequests.files;
+
+    updateInboxIfNoPending(selectedResident.id, updatedFiles, updatedSchedules);
+    fetchAcceptedRequests();
+    setSelectedSchedule(null);
+  } catch (err) {
+    console.error("Error updating schedule status:", err.response?.data || err.message);
+    alert(err.response?.data?.error || "Failed to update schedule status");
+  }
+};
+
 
   const handleReleaseSchedule = async (scheduleId) => {
     if (!staffId) return;
@@ -319,6 +354,12 @@ const handleAccountAction = async (id, action) => {
           <div className={`menu-item ${activeTab === "scheduled" ? "active" : ""}`} onClick={() => setActiveTab("scheduled")}>
             <FaCalendarAlt /> Scheduled Items
           </div>
+            <div
+  className={`menu-item ${activeTab === "printed" ? "active" : ""}`}
+  onClick={() => setActiveTab("printed")}
+>
+  <FaFileAlt /> Printed Items
+</div>
 
           <div className={`menu-item ${activeTab === "released" ? "active" : ""}`} onClick={() => setActiveTab("released")}>
             <FaCheckCircle /> Released Items
@@ -490,70 +531,146 @@ const handleAccountAction = async (id, action) => {
           )}
 
           {/* ACCEPTED LIST */}
-          {activeTab === "accepted" && (
-            <section className="accepted-list">
-              <h2>Accepted Requests</h2>
-              {(acceptedFiles.length === 0 && acceptedSchedules.length === 0) ? (
-                <p>No accepted requests yet.</p>
-              ) : (
-                <>
-                  <h3>Files</h3>
-                  {acceptedFiles.length === 0 ? <p>No accepted files.</p> : (
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Resident</th>
-                          <th>File Name</th>
-                          <th>Approved By</th>
-                          <th>Date Approved</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {acceptedFiles.map((f, idx) => (
-                          <tr key={`accepted-file-${f.id ?? idx}`}>
-                            <td>{f.resident_username || `Resident#${f.resident_id}`}</td>
-                            <td>{f.filename}</td>
-                            <td>{f.staff_username}</td>
-                            <td>{f.approved_at?.toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" }) || "N/A"}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
+{activeTab === "accepted" && (
+  <section className="accepted-list">
+    <h2>Accepted Requests</h2>
 
-                  <h3>Schedules</h3>
-                  {acceptedSchedules.length === 0 ? <p>No accepted schedules.</p> : (
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Resident</th>
-                          <th>Item</th>
-                          <th>Quantity</th>
-                          <th>Approved By</th>
-                          <th>Date Approved</th>
-                          <th>Release</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {acceptedSchedules.map((s, idx) => (
-                          <tr key={`accepted-schedule-${s.id ?? idx}`}>
-                            <td>{s.resident_username || `Resident#${s.user_id}`}</td>
-                            <td>{s.item}</td>
-                            <td>{s.quantity}</td>
-                            <td>{s.staff_username}</td>
-                            <td>{s.approved_at?.toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" }) || "N/A"}</td>
-                            <td>
-                              <button className="btn-blue" onClick={() => handleReleaseSchedule(s.id)}>Release</button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </>
-              )}
-            </section>
+    {/* --- Files --- */}
+    <h3>Files</h3>
+    {acceptedFiles.length === 0 ? (
+      <p>No accepted files.</p>
+    ) : (
+      <table>
+        <thead>
+          <tr>
+            <th>Resident</th>
+            <th>File Name</th>
+            <th>Approved By</th>
+            <th>Date Approved</th>
+          </tr>
+        </thead>
+        <tbody>
+          {acceptedFiles.map((f) => (
+            <tr
+              key={`accepted-file-${f.id}`}
+              onClick={() => setSelectedAccepted({ ...f, type: "File" })}
+              style={{ cursor: "pointer" }}
+            >
+              <td>{f.resident_username || `Resident#${f.resident_id}`}</td>
+              <td>{f.filename}</td>
+              <td>{f.staff_username}</td>
+              <td>
+                {f.approved_at
+                  ? f.approved_at.toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" })
+                  : "N/A"}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+
+    {/* --- Schedules --- */}
+    <h3>Schedules</h3>
+    {acceptedSchedules.length === 0 ? (
+      <p>No accepted schedules.</p>
+    ) : (
+      <table>
+        <thead>
+          <tr>
+            <th>Resident</th>
+            <th>Item</th>
+            <th>Quantity</th>
+            <th>Approved By</th>
+            <th>Date Approved</th>
+          </tr>
+        </thead>
+        <tbody>
+          {acceptedSchedules.map((s) => (
+            <tr
+              key={`accepted-schedule-${s.id}`}
+              onClick={() => setSelectedAccepted({ ...s, type: "Schedule" })}
+              style={{ cursor: "pointer" }}
+            >
+              <td>{s.resident_username || `Resident#${s.user_id}`}</td>
+              <td>{s.item}</td>
+              <td>{s.quantity}</td>
+              <td>{s.staff_username}</td>
+              <td>
+                {s.approved_at
+                  ? s.approved_at.toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" })
+                  : "N/A"}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+
+    {/* --- Modal Preview --- */}
+    {selectedAccepted && (
+      <div className="modal-overlay" onClick={() => setSelectedAccepted(null)}>
+        <div className="modal" onClick={(e) => e.stopPropagation()}>
+          <h2>{selectedAccepted.item || selectedAccepted.filename}</h2>
+
+          {selectedAccepted.type === "File" ? (
+            <iframe
+              src={`${import.meta.env.VITE_API_URL}/uploads/${selectedAccepted.filename}`}
+              width="100%"
+              height="400px"
+              title={selectedAccepted.filename}
+            />
+          ) : (
+            <div>
+              <p><strong>From:</strong> {selectedAccepted.date_from} {selectedAccepted.time_from || ""}</p>
+              <p><strong>To:</strong> {selectedAccepted.date_to} {selectedAccepted.time_to || ""}</p>
+              <p><strong>Item:</strong> {selectedAccepted.item}</p>
+              <p><strong>Quantity:</strong> {selectedAccepted.quantity}</p>
+            </div>
           )}
+
+          <div className="modal-actions">
+            <button
+  className="btn-yellow"
+  onClick={async () => {
+    try {
+      await axiosAuth.post(`/api/staff/print/${selectedAccepted.type.toLowerCase()}/${selectedAccepted.id}`);
+
+      // Immediately update printed files
+      fetchPrintedFiles();
+
+      // Remove from accepted requests list
+      if (selectedAccepted.type === "File") {
+        setAcceptedFiles(prev => prev.filter(f => f.id !== selectedAccepted.id));
+      } else {
+        setAcceptedSchedules(prev => prev.filter(s => s.id !== selectedAccepted.id));
+      }
+
+      setSelectedAccepted(null);
+      alert(`${selectedAccepted.type} marked as printed!`);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to mark as printed");
+    }
+  }}
+>
+  Print & Mark
+</button>
+
+
+
+            <button className="btn-gray" onClick={() => setSelectedAccepted(null)}>Close</button>
+          </div>
+        </div>
+      </div>
+    )}
+  </section>
+)}
+
+
+
+
+
 
           {/* SCHEDULED ITEMS */}
           {activeTab === "scheduled" && (
@@ -652,6 +769,84 @@ const handleAccountAction = async (id, action) => {
             </section>
           )}
     
+        {/* Printed Files */}
+{activeTab === "printed" && (
+  <section className="printed-list">
+    <h2>Printed Files</h2>
+    {printedFiles.length === 0 ? (
+      <p>No printed files yet.</p>
+    ) : (
+      <table>
+        <thead>
+          <tr>
+            <th>Resident</th>
+            <th>Filename</th>
+            <th>Printed By</th>
+            <th>Date Printed</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {printedFiles.map((file) => {
+            const statusRaw = file.status || "Printed";
+            const status = statusRaw.toLowerCase();
+            const isClaimed = status === "claimed";
+            const isReady = status === "ready to pick up";
+            const isPrinted = status === "printed";
+
+            const handleAction = async () => {
+              try {
+                if (isPrinted || (!isReady && !isClaimed)) {
+                  // Update status to "Ready to Pick Up"
+                  await axiosAuth.put(`/api/staff/printed-files/${file.id}/notify`);
+                  setPrintedFiles(prev =>
+                    prev.map(f => f.id === file.id ? { ...f, status: "Ready to Pick Up" } : f)
+                  );
+                  alert("Resident notified! Status updated to 'Ready to Pick Up'.");
+                } else if (isReady) {
+                  // Mark as claimed
+                  await axiosAuth.put(`/api/staff/printed-files/${file.id}/claim`);
+                  setPrintedFiles(prev =>
+                    prev.map(f => f.id === file.id ? { ...f, status: "Claimed" } : f)
+                  );
+                  alert("File marked as claimed!");
+                }
+              } catch (err) {
+                console.error(err);
+                alert("Action failed");
+              }
+            };
+
+            let buttonLabel = isReady ? "Mark as Claimed" : "Notify Resident";
+
+            return (
+              <tr key={file.id} style={{ opacity: isClaimed ? 0.5 : 1, pointerEvents: isClaimed ? "none" : "auto" }}>
+                <td>{file.resident_username || `Resident#${file.resident_id}`}</td>
+                <td>{file.filename}</td>
+                <td>{file.staff_username}</td>
+                <td>{new Date(file.printed_at).toLocaleString("en-PH")}</td>
+                <td title={statusRaw} style={{ cursor: "help" }}>
+                  {status.replace(/\b\w/g, (c) => c.toUpperCase())}
+                </td>
+                <td>
+                  {!isClaimed && (
+                    <button className={isReady ? "btn-green" : "btn-yellow"} onClick={handleAction}>
+                      {buttonLabel}
+                    </button>
+                  )}
+                  {isClaimed && <span>Claimed</span>}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    )}
+  </section>
+)}
+
+
 
 
           {/* FILE MODAL */}
@@ -725,8 +920,13 @@ const handleAccountAction = async (id, action) => {
         </div>
       </div>
       <div className="modal-buttons">
-        <button className="btn-green" onClick={() => handleScheduleStatusChange(selectedSchedule.id, "Approved")}>Approve</button>
-        <button className="btn-red" onClick={() => handleScheduleStatusChange(selectedSchedule.id, "Rejected")}>Reject</button>
+        <button className="btn-green" onClick={() => handleScheduleStatusChange(selectedSchedule.id, "Approved")}>
+  Approve
+</button>
+<button className="btn-red" onClick={() => handleScheduleStatusChange(selectedSchedule.id, "Rejected")}>
+  Reject
+</button>
+
         <button className="btn-gray" onClick={() => setSelectedSchedule(null)}>Close</button>
       </div>
     </div>

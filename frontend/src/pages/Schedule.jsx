@@ -248,29 +248,41 @@ export default function Schedule() {
               <div style={{ marginBottom: "15px" }}>
                 <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>Select Date Range</label>
                 <Calendar
-                  minDate={new Date()}
-                  value={selectedDates}
-                  tileDisabled={({ date }) => {
-                    const iso = formatDate(date);
-                    const day = itemAvailability.find((a) => a.date === iso);
-                    return !day || day.available <= 0;
-                  }}
-                  tileClassName={({ date }) => {
-                    const iso = formatDate(date);
-                    const day = itemAvailability.find((a) => a.date === iso);
-                    if (!day || day.available <= 0) return "fully-booked";
-                    if (selectedDates.some((d) => formatDate(d) === iso)) return "selected-range";
-                    return "available";
-                  }}
-                  tileContent={({ date }) => {
-                    const iso = formatDate(date);
-                    const day = itemAvailability.find((a) => a.date === iso);
-                    if (day && day.available > 0) return <p style={{ fontSize: "10px", color: "green" }}>{day.available} left</p>;
-                    if (!day || day.available <= 0) return <p style={{ fontSize: "10px", color: "red" }}>Fully booked</p>;
-                    return null;
-                  }}
-                  onClickDay={handleSelectDate}
-                />
+  minDate={new Date()}
+  value={selectedDates}
+  tileDisabled={({ date }) => {
+    const iso = formatDate(date);
+    const today = formatDate(new Date());
+    const day = itemAvailability.find((a) => a.date === iso);
+
+    // disable kapag:
+    // 1. lumipas na araw (date < today)
+    // 2. walang availability or ubos na
+    if (iso < today) return true;
+    if (!day || day.available <= 0) return true;
+    return false;
+  }}
+  tileClassName={({ date }) => {
+    const iso = formatDate(date);
+    const day = itemAvailability.find((a) => a.date === iso);
+
+    if (iso < formatDate(new Date())) return "past-day"; // custom style para makita na greyed-out
+    if (!day || day.available <= 0) return "fully-booked";
+    if (selectedDates.some((d) => formatDate(d) === iso)) return "selected-range";
+    return "available";
+  }}
+  tileContent={({ date }) => {
+    const iso = formatDate(date);
+    const day = itemAvailability.find((a) => a.date === iso);
+
+    if (iso < formatDate(new Date())) return <p style={{ fontSize: "10px", color: "gray" }}>Past</p>;
+    if (day && day.available > 0) return <p style={{ fontSize: "10px", color: "green" }}>{day.available} left</p>;
+    if (!day || day.available <= 0) return <p style={{ fontSize: "10px", color: "red" }}>Fully booked</p>;
+    return null;
+  }}
+  onClickDay={handleSelectDate}
+/>
+
                 {selectedDates.length > 0 && <p style={{ marginTop: "5px" }}>Selected Dates: <strong>{selectedDates.map((d) => formatDate(d)).join(", ")}</strong></p>}
               </div>
             )}

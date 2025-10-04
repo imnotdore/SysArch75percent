@@ -14,6 +14,61 @@ import { API_URL } from "../config";
 import { FileContext } from "../context/Filecontext";
 import { ScheduleContext } from "../context/ScheduleContext";
 
+// Cancel Request Modal (for files)
+const CancelRequestModal = ({ show, onClose, request, onSuccess }) => {
+  const [loading, setLoading] = useState(false);
+  if (!request) return null;
+
+  const handleCancel = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      await axios.post(
+        `${API_URL}/api/files/${request.id}/cancel`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      onSuccess();
+      onClose();
+    } catch (err) {
+      console.error("Cancel failed", err);
+      alert("Failed to cancel request.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className={`modal fade ${show ? "show d-block" : ""}`} tabIndex="-1">
+      <div className="modal-dialog modal-dialog-centered">
+        <div className="modal-content rounded-3 shadow">
+          <div className="modal-header">
+            <h5 className="modal-title">Cancel Request</h5>
+            <button type="button" className="btn-close" onClick={onClose}></button>
+          </div>
+          <div className="modal-body">
+            <p><strong>Filename:</strong> {request.originalName || request.filename}</p>
+            <p><strong>Date Needed:</strong> {request.dateNeeded}</p>
+            <p><strong>Purpose:</strong> {request.purpose}</p>
+          </div>
+          <div className="modal-footer">
+            <button className="btn btn-secondary" onClick={onClose}>
+              Close
+            </button>
+            <button
+              className="btn btn-danger"
+              onClick={handleCancel}
+              disabled={loading}
+            >
+              {loading ? "Cancelling..." : "Cancel Request"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function YourAccount() {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const { schedules, fetchSchedules, cancelSchedule } = useContext(ScheduleContext);
@@ -22,10 +77,12 @@ export default function YourAccount() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-  const [previewFile, setPreviewFile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [user, setUser] = useState(null);
+
+  const [showCancel, setShowCancel] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
 
   const sidebarRef = useRef(null);
   const navigate = useNavigate();
@@ -97,27 +154,6 @@ export default function YourAccount() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     navigate("/");
-  };
-
-  // Download file
-  const handleDownload = async (fileName) => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await axios.get(`${API_URL}/api/download/${fileName}`, {
-        headers: { Authorization: `Bearer ${token}` },
-        responseType: "blob",
-      });
-      const url = window.URL.createObjectURL(new Blob([res.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", fileName);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (err) {
-      console.error("Download failed:", err);
-      alert("Failed to download file.");
-    }
   };
 
   // Helpers
@@ -207,6 +243,62 @@ export default function YourAccount() {
 
         {/* Main Content */}
         <main style={{ ...styles.mainContent, padding: isMobile ? "15px 10px" : "20px" }}>
+        {/* Uploaded Files */}
+<section style={{ marginTop: 40 }}>
+  <h2 style={{ color: "#1E90FF" }}>Your Uploaded Files</h2>
+  {uploadedFiles.length === 0 ? (
+    <p>No uploaded files yet.</p>
+  ) : (
+    <table style={styles.table}>
+      <thead>
+        <tr style={{ backgroundColor: "#1E90FF", color: "black" }}>
+          <th style={styles.tableCell}>Filename</th>
+          <th style={styles.tableCell}>Date Needed</th>
+          <th style={styles.tableCell}>Page Count</th>
+          <th style={styles.tableCell}>Uploaded At</th>
+          <th style={styles.tableCell}>Status</th>
+          <th style={styles.tableCell}>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {uploadedFiles.map((f) => {
+          let statusColor = "#555"; // default gray
+          if (f.status?.toLowerCase() === "approved") statusColor = "green";
+          if (f.status?.toLowerCase() === "rejected") statusColor = "red";
+          if (f.status?.toLowerCase() === "cancelled") statusColor = "gray";
+          if (f.status?.toLowerCase() === "pending") statusColor = "orange";
+
+          return (
+            <tr key={f.id}>
+              <td style={styles.tableCell}>{f.original_name || f.filename}</td>
+              <td style={styles.tableCell}>{formatDate(f.date_needed)}</td>
+              <td style={styles.tableCell}>{f.page_count}</td>
+               <td style={styles.tableCell}>{formatDate(f.created_at)}</td>
+              <td style={{ ...styles.tableCell, color: statusColor, fontWeight: "bold" }}>
+                {f.status || "Pending"}
+              </td>
+              <td style={styles.tableCell}>
+                {f.status?.toLowerCase() === "pending" && (
+                  <button
+                    onClick={() => {
+                      setSelectedFile(f);
+                      setShowCancel(true);
+                    }}
+                    style={styles.cancelBtn}
+                  >
+                    Cancel Request
+                  </button>
+                )}
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  )}
+</section>
+
+
           {/* Schedules */}
           <section style={{ marginTop: 30 }}>
             <h2 style={{ color: "#28D69F" }}>Your Schedules</h2>
@@ -262,11 +354,19 @@ export default function YourAccount() {
           </section>
         </main>
       </div>
+
+      {/* Cancel Request Modal */}
+      <CancelRequestModal
+        show={showCancel}
+        onClose={() => setShowCancel(false)}
+        request={selectedFile}
+        onSuccess={fetchFiles}
+      />
     </div>
   );
 }
 
-// Styles (same as before)
+// Styles
 const styles = {
   container: { fontFamily: '"Lexend", sans-serif', width: "100%", minHeight: "100%", backgroundColor: "#f5f6fa", color: "#333" },
   header: { backgroundColor: "#FFC107", color: "#000", padding: "20px 30px", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, zIndex: 999, boxShadow: "0 3px 8px rgba(0,0,0,0.1)", borderBottomLeftRadius: 8, borderBottomRightRadius: 8 },

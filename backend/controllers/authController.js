@@ -125,21 +125,25 @@ exports.loginResident = (req, res) => {
 };
 
 // ================= STAFF =================
+// ================= STAFF =================
 exports.registerStaff = async (req, res) => {
   try {
-    const { username, password, staff_id, name, contact } = req.body;
+    const { username, password, name, contact } = req.body;
 
-    if (!username || !password || !staff_id || !name) {
+    if (!username || !password || !name) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
     const hashed = await bcrypt.hash(password, 10);
 
-    const fields = ["username", "password", "staff_id", "name", "contact", "status"];
-    const values = [username, hashed, staff_id, name, contact || "", "active"];
-    const placeholders = fields.map(() => "?").join(", ");
+    const fields = ["username", "password", "name", "contact"];
+    const values = [username, hashed, name, contact || ""];
+    const placeholders = fields.map(() => "?").join(",");
 
-    await db.query(`INSERT INTO staff (${fields.join(", ")}) VALUES (${placeholders})`, values);
+    await db.query(
+      `INSERT INTO staff (${fields.join(",")}) VALUES (${placeholders})`,
+      values
+    );
 
     res.json({ message: "Staff registered successfully" });
   } catch (err) {
@@ -147,6 +151,7 @@ exports.registerStaff = async (req, res) => {
     res.status(500).json({ error: "Staff registration failed" });
   }
 };
+
 
 exports.loginStaff = (req, res) => {
   const { username, password } = req.body;

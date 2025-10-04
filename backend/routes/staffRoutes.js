@@ -135,4 +135,19 @@ router.put("/schedules/:id/return", staffController.returnSchedule);
 // ---------------- Returned Schedules ----------------
 router.get("/returned-schedules", returnedSchedulesController);
 
+// Mark a file as printed
+// ---------------- Files ----------------
+
+// Mark a file as printed (matches frontend POST)
+router.post("/print/file/:id", staffController.markFileAsPrinted);
+
+
+// Get all printed files
+router.get("/printed-files", staffController.getPrintedFiles);
+
+// Mark file as claimed (staff only)
+router.post("/claimed-file/:id", staffController.markFileAsClaimed);
+// Notify resident that their file is ready
+router.put("/printed-files/:id/notify", staffController.notifyResident);
+
 module.exports = router;
