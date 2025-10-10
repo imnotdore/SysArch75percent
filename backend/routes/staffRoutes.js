@@ -150,4 +150,7 @@ router.post("/claimed-file/:id", staffController.markFileAsClaimed);
 // Notify resident that their file is ready
 router.put("/printed-files/:id/notify", staffController.notifyResident);
 
+// Mark printed file as claimed
+router.put("/printed-files/:id/claim", staffController.markFileAsClaimed);
+
 module.exports = router;

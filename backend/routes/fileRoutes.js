@@ -15,16 +15,28 @@ const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
 });
+
+const fileFilter = (req, file, cb) => {
+  const allowedTypes = [
+    "application/pdf",
+    "application/msword", // .doc
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document" // .docx
+  ];
+
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error("Only PDF and Word documents (.doc, .docx) are allowed"), false);
+  }
+};
+
 const upload = multer({
   storage,
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype !== "application/pdf") {
-      return cb(new Error("Only PDF files are allowed"), false);
-    }
-    cb(null, true);
-  },
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+  fileFilter,
+  limits: { fileSize: 50 * 1024 * 1024 } // 50 MB
+
 });
+
 
 // ---------------- Resident Routes ---------------- //
 
@@ -37,12 +49,25 @@ router.post(
   authMiddleware(),
   upload.single("file"),
   (req, res, next) => {
-    if (!req.body.dateNeeded) return res.status(400).json({ error: "dateNeeded is required" });
-    if (req.body.pageCount === undefined) return res.status(400).json({ error: "pageCount is required" });
+    // If no file uploaded
+    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+
+    // Convert and validate form fields safely
+    req.body.dateNeeded = req.body.dateNeeded?.trim();
+    req.body.pageCount = Number(req.body.pageCount);
+
+    if (!req.body.dateNeeded) {
+      return res.status(400).json({ error: "dateNeeded is required" });
+    }
+    if (!req.body.pageCount || req.body.pageCount <= 0) {
+      return res.status(400).json({ error: "pageCount must be greater than 0" });
+    }
+
     next();
   },
   fileController.uploadFile
 );
+
 
 // Download a file
 router.get("/download/:fileName", authMiddleware(), (req, res) => {

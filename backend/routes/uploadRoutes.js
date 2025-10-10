@@ -3,7 +3,9 @@ const multer = require('multer');
 const path = require('path');
 const pool = require('../config/db'); // adjust kung saan naka-config db mo
 const router = express.Router();
-
+const fs = require("fs");
+const mammoth = require("mammoth");
+const pdfParse = require("pdf-parse");
 // Multer storage setup
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {

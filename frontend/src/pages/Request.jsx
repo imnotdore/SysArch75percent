@@ -83,33 +83,54 @@ export default function RequestPage() {
   }, []);
 
   // --- file change ---
-  const handleFileChange = async (e) => {
-    const file = e.target.files[0];
-    setSelectedFile(file);
+  // --- file change ---
+const handleFileChange = async (e) => {
+  const file = e.target.files[0];
+  setSelectedFile(file);
 
-    if (file && (file.type === "application/pdf" || file.type.includes("word"))) {
-      if (file.type === "application/pdf") {
-        try {
-          const pdfData = await file.arrayBuffer();
-          const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
-          setPageLimit(pdf.numPages);
+  if (file && (file.type === "application/pdf" || file.type.includes("word"))) {
+    if (file.type === "application/pdf") {
+      try {
+        const pdfData = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
+        setPageLimit(pdf.numPages);
 
-          if (pdf.numPages > MAX_PAGES_PER_FILE) {
-            alert(`❌ Max ${MAX_PAGES_PER_FILE} pages allowed.`);
-            setSelectedFile(null);
-            setPageLimit(0);
-          }
-        } catch {
-          alert("Failed to read file.");
+        if (pdf.numPages > MAX_PAGES_PER_FILE) {
+          alert(`❌ Max ${MAX_PAGES_PER_FILE} pages allowed.`);
+          setSelectedFile(null);
           setPageLimit(0);
         }
+      } catch {
+        alert("Failed to read file.");
+        setPageLimit(0);
       }
     } else {
-      alert("❌ Only PDF or Word files are accepted.");
-      setPageLimit(0);
-      setSelectedFile(null);
+      // ✅ DOC/DOCX fallback
+      const userPages = prompt("Enter number of pages for this Word document:");
+      const num = parseInt(userPages);
+
+      if (!num || num <= 0) {
+        alert("❌ Invalid page count.");
+        setSelectedFile(null);
+        setPageLimit(0);
+        return;
+      }
+
+      if (num > MAX_PAGES_PER_FILE) {
+        alert(`❌ Max ${MAX_PAGES_PER_FILE} pages allowed.`);
+        setSelectedFile(null);
+        setPageLimit(0);
+        return;
+      }
+
+      setPageLimit(num);
     }
-  };
+  } else {
+    alert("❌ Only PDF or Word files are accepted.");
+    setPageLimit(0);
+    setSelectedFile(null);
+  }
+};
 
   // --- upload ---
   const confirmUpload = async () => {
