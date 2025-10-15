@@ -10,7 +10,7 @@ router.get("/", itemController.getItems);
 // Public: Get overall availability (global stock)
 router.get("/overall-availability", itemController.getOverallAvailability);
 
-// Protected: Check availability per date and per time slot (requires login)
+// Protected: Check availability per date and per time slot (requires login))))
 router.get("/availability", authMiddleware(), itemController.getAvailability);
 
 module.exports = router;
