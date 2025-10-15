@@ -39,6 +39,7 @@ app.use("/api/schedules", require("./routes/scheduleRoutes"));
 app.use("/api/items", require("./routes/itemRoutes"));
 app.use("/api/announcements", require("./routes/announcementRoutes"));
 app.use("/api/disclosures", require("./routes/disclosureRoutes"));
+app.use("/api/computer-borrow", require("./routes/computerBorrowRoutes"));
 
 // ---------------- Health Check ---------------- //
 app.get("/", (req, res) => res.send("Barangay Management System Backend is running"));
