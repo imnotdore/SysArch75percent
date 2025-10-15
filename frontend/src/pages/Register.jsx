@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { FaUserCircle, FaEye, FaEyeSlash } from "react-icons/fa";
@@ -29,6 +29,33 @@ function Register() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
+
+  // Track if user tries to refresh or navigate away
+const [showExitModal, setShowExitModal] = useState(false);
+const [pendingUnload, setPendingUnload] = useState(false);
+
+useEffect(() => {
+  const handleBeforeUnload = (event) => {
+    if (
+      form.username ||
+      form.password ||
+      (role === "staff" && (form.name || form.contact)) ||
+      (role === "resident" && Object.values(form).some((v) => v !== ""))
+    ) {
+      event.preventDefault();
+      event.returnValue = ""; // Required for Chrome
+      setShowExitModal(true);
+      setPendingUnload(true);
+      return "";
+    }
+  };
+
+  window.addEventListener("beforeunload", handleBeforeUnload);
+  return () => {
+    window.removeEventListener("beforeunload", handleBeforeUnload);
+  };
+}, [form, role]);
+
 
   const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
 

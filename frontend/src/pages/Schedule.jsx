@@ -163,6 +163,10 @@ export default function Schedule() {
   const handleSubmit = async () => {
     const { dateFrom, dateTo, timeTo, item, quantity, reason } = form;
     if (!dateFrom || !dateTo || !timeTo || !item) return alert("⚠️ Please fill out all fields!");
+    if (!form.acceptPolicy) {
+  return alert("⚠️ You must accept the policy before submitting the schedule!");
+}
+
 
     const datesToBook = getDatesBetween(dateFrom, dateTo);
     const insufficient = datesToBook.some((date) => {
@@ -287,18 +291,36 @@ export default function Schedule() {
               </div>
             )}
 
-            {/* Time */}
-            {selectedDates.length > 0 && (
-              <div style={{ marginBottom: "15px" }}>
-                <label style={{ display: "block", fontWeight: "bold" }}>Select Time</label>
-                <select value={form.timeTo} onChange={(e) => setForm({ ...form, timeTo: e.target.value })} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #ccc" }}>
-                  {availableTimes.length === 0 && <option disabled>No slots available</option>}
-                  {availableTimes.map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
-              </div>
-            )}
+           {/* Time */}
+{selectedDates.length > 0 && (
+  <div style={{ marginBottom: "15px", display: "flex", gap: "10px" }}>
+    <div style={{ flex: 1 }}>
+      <label style={{ display: "block", fontWeight: "bold" }}>Start Time</label>
+      <select
+        value={form.timeFrom || availableTimes[0]}
+        onChange={(e) => setForm({ ...form, timeFrom: e.target.value })}
+        style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #ccc" }}
+      >
+        {availableTimes.map((t) => (
+          <option key={t} value={t}>{t}</option>
+        ))}
+      </select>
+    </div>
+    <div style={{ flex: 1 }}>
+      <label style={{ display: "block", fontWeight: "bold" }}>End Time</label>
+      <select
+        value={form.timeTo || availableTimes[availableTimes.length - 1]}
+        onChange={(e) => setForm({ ...form, timeTo: e.target.value })}
+        style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #ccc" }}
+      >
+        {availableTimes.map((t) => (
+          <option key={t} value={t}>{t}</option>
+        ))}
+      </select>
+    </div>
+  </div>
+)}
+
 
             {/* Reason */}
             {selectedDates.length > 0 && (
@@ -307,14 +329,51 @@ export default function Schedule() {
                 <textarea value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #ccc" }} placeholder="Enter your reason..." />
               </div>
             )}
+{/* Policy Agreement */}
+{selectedDates.length > 0 && (
+  <div style={{ marginBottom: "15px", padding: "10px", backgroundColor: "#FFF3CD", border: "1px solid #FFEEBA", borderRadius: "6px" }}>
+    <input
+      type="checkbox"
+      checked={form.acceptPolicy || false}
+      onChange={(e) => setForm({ ...form, acceptPolicy: e.target.checked })}
+      style={{ marginRight: "8px" }}
+    />
+    <span style={{ fontSize: "14px" }}>
+      I acknowledge that I am fully responsible for any damage or loss of the borrowed item. 
+      Any costs to repair or replace the item will be charged based on the actual damage value.
+      I agree to comply with this policy.
+    </span>
+  </div>
+)}
 
-            {/* Quantity */}
-            {selectedDates.length > 0 && (
-              <div style={{ marginBottom: "15px" }}>
-                <label style={{ display: "block", fontWeight: "bold" }}>Quantity</label>
-                <input type="number" min="1" max={maxAvailable} value={form.quantity} onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) })} style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #ccc" }} />
-              </div>
-            )}
+           {/* Quantity */}
+{selectedDates.length > 0 && (
+  <div style={{ marginBottom: "15px" }}>
+    <label style={{ display: "block", fontWeight: "bold" }}>Quantity</label>
+    <input
+      type="number"
+      min="0"
+      max={maxAvailable}
+      value={form.quantity}
+      onChange={(e) =>
+        setForm({ ...form, quantity: Number(e.target.value) })
+      }
+      style={{
+        width: "100%",
+        padding: "8px 10px",
+        borderRadius: "6px",
+        border: "1px solid #ccc",
+      }}
+      disabled={maxAvailable === 0} // disable if nothing available
+    />
+    {maxAvailable === 0 && (
+      <p style={{ fontSize: "12px", color: "red", marginTop: "5px" }}>
+        ⚠️ No items available for the selected date.
+      </p>
+    )}
+  </div>
+)}
+
 
             {/* Submit */}
             {selectedDates.length > 0 && (

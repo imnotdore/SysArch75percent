@@ -1,19 +1,14 @@
-// src/components/PrintedFiles.jsx
 import { useState, useEffect } from "react";
 import axios from "axios";
-import "./PrintedFiles.css";
 
-export default function PrintedFiles({ axiosAuth }) {
+export default function PrintedTab({ axiosAuth }) {
   const [printedFiles, setPrintedFiles] = useState([]);
-  const [selectedPrinted, setSelectedPrinted] = useState(null);
 
-  // Fetch printed files
   const fetchPrintedFiles = async () => {
     try {
+      const token = localStorage.getItem("token");
       const res = await axios.get("http://localhost:3000/api/staff/printed-files", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
         withCredentials: true,
       });
       setPrintedFiles(res.data);
@@ -25,6 +20,26 @@ export default function PrintedFiles({ axiosAuth }) {
   useEffect(() => {
     fetchPrintedFiles();
   }, []);
+
+  const handleAction = async (file) => {
+    try {
+      const status = (file.status || "printed").toLowerCase();
+      if (status === "printed") {
+        await axiosAuth.put(`/api/staff/printed-files/${file.id}/notify`);
+        setPrintedFiles(prev =>
+          prev.map(f => f.id === file.id ? { ...f, status: "Ready to Pick Up" } : f)
+        );
+      } else if (status === "ready to pick up") {
+        await axiosAuth.put(`/api/staff/printed-files/${file.id}/claim`);
+        setPrintedFiles(prev =>
+          prev.map(f => f.id === file.id ? { ...f, status: "Claimed" } : f)
+        );
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Action failed");
+    }
+  };
 
   return (
     <section className="printed-list">
@@ -39,39 +54,35 @@ export default function PrintedFiles({ axiosAuth }) {
               <th>Filename</th>
               <th>Printed By</th>
               <th>Date Printed</th>
+              <th>Status</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>
-            {printedFiles.map((file) => (
-              <tr key={file.id} onClick={() => setSelectedPrinted(file)}>
-                <td>{file.resident_username || `Resident#${file.resident_id}`}</td>
-                <td>{file.filename}</td>
-                <td>{file.staff_username}</td>
-                <td>{new Date(file.printed_at).toLocaleString("en-PH")}</td>
-              </tr>
-            ))}
+            {printedFiles.map(file => {
+              const status = (file.status || "Printed").toLowerCase();
+              const isClaimed = status === "claimed";
+              const isReady = status === "ready to pick up";
+              return (
+                <tr key={file.id} style={{ opacity: isClaimed ? 0.5 : 1, pointerEvents: isClaimed ? "none" : "auto" }}>
+                  <td>{file.resident_username || `Resident#${file.resident_id}`}</td>
+                  <td>{file.filename}</td>
+                  <td>{file.staff_username}</td>
+                  <td>{new Date(file.printed_at).toLocaleString("en-PH")}</td>
+                  <td>{status.replace(/\b\w/g, c => c.toUpperCase())}</td>
+                  <td>
+                    {!isClaimed && (
+                      <button className={isReady ? "btn-green" : "btn-yellow"} onClick={() => handleAction(file)}>
+                        {isReady ? "Mark as Claimed" : "Notify Resident"}
+                      </button>
+                    )}
+                    {isClaimed && <span>Claimed</span>}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
-      )}
-
-      {/* Modal Preview */}
-      {selectedPrinted && (
-        <div className="modal-overlay" onClick={() => setSelectedPrinted(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>{selectedPrinted.filename}</h2>
-            <iframe
-              src={`${import.meta.env.VITE_API_URL}/uploads/${selectedPrinted.filename}`}
-              width="100%"
-              height="400px"
-              title={selectedPrinted.filename}
-            />
-            <div className="modal-actions">
-              <button className="btn-gray" onClick={() => setSelectedPrinted(null)}>
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
       )}
     </section>
   );

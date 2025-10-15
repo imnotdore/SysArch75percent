@@ -55,7 +55,7 @@
 
 /* Highlight the auto-selected 2-day range */
 .react-calendar__tile.selected-range {
-  border: 2px solid #28d69f;
+  border: 2px solid #00000075;
   background-color: #d1f7e7 !important;
   color: #155724;
   font-weight: bold;

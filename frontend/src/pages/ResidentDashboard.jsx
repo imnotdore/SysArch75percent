@@ -298,7 +298,20 @@ useEffect(() => {
         gap: '5px',
         marginTop: '5px',
       }}
-    >
+    ><div
+  style={{
+    ...submenuStyle,
+    backgroundColor: '#1E90FF', 
+    color: 'white',
+    transition: 'transform 0.3s ease',
+  }}
+  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateX(10px)'; }}
+  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateX(0)'; }}
+  onClick={() => navigate('/resident/computer-borrowing')}
+>
+  <FaClipboardList style={iconStyle} /> Computer Borrowing
+</div>
+
       <div
         style={{
           ...submenuStyle,
@@ -379,7 +392,7 @@ useEffect(() => {
             >
 
               
-              <h2>Announcements</h2>
+              <h2>ANNOUNCEMENTS</h2>
               {announcements.map((a) => (
                 <div key={a.id} style={{ marginBottom: '10px' }}>
                   <h3>{a.title}</h3>

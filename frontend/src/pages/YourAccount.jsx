@@ -14,7 +14,7 @@ import { API_URL } from "../config";
 import { FileContext } from "../context/Filecontext";
 import { ScheduleContext } from "../context/ScheduleContext";
 
-// Cancel Request Modal (for files)
+// Cancel Request Modal (for uploaded files)
 const CancelRequestModal = ({ show, onClose, request, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   if (!request) return null;
@@ -47,8 +47,8 @@ const CancelRequestModal = ({ show, onClose, request, onSuccess }) => {
             <button type="button" className="btn-close" onClick={onClose}></button>
           </div>
           <div className="modal-body">
-            <p><strong>Filename:</strong> {request.originalName || request.filename}</p>
-            <p><strong>Date Needed:</strong> {request.dateNeeded}</p>
+            <p><strong>Filename:</strong> {request.original_name || request.filename}</p>
+            <p><strong>Date Needed:</strong> {request.date_needed}</p>
             <p><strong>Purpose:</strong> {request.purpose}</p>
           </div>
           <div className="modal-footer">
@@ -243,61 +243,58 @@ export default function YourAccount() {
 
         {/* Main Content */}
         <main style={{ ...styles.mainContent, padding: isMobile ? "15px 10px" : "20px" }}>
-        {/* Uploaded Files */}
-<section style={{ marginTop: 40 }}>
-  <h2 style={{ color: "#1E90FF" }}>Your Uploaded Files</h2>
-  {uploadedFiles.length === 0 ? (
-    <p>No uploaded files yet.</p>
-  ) : (
-    <table style={styles.table}>
-      <thead>
-        <tr style={{ backgroundColor: "#1E90FF", color: "black" }}>
-          <th style={styles.tableCell}>Filename</th>
-          <th style={styles.tableCell}>Date Needed</th>
-          <th style={styles.tableCell}>Page Count</th>
-          <th style={styles.tableCell}>Uploaded At</th>
-          <th style={styles.tableCell}>Status</th>
-          <th style={styles.tableCell}>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        {uploadedFiles.map((f) => {
-          let statusColor = "#555"; // default gray
-          if (f.status?.toLowerCase() === "approved") statusColor = "green";
-          if (f.status?.toLowerCase() === "rejected") statusColor = "red";
-          if (f.status?.toLowerCase() === "cancelled") statusColor = "gray";
-          if (f.status?.toLowerCase() === "pending") statusColor = "orange";
+          {/* Uploaded Files */}
+          <section style={{ marginTop: 40 }}>
+            <h2 style={{ color: "#1E90FF" }}>Your Uploaded Files</h2>
+            {uploadedFiles.length === 0 ? (
+              <p>No uploaded files yet.</p>
+            ) : (
+              <table style={styles.table}>
+                <thead>
+                  <tr style={{ backgroundColor: "#1E90FF", color: "black" }}>
+                    <th style={styles.tableCell}>Filename</th>
+                    <th style={styles.tableCell}>Date Needed</th>
+                    <th style={styles.tableCell}>Page Count</th>
+                    <th style={styles.tableCell}>Uploaded At</th>
+                    <th style={styles.tableCell}>Status</th>
+                    <th style={styles.tableCell}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {uploadedFiles.map((f) => {
+                    let statusColor = "#555"; // default gray
+                    if (f.status?.toLowerCase() === "approved") statusColor = "green";
+                    if (f.status?.toLowerCase() === "rejected") statusColor = "red";
+                    if (f.status?.toLowerCase() === "cancelled") statusColor = "gray";
+                    if (f.status?.toLowerCase() === "pending") statusColor = "orange";
 
-          return (
-            <tr key={f.id}>
-              <td style={styles.tableCell}>{f.original_name || f.filename}</td>
-              <td style={styles.tableCell}>{formatDate(f.date_needed)}</td>
-              <td style={styles.tableCell}>{f.page_count}</td>
-               <td style={styles.tableCell}>{formatDate(f.created_at)}</td>
-              <td style={{ ...styles.tableCell, color: statusColor, fontWeight: "bold" }}>
-                {f.status || "Pending"}
-              </td>
-              <td style={styles.tableCell}>
-                {f.status?.toLowerCase() === "pending" && (
-                  <button
-                    onClick={() => {
-                      setSelectedFile(f);
-                      setShowCancel(true);
-                    }}
-                    style={styles.cancelBtn}
-                  >
-                    Cancel Request
-                  </button>
-                )}
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
-  )}
-</section>
-
+                    return (
+                      <tr key={f.id}>
+                        <td style={styles.tableCell}>{f.original_name || f.filename}</td>
+                        <td style={styles.tableCell}>{formatDate(f.date_needed)}</td>
+                        <td style={styles.tableCell}>{f.page_count}</td>
+                        <td style={styles.tableCell}>{formatDate(f.created_at)}</td>
+                        <td style={{ ...styles.tableCell, color: statusColor, fontWeight: "bold" }}>{f.status || "Pending"}</td>
+                        <td style={styles.tableCell}>
+                          {f.status?.toLowerCase() === "pending" && (
+                            <button
+                              onClick={() => {
+                                setSelectedFile(f);
+                                setShowCancel(true);
+                              }}
+                              style={styles.cancelBtn}
+                            >
+                              Cancel Request
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </section>
 
           {/* Schedules */}
           <section style={{ marginTop: 30 }}>

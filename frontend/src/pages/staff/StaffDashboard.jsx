@@ -37,6 +37,21 @@ export default function StaffDashboard() {
   const [acceptedSchedules, setAcceptedSchedules] = useState([]);
   const [activeTab, setActiveTab] = useState("inbox"); // inbox, accepted, scheduled, returned, released
   const [selectedAccepted, setSelectedAccepted] = useState(null);
+  const [modalLoading, setModalLoading] = useState(false);
+
+
+
+  useEffect(() => {
+  const handleEsc = (e) => {
+    if (e.key === "Escape") {
+      setSelectedFile(null);
+      setSelectedSchedule(null);
+      setSelectedAccepted(null);
+    }
+  };
+  document.addEventListener("keydown", handleEsc);
+  return () => document.removeEventListener("keydown", handleEsc);
+}, []);
 
   const token = localStorage.getItem("token");
   const statusMap = {
@@ -296,21 +311,26 @@ const handleScheduleStatusChange = async (scheduleId, status) => {
   };
 
   const fetchResidentRequests = async (residentId) => {
-    try {
-      const [filesRes, schedulesRes] = await Promise.all([
-        axiosAuth.get(`/api/staff/files/resident/${residentId}`),
-        axiosAuth.get(`/api/staff/schedules/resident/${residentId}`),
-      ]);
+  try {
+    const [filesRes, schedulesRes] = await Promise.all([
+      axiosAuth.get(`/api/staff/files/resident/${residentId}`),
+      axiosAuth.get(`/api/staff/schedules/resident/${residentId}`),
+    ]);
 
-      setSelectedResidentRequests({
-        files: Array.isArray(filesRes.data) ? filesRes.data.filter((f) => f.status !== "approved") : [],
-        schedules: Array.isArray(schedulesRes.data) ? schedulesRes.data.filter((s) => s.status === "Pending") : [],
-      });
-    } catch (err) {
-      console.error("Error fetching resident requests:", err.response?.data || err.message);
-      setSelectedResidentRequests({ files: [], schedules: [] });
-    }
-  };
+    setSelectedResidentRequests({
+      files: Array.isArray(filesRes.data)
+        ? filesRes.data.filter((f) => f.status.toLowerCase() !== "approved" && f.status.toLowerCase() !== "claimed")
+        : [],
+      schedules: Array.isArray(schedulesRes.data)
+        ? schedulesRes.data.filter((s) => s.status.toLowerCase() === "pending")
+        : [],
+    });
+  } catch (err) {
+    console.error("Error fetching resident requests:", err.response?.data || err.message);
+    setSelectedResidentRequests({ files: [], schedules: [] });
+  }
+};
+
 
   const filteredResidents = residents.filter((r) =>
     (r.username || "").toLowerCase().includes(searchTerm.toLowerCase())
@@ -440,7 +460,7 @@ const handleScheduleStatusChange = async (scheduleId, status) => {
             <div className="file-icon">
               <FaFileAlt size={28} color="#e37400" />
             </div>
-            <div className="file-info" onClick={() => setSelectedFile(f)}>
+            <div className="file-info" onClick={() => (f.status.toLowerCase() !== "claimed") && setSelectedFile(f)}>
               <h4 className="file-title">{f.filename}</h4>
               <p><strong>Pages:</strong> {f.page_count}</p>
               <p><strong>Date Needed:</strong> {new Date(f.date_needed).toLocaleDateString("en-PH")}</p>
@@ -508,7 +528,7 @@ const handleScheduleStatusChange = async (scheduleId, status) => {
       <div className="resident-schedules">
         <h3>Schedule Requests</h3>
         {selectedResidentRequests.schedules.map((s) => (
-          <div key={s.id} className="schedule-card" onClick={() => setSelectedSchedule(s)}>
+         <div className="schedule-card" onClick={() => (s.status.toLowerCase() !== "claimed") && setSelectedSchedule(s)}>
             <div className="schedule-icon">
               <FaCalendarAlt size={28} color="#1a73e8" />
             </div>
@@ -570,42 +590,82 @@ const handleScheduleStatusChange = async (scheduleId, status) => {
       </table>
     )}
 
-    {/* --- Schedules --- */}
-    <h3>Schedules</h3>
-    {acceptedSchedules.length === 0 ? (
-      <p>No accepted schedules.</p>
-    ) : (
-      <table>
-        <thead>
-          <tr>
-            <th>Resident</th>
-            <th>Item</th>
-            <th>Quantity</th>
-            <th>Approved By</th>
-            <th>Date Approved</th>
+  {/* --- Schedules --- */}
+<h3>Schedules</h3>
+{acceptedSchedules.length === 0 ? (
+  <p>No accepted schedules.</p>
+) : (
+  <table>
+    <thead>
+      <tr>
+        <th>Resident</th>
+        <th>Item</th>
+        <th>Quantity</th>
+        <th>Approved By</th>
+        <th>Date Approved</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {acceptedSchedules.map((s) => {
+        const status = (s.status || "Approved").toLowerCase();
+        const isNotified = status === "ready" || status === "to pick up";
+        const isClaimed = status === "claimed";
+
+        const handleNotify = async () => {
+          try {
+            await axiosAuth.put(`/api/staff/schedules/${s.id}/notify`);
+            setAcceptedSchedules((prev) =>
+              prev.map((sch) =>
+                sch.id === s.id ? { ...sch, status: "Ready" } : sch
+              )
+            );
+            alert("Resident notified! Status updated to 'Ready'.");
+          } catch (err) {
+            console.error(err);
+            alert("Failed to notify resident.");
+          }
+        };
+
+        return (
+          <tr
+            key={`accepted-schedule-${s.id}`}
+            onClick={() => setSelectedAccepted({ ...s, type: "Schedule" })}
+            style={{ cursor: "pointer", opacity: isClaimed ? 0.5 : 1 }}
+          >
+            <td>{s.resident_username || `Resident#${s.user_id}`}</td>
+            <td>{s.item}</td>
+            <td>{s.quantity}</td>
+            <td>{s.staff_username}</td>
+            <td>
+              {s.approved_at
+                ? s.approved_at.toLocaleString("en-PH", {
+                    month: "2-digit",
+                    day: "2-digit",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : "N/A"}
+            </td>
+            <td>
+              <span className={`status-badge ${status}`}>{status}</span>
+            </td>
+            <td>
+              {!isClaimed && (
+                <button className="btn-yellow" onClick={(e) => { e.stopPropagation(); handleNotify(); }}>
+                  {isNotified ? "Mark as Claimed" : "Notify Resident"}
+                </button>
+              )}
+              {isClaimed && <span>Claimed</span>}
+            </td>
           </tr>
-        </thead>
-        <tbody>
-          {acceptedSchedules.map((s) => (
-            <tr
-              key={`accepted-schedule-${s.id}`}
-              onClick={() => setSelectedAccepted({ ...s, type: "Schedule" })}
-              style={{ cursor: "pointer" }}
-            >
-              <td>{s.resident_username || `Resident#${s.user_id}`}</td>
-              <td>{s.item}</td>
-              <td>{s.quantity}</td>
-              <td>{s.staff_username}</td>
-              <td>
-                {s.approved_at
-                  ? s.approved_at.toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" })
-                  : "N/A"}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    )}
+        );
+      })} 
+    </tbody>
+  </table>
+)}
 
     {/* --- Modal Preview --- */}
     {selectedAccepted && (
@@ -617,7 +677,7 @@ const handleScheduleStatusChange = async (scheduleId, status) => {
             <iframe
               src={`${import.meta.env.VITE_API_URL}/uploads/${selectedAccepted.filename}`}
               width="100%"
-              height="400px"
+              height="40 0px"
               title={selectedAccepted.filename}
             />
           ) : (
@@ -851,18 +911,41 @@ const handleScheduleStatusChange = async (scheduleId, status) => {
 
           {/* FILE MODAL */}
           {selectedFile && (
-            <div className="modal-overlay" onClick={() => setSelectedFile(null)}>
-              <div className="modal" onClick={(e) => e.stopPropagation()}>
-                <h2>{selectedFile.filename}</h2>
-                <iframe src={`${import.meta.env.VITE_API_URL}/uploads/${selectedFile.filename}`} title={selectedFile.filename}></iframe>
-                <div className="modal-buttons">
-                  <button className="btn-green" onClick={() => handleFileStatusChange(selectedFile.id, "approved")}>Accept</button>
-                  <button className="btn-red" onClick={() => handleFileStatusChange(selectedFile.id, "rejected")}>Reject</button>
-                  <button className="btn-gray" onClick={() => setSelectedFile(null)}>Close</button>
-                </div>
-              </div>
-            </div>
-          )}
+  <div className="modal-overlay" onClick={() => setSelectedFile(null)}>
+    <div className="modal" onClick={(e) => e.stopPropagation()}>
+      <h2>{selectedFile.filename}</h2>
+      <iframe src={`${import.meta.env.VITE_API_URL}/uploads/${selectedFile.filename}`} title={selectedFile.filename}></iframe>
+      <div className="modal-buttons">
+        <button
+          className="btn-green"
+          disabled={modalLoading}
+          onClick={async () => {
+            setModalLoading(true);
+            await handleFileStatusChange(selectedFile.id, "approved");
+            setModalLoading(false);
+            setSelectedFile(null);
+          }}
+        >
+          {modalLoading ? "Processing..." : "Accept"}
+        </button>
+        <button
+          className="btn-red"
+          disabled={modalLoading}
+          onClick={async () => {
+            setModalLoading(true);
+            await handleFileStatusChange(selectedFile.id, "rejected");
+            setModalLoading(false);
+            setSelectedFile(null);
+          }}
+        >
+          {modalLoading ? "Processing..." : "Reject"}
+        </button>
+        <button className="btn-gray" onClick={() => setSelectedFile(null)}>Close</button>
+      </div>
+    </div>
+  </div>
+)}
+
         {activeTab === "released" && (
   <section className="released-list">
     <h2>Released Items</h2>
@@ -920,18 +1003,36 @@ const handleScheduleStatusChange = async (scheduleId, status) => {
         </div>
       </div>
       <div className="modal-buttons">
-        <button className="btn-green" onClick={() => handleScheduleStatusChange(selectedSchedule.id, "Approved")}>
-  Approve
-</button>
-<button className="btn-red" onClick={() => handleScheduleStatusChange(selectedSchedule.id, "Rejected")}>
-  Reject
-</button>
-
+        <button
+          className="btn-green"
+          disabled={modalLoading}
+          onClick={async () => {
+            setModalLoading(true);
+            await handleScheduleStatusChange(selectedSchedule.id, "Approved");
+            setModalLoading(false);
+            setSelectedSchedule(null);
+          }}
+        >
+          {modalLoading ? "Processing..." : "Approve"}
+        </button>
+        <button
+          className="btn-red"
+          disabled={modalLoading}
+          onClick={async () => {
+            setModalLoading(true);
+            await handleScheduleStatusChange(selectedSchedule.id, "Rejected");
+            setModalLoading(false);
+            setSelectedSchedule(null);
+          }}
+        >
+          {modalLoading ? "Processing..." : "Reject"}
+        </button>
         <button className="btn-gray" onClick={() => setSelectedSchedule(null)}>Close</button>
       </div>
     </div>
   </div>
 )}
+
 
         </main>
       </div>

@@ -312,7 +312,7 @@ th {
 }
 
 .modal {
-  background-color: #fff;
+  background-color: #18010100;
   border-radius: 12px;
   padding: 24px;
   max-width: 520px;
@@ -458,11 +458,16 @@ th {
 
 /* Schedule modal */
 .schedule-modal {
-  max-width: 500px;
+  max-width: 1000px;      /* palakihin */
+  width: 90%;            /* responsive sa maliit na screen */
+  padding: 30px;         /* mas maraming padding */
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.5rem;           /* mas maraming space sa pagitan */
+  font-size: 18px;       /* mas malaking text */
+  border-radius: 12px;
 }
+
 
 .schedule-modal-header {
   display: flex;

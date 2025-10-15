@@ -2,12 +2,12 @@
 .request-page {
   font-family: "Lexend", sans-serif;
   min-height: 100vh;
-  background-color: #f0f2f5;
+  background-color: #0858cf;
 }
 
 /* Header */
 .header {
-  background-color: #F4BE2A;
+  background-color: #f42a2a;
   color: #000;
   padding: 15px;
   display: flex;

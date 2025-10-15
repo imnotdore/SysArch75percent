@@ -171,60 +171,42 @@ const handleFileChange = async (e) => {
   const isUploadDisabled = !purpose || !selectedFile || !dateNeeded;
 
   return (
-    <div className="request-page">
-      {/* Header */}
-      <header className="header">
-        {isMobile && (
-          <div onClick={() => setSidebarOpen(!sidebarOpen)} style={{ cursor: "pointer", marginRight: 10 }}>
-            {sidebarOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
-          </div>
-        )}
-        <h1>REQUEST PRINTING</h1>
+   <div style={{ fontFamily: '"Lexend", sans-serif', width: "100%", minHeight: "100%" }}>
+      <header style={{ backgroundColor: "#F4BE2A", color: "black", padding: "15px 20px", display: "flex", alignItems: "center", position: "sticky", top: 0, zIndex: 999 }}>
+        {isMobile && <div onClick={() => setSidebarOpen(!sidebarOpen)} style={{ cursor: "pointer", marginRight: "10px" }}>{sidebarOpen ? <FaTimes size={24} /> : <FaBars size={24} />}</div>}
+        <h1 style={{ margin: 0, fontSize: "18px", fontWeight: "bold" }}>MY SCHEDULE</h1>
       </header>
 
-      <div className="main-layout">
+      <div style={{ display: "flex", position: "relative" }}>
         {/* Sidebar */}
-        <aside className="sidebar" ref={sidebarRef} style={{ left: sidebarOpen || !isMobile ? 0 : "-240px" }}>
-          <div className="account-box" onClick={() => navigate("/resident/youraccount")}>
+        <aside ref={sidebarRef} style={{ position: isMobile ? "fixed" : "relative", top: 0, left: sidebarOpen || !isMobile ? 0 : "-240px", height: "100vh", width: "220px", backgroundColor: "#A43259", color: "white", transition: "left 0.3s ease", zIndex: 1000, padding: "20px 10px", display: "flex", flexDirection: "column" }}>
+          <div onClick={() => navigate("/resident/youraccount")} style={{ textAlign: "center", marginBottom: "20px", padding: "10px", backgroundColor: "#f9f9f9", borderRadius: "8px", color: "black", cursor: "pointer" }}>
             <FaUserCircle size={50} color="black" />
-            <p>Your Account</p>
+            <p style={{ fontWeight: "bold", marginTop: "10px" }}>Your Account</p>
           </div>
-
-          <div className="menu-item" style={{ background: "#F4BE2A", color: "#000" }} onClick={() => navigate("/resident/dashboard")}>
+          <div onClick={() => navigate("/resident/dashboard")} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", padding: "10px", fontSize: "15px", borderRadius: "6px", marginBottom: "10px", backgroundColor: "#F4BE2A", color: "black" }}>
             <FaHome /> Home
           </div>
-
           <div>
-            <div
-              className="menu-item"
-              style={{ background: "#F4BE2A", color: "#000" }}
-              onClick={() => setServicesOpen(!servicesOpen)}
-            >
+            <div onClick={() => setServicesOpen(!servicesOpen)} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", padding: "10px", fontSize: "15px", borderRadius: "6px", marginBottom: "10px", backgroundColor: "#F4BE2A", color: "black" }}>
               <FaConciergeBell /> Services
             </div>
             {servicesOpen && (
-              <div style={{ marginLeft: 15 }}>
-                <div
-                  className="submenu-item"
-                  style={{ background: "#1E90FF", color: "#fff", borderRadius: "6px", marginBottom: "5px" }}
-                  onClick={() => navigate("/resident/request")}
-                >
+              <div style={{ marginLeft: "15px", display: "flex", flexDirection: "column", gap: "5px" }}>
+                <div onClick={() => navigate("/resident/request")} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", padding: "6px", fontSize: "13px", borderRadius: "6px", backgroundColor: "#1E90FF", color: "white" }}>
                   <FaFileAlt /> Requests
                 </div>
-                <div
-                  className="submenu-item"
-                  style={{ background: "#26ff1e", color: "#000", borderRadius: "6px" }}
-                  onClick={() => navigate("/resident/schedule")}
-                >
+                <div onClick={() => navigate("/resident/schedule")} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", padding: "6px", fontSize: "13px", borderRadius: "6px", backgroundColor: "#26ff1e", color: "black" }}>
                   <FaCalendarAlt /> Schedule
                 </div>
               </div>
             )}
           </div>
-
-          <button className="logout-btn" onClick={handleLogout}>
-            <FaSignOutAlt /> Logout
-          </button>
+          <div style={{ marginTop: "auto", paddingTop: "20px" }}>
+            <button onClick={handleLogout} style={{ display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#ff0000", color: "white", width: "100%", padding: "10px", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" }}>
+              <FaSignOutAlt /> Logout
+            </button>
+          </div>
         </aside>
 
         {/* Main Card */}
