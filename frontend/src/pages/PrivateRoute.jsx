@@ -1,14 +1,19 @@
-import { Navigate, useLocation, useParams } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 
-const PrivateRoute = ({ children }) => {
+const PrivateRoute = ({ children, role }) => {
   const token = localStorage.getItem("token");
   const username = localStorage.getItem("username");
+  const userRole = localStorage.getItem("role"); // store user role on login
   const location = useLocation();
-  const { role } = useParams(); // kukunin yung role param (resident, staff, admin)
 
   if (!token || !username) {
-    // ✅ Walang login, redirect back to login ng tamang role
+    // Not logged in
     return <Navigate to={`/${role || "resident"}/login`} state={{ from: location }} replace />;
+  }
+
+  if (role && userRole !== role) {
+    // Logged in but wrong role
+    return <Navigate to="/" replace />;
   }
 
   return children;

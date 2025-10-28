@@ -193,10 +193,10 @@ const handleFileChange = async (e) => {
             </div>
             {servicesOpen && (
               <div style={{ marginLeft: "15px", display: "flex", flexDirection: "column", gap: "5px" }}>
-                <div onClick={() => navigate("/resident/request")} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", padding: "6px", fontSize: "13px", borderRadius: "6px", backgroundColor: "#1E90FF", color: "white" }}>
+                <div onClick={() => navigate("/resident/request")} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", padding: "6px", fontSize: "13px", borderRadius: "6px", backgroundColor: "#26ff1e", color: "black" }}>
                   <FaFileAlt /> Requests
                 </div>
-                <div onClick={() => navigate("/resident/schedule")} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", padding: "6px", fontSize: "13px", borderRadius: "6px", backgroundColor: "#26ff1e", color: "black" }}>
+                <div onClick={() => navigate("/resident/schedule")} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", padding: "6px", fontSize: "13px", borderRadius: "6px", backgroundColor: " #1E90FF", color: "black" }}>
                   <FaCalendarAlt /> Schedule
                 </div>
               </div>

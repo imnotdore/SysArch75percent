@@ -1,14 +1,24 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { FaFileAlt, FaCalendarAlt } from "react-icons/fa";
-import axios from "axios";
 
-export default function InboxTab({ residents, fetchResidentRequests, selectedResident, setSelectedResident, selectedResidentRequests, setSelectedResidentRequests, staffId, axiosAuth }) {
+export default function InboxTab({
+  residents,
+  fetchResidentRequests,
+  selectedResident,
+  setSelectedResident,
+  selectedResidentRequests,
+  setSelectedResidentRequests,
+  staffId,
+  axiosAuth
+}) {
   const [searchTerm, setSearchTerm] = useState("");
 
+  // Filter residents based on search
   const filteredResidents = residents.filter((r) =>
     (r.username || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Update inbox list when no pending remains
   const updateInboxIfNoPending = (residentId, updatedFiles, updatedSchedules) => {
     const hasPending = updatedFiles.length > 0 || updatedSchedules.length > 0;
     if (!hasPending) {
@@ -19,6 +29,7 @@ export default function InboxTab({ residents, fetchResidentRequests, selectedRes
     }
   };
 
+  // File status handler
   const handleFileStatusChange = async (fileId, status) => {
     if (!staffId || !selectedResident) return;
     try {
@@ -29,7 +40,6 @@ export default function InboxTab({ residents, fetchResidentRequests, selectedRes
 
       const updatedFiles = selectedResidentRequests.files.filter((f) => f.id !== fileId);
       const updatedSchedules = selectedResidentRequests.schedules;
-
       updateInboxIfNoPending(selectedResident.id, updatedFiles, updatedSchedules);
       setSelectedResidentRequests(prev => ({ ...prev, files: updatedFiles, schedules: updatedSchedules }));
     } catch (err) {
@@ -38,6 +48,7 @@ export default function InboxTab({ residents, fetchResidentRequests, selectedRes
     }
   };
 
+  // Schedule status handler
   const handleScheduleStatusChange = async (scheduleId, status) => {
     if (!staffId || !selectedResident) return;
 
@@ -46,9 +57,8 @@ export default function InboxTab({ residents, fetchResidentRequests, selectedRes
     try {
       await axiosAuth.put(`/api/staff/schedules/${scheduleId}/status`, payload);
 
-      const updatedSchedules = selectedResidentRequests.schedules.filter(s => s.id !== scheduleId);
+      const updatedSchedules = selectedResidentRequests.schedules.filter((s) => s.id !== scheduleId);
       const updatedFiles = selectedResidentRequests.files;
-
       updateInboxIfNoPending(selectedResident.id, updatedFiles, updatedSchedules);
       setSelectedResidentRequests(prev => ({ ...prev, files: updatedFiles, schedules: updatedSchedules }));
     } catch (err) {
@@ -58,7 +68,7 @@ export default function InboxTab({ residents, fetchResidentRequests, selectedRes
   };
 
   return (
-    <div>
+    <div className="inbox-tab">
       <div className="search-bar">
         <input
           type="text"
@@ -70,23 +80,38 @@ export default function InboxTab({ residents, fetchResidentRequests, selectedRes
 
       {!selectedResident ? (
         <section className="resident-list">
-          <h2>Residents with Requests</h2>
-          {filteredResidents.map((r) => (
-            <div key={r.id} className="resident-item" onClick={() => { setSelectedResident(r); fetchResidentRequests(r.id); }}>
-              <span>{r.username || "Unnamed Resident"}</span>
-              <span className="pending-count">{r.pending_count}</span>
-            </div>
-          ))}
+          <h2>Residents with Pending Requests</h2>
+          {filteredResidents
+            .filter((r) => r.pending_count > 0)
+            .map((r) => (
+              <div
+                key={r.id}
+                className="resident-item"
+                onClick={() => {
+                  setSelectedResident(r);
+                  fetchResidentRequests(r.id);
+                }}
+              >
+                <span>{r.username || "Unnamed Resident"}</span>
+                <span className="pending-count">{r.pending_count}</span>
+              </div>
+            ))}
         </section>
       ) : (
         <section className="resident-requests">
-          <button className="back-btn" onClick={() => { setSelectedResident(null); setSelectedResidentRequests({ files: [], schedules: [] }); }}>
+          <button
+            className="back-btn"
+            onClick={() => {
+              setSelectedResident(null);
+              setSelectedResidentRequests({ files: [], schedules: [] });
+            }}
+          >
             ← Back
           </button>
 
-          <h2>{selectedResident.username}'s Requests</h2>
+          <h2>{selectedResident.username}'s Pending Requests</h2>
 
-          {/* FILES */}
+          {/* FILE REQUESTS */}
           {selectedResidentRequests.files.length > 0 && (
             <div className="resident-files">
               <h3>File Requests</h3>
@@ -106,7 +131,7 @@ export default function InboxTab({ residents, fetchResidentRequests, selectedRes
             </div>
           )}
 
-          {/* SCHEDULES */}
+          {/* SCHEDULE REQUESTS */}
           {selectedResidentRequests.schedules.length > 0 && (
             <div className="resident-schedules">
               <h3>Schedule Requests</h3>
@@ -116,7 +141,10 @@ export default function InboxTab({ residents, fetchResidentRequests, selectedRes
                   <div className="schedule-info">
                     <h4>{s.item}</h4>
                     <p>Quantity: {s.quantity}</p>
-                    <p>Date: {new Date(s.date_from).toLocaleString()} → {new Date(s.date_to).toLocaleString()}</p>
+                    <p>
+                      Date: {new Date(s.date_from).toLocaleString()} →{" "}
+                      {new Date(s.date_to).toLocaleString()}
+                    </p>
                   </div>
                   <div className={`schedule-status ${s.status.toLowerCase()}`}>{s.status}</div>
                   <button className="btn-green" onClick={() => handleScheduleStatusChange(s.id, "Approved")}>Approve</button>

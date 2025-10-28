@@ -11,7 +11,7 @@ export default function RoleSelection() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+  const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -41,9 +41,9 @@ export default function RoleSelection() {
     try {
       const loginUrl = `${baseUrl}/api/auth/${role.toLowerCase()}/login`;
       
-      // Pangtesting sa mobile view (use your computer's local IP address)
+      // Pangtesting sa mobile view (dapat yung  local IP address ng computer mo yung gagamitin
       /*const res = await axios.post(
-  loginUrl.replace("localhost", "192.168.100.100"), // palitan ng computer IP mo
+  loginUrl.replace("localhost", "192.168.100.100"), // palitan mo nalang yung sa  computer IP address mo
   form,
   { withCredentials: true }
 );*/

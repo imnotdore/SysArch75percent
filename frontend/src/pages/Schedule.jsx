@@ -199,35 +199,159 @@ export default function Schedule() {
 
       <div style={{ display: "flex", position: "relative" }}>
         {/* Sidebar */}
-        <aside ref={sidebarRef} style={{ position: isMobile ? "fixed" : "relative", top: 0, left: sidebarOpen || !isMobile ? 0 : "-240px", height: "100vh", width: "220px", backgroundColor: "#A43259", color: "white", transition: "left 0.3s ease", zIndex: 1000, padding: "20px 10px", display: "flex", flexDirection: "column" }}>
-          <div onClick={() => navigate("/resident/youraccount")} style={{ textAlign: "center", marginBottom: "20px", padding: "10px", backgroundColor: "#f9f9f9", borderRadius: "8px", color: "black", cursor: "pointer" }}>
-            <FaUserCircle size={50} color="black" />
-            <p style={{ fontWeight: "bold", marginTop: "10px" }}>Your Account</p>
-          </div>
-          <div onClick={() => navigate("/resident/dashboard")} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", padding: "10px", fontSize: "15px", borderRadius: "6px", marginBottom: "10px", backgroundColor: "#F4BE2A", color: "black" }}>
-            <FaHome /> Home
-          </div>
-          <div>
-            <div onClick={() => setServicesOpen(!servicesOpen)} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", padding: "10px", fontSize: "15px", borderRadius: "6px", marginBottom: "10px", backgroundColor: "#F4BE2A", color: "black" }}>
-              <FaConciergeBell /> Services
-            </div>
-            {servicesOpen && (
-              <div style={{ marginLeft: "15px", display: "flex", flexDirection: "column", gap: "5px" }}>
-                <div onClick={() => navigate("/resident/request")} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", padding: "6px", fontSize: "13px", borderRadius: "6px", backgroundColor: "#1E90FF", color: "white" }}>
-                  <FaFileAlt /> Requests
-                </div>
-                <div onClick={() => navigate("/resident/schedule")} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", padding: "6px", fontSize: "13px", borderRadius: "6px", backgroundColor: "#26ff1e", color: "black" }}>
-                  <FaCalendarAlt /> Schedule
-                </div>
-              </div>
-            )}
-          </div>
-          <div style={{ marginTop: "auto", paddingTop: "20px" }}>
-            <button onClick={handleLogout} style={{ display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#ff0000", color: "white", width: "100%", padding: "10px", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" }}>
-              <FaSignOutAlt /> Logout
-            </button>
-          </div>
-        </aside>
+        <aside
+  ref={sidebarRef}
+  style={{
+    position: isMobile ? "fixed" : "relative",
+    top: 0,
+    left: sidebarOpen || !isMobile ? 0 : "-240px",
+    height: "100vh",
+    width: "220px",
+    backgroundColor: "#A43259",
+    color: "white",
+    transition: "left 0.3s ease",
+    zIndex: 1000,
+    padding: "20px 10px",
+    display: "flex",
+    flexDirection: "column",
+  }}
+>
+  <div
+    onClick={() => navigate("/resident/youraccount")}
+    style={{
+      textAlign: "center",
+      marginBottom: "20px",
+      padding: "10px",
+      backgroundColor: "#f9f9f9",
+      borderRadius: "8px",
+      color: "black",
+      cursor: "pointer",
+    }}
+  >
+    <FaUserCircle size={50} color="black" />
+    <p style={{ fontWeight: "bold", marginTop: "10px" }}>Your Account</p>
+  </div>
+
+  <div
+    onClick={() => navigate("/resident/dashboard")}
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: "8px",
+      cursor: "pointer",
+      padding: "10px",
+      fontSize: "15px",
+      borderRadius: "6px",
+      marginBottom: "10px",
+      backgroundColor: "#F4BE2A",
+      color: "black",
+    }}
+  >
+    <FaHome /> Home
+  </div>
+
+  <div>
+    <div
+      onClick={() => setServicesOpen(!servicesOpen)}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "8px",
+        cursor: "pointer",
+        padding: "10px",
+        fontSize: "15px",
+        borderRadius: "6px",
+        marginBottom: "10px",
+        backgroundColor: "#F4BE2A",
+        color: "black",
+      }}
+    >
+      <FaConciergeBell /> Services
+    </div>
+
+    {servicesOpen && (
+      <div
+        style={{
+          marginLeft: "15px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "5px",
+        }}
+      >
+        <div
+          onClick={() => navigate("/resident/request")}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            cursor: "pointer",
+            padding: "6px",
+            fontSize: "13px",
+            borderRadius: "6px",
+            backgroundColor: "#1E90FF",
+            color: "white",
+          }}
+        >
+          <FaFileAlt /> Requests
+        </div>
+
+        <div
+          onClick={() => navigate("/resident/schedule")}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            cursor: "pointer",
+            padding: "6px",
+            fontSize: "13px",
+            borderRadius: "6px",
+            backgroundColor: "#26ff1e",
+            color: "black",
+          }}
+        >
+          <FaCalendarAlt /> Schedule
+        </div>
+
+        <div
+          onClick={() => navigate("/resident/computer-borrowing")}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            cursor: "pointer",
+            padding: "6px",
+            fontSize: "13px",
+            borderRadius: "6px",
+            backgroundColor: "#1E90FF"
+          }}
+        >
+          <FaCalendarAlt /> Computer Borrowing
+        </div>
+      </div>
+    )}
+  </div>
+
+  <div style={{ marginTop: "auto", paddingTop: "20px" }}>
+    <button
+      onClick={handleLogout}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "#ff0000",
+        color: "white",
+        width: "100%",
+        padding: "10px",
+        borderRadius: "6px",
+        cursor: "pointer",
+        fontWeight: "bold",
+      }}
+    >
+      <FaSignOutAlt /> Logout
+    </button>
+  </div>
+</aside>
+
 
         {/* Main content */}
         <main style={{ flex: 1, padding: "20px", overflowY: "auto", minHeight: "100vh" }}>

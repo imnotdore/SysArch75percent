@@ -79,9 +79,7 @@ useEffect(() => {
     'https://media.istockphoto.com/id/2191922460/video/mountainous-horizon-in-lipa-city-batangas.mp4?s=mp4-640x640-is&k=20&c=r1kao0Cgr_BE6vEOqm0z2y_R2joO1xjNm00qD4_lUO0=';
 
   const sidePictures = [
-    'https://scontent.fmnl17-3.fna.fbcdn.net/v/t1.15752-9/550698908_773205295619514_8422588768104079046_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=9f807c&_nc_eui2=AeGQk4OPjdkC4xNLVQBR-yb_WMkkOa_kQJNYySQ5r-RAkxpWV9iUMyBEJmMw_ETX2u3r3TueZokfhuoX_p7CMKcH&_nc_ohc=-WiuStroLoYQ7kNvwFw0doi&_nc_oc=Adm-k3g5v65sLmRNucVuxlgDECu3_X97iC4NvhThJi6fUjRVab4J9l4q0UiXjhow1Sk&_nc_zt=23&_nc_ht=scontent.fmnl17-3.fna&oh=03_Q7cD3QG5i4FvopphREY0EN4gjB1GaXzlSJ-tKYgrFMjmumcd8g&oe=68F5F847',
-    'https://scontent.fmnl17-1.fna.fbcdn.net/v/t1.15752-9/525731388_1250045176610704_741930549309933683_n.jpg?_nc_cat=100&ccb=1-7&_nc_sid=9f807c&_nc_eui2=AeEWJ-_-B7Dz-mozz5vUwygyPchZTn38wPE9yFlOffzA8VFglJLqxXmvH5OPeLIdMxZmEMwOeFtj-NCH9iXtXUzb&_nc_ohc=8dZq1ESU4U8Q7kNvwHYN0ra&_nc_oc=Adla1PMVm8SYcxxa2dlFY_HgbmM3yX9QXxqC_p3v8_SD59gXvtFhS2lpLoY1r2aAI0w&_nc_zt=23&_nc_ht=scontent.fmnl17-1.fna&oh=03_Q7cD3QGTji5e1f17D-pKsXym2CXaT0mHhpRyatEVWCqUpjCc4A&oe=68F5EDB1',
-    'https://scontent.fmnl17-3.fna.fbcdn.net/v/t1.15752-9/551037623_798617752618629_8395003703547952576_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=9f807c&_nc_eui2=AeFi6NSuinikBFjqLfKhVFQc2_gCXlitZKbb-AJeWK1kpnp7QgZng3_00nEn2Zsa-G0vimWL_FINSaZeYIC9-cAL&_nc_ohc=J0rhGX8qMkkQ7kNvwG_RPBT&_nc_oc=AdkcXUw41DpHkp99loANkjqzGD0zu4jxocbrWFMLkLYQUv0PrLCevacpbjDmnp1Z4eY&_nc_zt=23&_nc_ht=scontent.fmnl17-3.fna&oh=03_Q7cD3QEQDDkR5Wj7gR4_kitNgw4WrnFaXcn7zQ0NiXxJpNJKxw&oe=68F60AE5',
+   '/uploads/SK_Photo/SK1.jpg',
   ];
 
   const galleryProjects = [
