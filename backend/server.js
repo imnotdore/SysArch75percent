@@ -29,7 +29,10 @@ app.use(cors({
 }));*/
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // <-- parses urlencoded form data
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+
 
 // ---------------- Routes ---------------- //
 app.use("/api/auth", require("./routes/authRoutes"));
@@ -45,5 +48,5 @@ app.use("/api/computer-borrow", require("./routes/computerBorrowRoutes"));
 app.get("/", (req, res) => res.send("Barangay Management System Backend is running"));
 
 // ---------------- Start Server ---------------- //
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

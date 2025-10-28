@@ -59,6 +59,7 @@ router.put("/files/:id", fileController.updateFileStatus);
 // Get all accepted files
 router.get("/accepted", fileController.getAcceptedFiles);
 
+
 // ---------------- Schedules ----------------
 // Get schedules of a specific resident (pending only)
 router.get("/schedules/resident/:residentId", async (req, res) => {
@@ -124,6 +125,16 @@ router.put("/schedules/:id/status", async (req, res) => {
     res.status(500).json({ error: "Failed to update schedule status" });
   }
 });
+
+
+const authController = require("../controllers/authController");
+
+
+// routes/staffRoutes.js
+router.put("/residents/:id/status", authController.approveResident);
+
+// GET all pending residents (for staff dashboard)
+router.get("/residents/accounts", authController.getPendingResidents);
 
 // ---------------- Release / Return ----------------
 // Mark schedule as Released
