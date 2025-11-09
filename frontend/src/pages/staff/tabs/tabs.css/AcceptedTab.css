@@ -1,0 +1,375 @@
+/* =================== Accepted Tab Styles =================== */
+.accepted-list {
+  background: white;
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+  border: 1px solid #e2e8f0;
+}
+
+.accepted-list h2 {
+  color: #1f2937;
+  font-weight: 700;
+  margin-bottom: 32px;
+  font-size: 1.75rem;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.accepted-list h2::before {
+  content: "✅";
+  font-size: 1.5rem;
+}
+
+.accepted-list h3 {
+  color: #374151;
+  font-weight: 600;
+  margin: 40px 0 20px 0;
+  font-size: 1.3rem;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.accepted-list h3::before {
+  content: "📁";
+  font-size: 1.2rem;
+}
+
+.accepted-list h3:nth-of-type(2)::before {
+  content: "📅";
+}
+
+.accepted-list > p {
+  text-align: center;
+  color: #6b7280;
+  font-style: italic;
+  padding: 40px 20px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 2px dashed #e2e8f0;
+  margin: 20px 0;
+}
+
+/* Table Styles */
+.accepted-list table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+  margin-bottom: 32px;
+  border: 1px solid #e2e8f0;
+}
+
+.accepted-list table:last-of-type {
+  margin-bottom: 0;
+}
+
+.accepted-list th,
+.accepted-list td {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.accepted-list th {
+  background-color: #f8fafc;
+  font-weight: 600;
+  color: #374151;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+}
+
+.accepted-list tr {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.accepted-list tr:hover {
+  background-color: #f8fafc;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.accepted-list tr:last-child td {
+  border-bottom: none;
+}
+
+/* Status Badges */
+.status-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+  text-align: center;
+  min-width: 80px;
+  transition: all 0.2s ease;
+}
+
+.status-badge.approved {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.status-badge.ready,
+.status-badge.to.pick.up {
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+
+.status-badge.claimed {
+  background: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
+
+.status-badge.pending {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.status-badge.rejected {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.status-badge.in.progress {
+  background: #f0f9ff;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+/* Table Cell Enhancements */
+.accepted-list td:first-child {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.accepted-list td:nth-child(2) {
+  color: #374151;
+  font-weight: 500;
+}
+
+.accepted-list td:last-child {
+  text-align: center;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.btn-notify {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-notify:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn-notify:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-notify::before {
+  content: "🔔";
+  font-size: 10px;
+}
+
+/* Empty States */
+.accepted-list table + p {
+  text-align: center;
+  color: #6b7280;
+  font-style: italic;
+  padding: 40px 20px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 2px dashed #e2e8f0;
+  margin: 20px 0;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .accepted-list {
+    padding: 24px;
+  }
+  
+  .accepted-list table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  
+  .accepted-list th,
+  .accepted-list td {
+    padding: 14px 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .accepted-list {
+    padding: 20px;
+    margin: 0 -5px;
+  }
+  
+  .accepted-list h2 {
+    font-size: 1.5rem;
+    margin-bottom: 24px;
+  }
+  
+  .accepted-list h3 {
+    font-size: 1.2rem;
+    margin: 32px 0 16px 0;
+  }
+  
+  .accepted-list th,
+  .accepted-list td {
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+  
+  .status-badge {
+    padding: 4px 10px;
+    font-size: 11px;
+    min-width: 70px;
+  }
+  
+  .btn-notify {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .accepted-list {
+    padding: 16px;
+  }
+  
+  .accepted-list h2 {
+    font-size: 1.3rem;
+  }
+  
+  .accepted-list h3 {
+    font-size: 1.1rem;
+  }
+  
+  .accepted-list th,
+  .accepted-list td {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  
+  .accepted-list table {
+    font-size: 12px;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
+/* Animation for table rows */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.accepted-list tr {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+/* Hover effects for status badges */
+.status-badge:hover {
+  transform: scale(1.05);
+}
+
+/* Loading state */
+.accepted-list.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.accepted-list.loading::after {
+  content: 'Loading...';
+  display: block;
+  text-align: center;
+  padding: 40px;
+  color: #6b7280;
+  font-style: italic;
+}
+
+/* Section dividers */
+.accepted-section {
+  margin-bottom: 40px;
+}
+
+.accepted-section:last-child {
+  margin-bottom: 0;
+}
+
+/* Count badges */
+.section-count {
+  background: #3b82f6;
+  color: white;
+  border-radius: 12px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+/* Print-specific styles */
+@media print {
+  .accepted-list {
+    box-shadow: none;
+    border: 1px solid #000;
+  }
+  
+  .accepted-list tr {
+    break-inside: avoid;
+  }
+}

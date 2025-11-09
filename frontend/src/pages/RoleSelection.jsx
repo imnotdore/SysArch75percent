@@ -11,7 +11,7 @@ export default function RoleSelection() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+  const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -22,7 +22,7 @@ export default function RoleSelection() {
   const validateForm = () => {
     const newErrors = {};
     if (!role) newErrors.role = "Please select a role";
-    if (!form.username.trim()) newErrors.username = "Username is required";
+    if (!form.username.trim()) newErrors.username = "Username/Staff ID is required";
     if (!form.password) newErrors.password = "Password is required";
     else if (form.password.length < 6)
       newErrors.password = "Password must be at least 6 characters";
@@ -41,13 +41,12 @@ export default function RoleSelection() {
     try {
       const loginUrl = `${baseUrl}/api/auth/${role.toLowerCase()}/login`;
       
-      // Pangtesting sa mobile view (dapat yung  local IP address ng computer mo yung gagamitin
+      // Pangtesting sa mobile view (dapat yung local IP address ng computer mo yung gagamitin)
       /*const res = await axios.post(
-  loginUrl.replace("localhost", "192.168.100.100"), // palitan mo nalang yung sa  computer IP address mo
-  form,
-  { withCredentials: true }
-);*/
-
+        loginUrl.replace("localhost", "192.168.100.100"), // palitan mo nalang yung sa computer IP address mo
+        form,
+        { withCredentials: true }
+      );*/
 
       const res = await axios.post(loginUrl, form);
 
@@ -59,13 +58,16 @@ export default function RoleSelection() {
       localStorage.setItem("username", user?.username || "Unknown");
       localStorage.setItem("role", role.toLowerCase());
 
-      // Save role-specific IDs directly from user object
+      // Save role-specific data
       if (role.toLowerCase() === "staff") {
         localStorage.setItem("staffId", user.id);
+        localStorage.setItem("staffName", user.name || "");
+        localStorage.setItem("staffStaffId", user.staff_id || ""); // Save actual staff_id
       } else if (role.toLowerCase() === "admin") {
         localStorage.setItem("adminId", user.id);
       } else if (role.toLowerCase() === "resident") {
         localStorage.setItem("residentId", user.id);
+        localStorage.setItem("residentName", user.full_name || "");
       }
 
       // Redirect based on role
@@ -96,8 +98,26 @@ export default function RoleSelection() {
   };
 
   const handleRegister = () => {
-    if (role) navigate(`/${role.toLowerCase()}/register`);
-    else setErrors({ role: "Please select a role to register" });
+    // Only allow resident registration
+    if (role === "Resident") {
+      navigate("/resident/register");
+    } else if (role === "Staff") {
+      setErrors({ 
+        submit: "Staff accounts are created by administrators only. Please contact your admin." 
+      });
+    } else if (role === "Admin") {
+      setErrors({ 
+        submit: "Admin registration is not available through this portal." 
+      });
+    } else {
+      setErrors({ role: "Please select a role to register" });
+    }
+  };
+
+  // Get placeholder text based on selected role
+  const getUsernamePlaceholder = () => {
+    if (role === "Staff") return "Staff ID or Username";
+    return "Username";
   };
 
   const inputStyle = (error) => ({
@@ -144,6 +164,7 @@ export default function RoleSelection() {
           onChange={(e) => {
             setRole(e.target.value);
             if (errors.role) setErrors({ ...errors, role: "" });
+            if (errors.submit) setErrors({ ...errors, submit: "" });
           }}
           style={inputStyle(errors.role)}
         >
@@ -160,7 +181,7 @@ export default function RoleSelection() {
           <input
             type="text"
             name="username"
-            placeholder="Username"
+            placeholder={getUsernamePlaceholder()}
             value={form.username}
             onChange={handleChange}
             style={inputStyle(errors.username)}
@@ -171,7 +192,7 @@ export default function RoleSelection() {
             </p>
           )}
 
-          <div style={{ position: "relative" }}>
+          <div style={{ position: "relative", marginBottom: "15px" }}>
             <input
               type={showPassword ? "text" : "password"}
               name="password"
@@ -233,15 +254,44 @@ export default function RoleSelection() {
           </button>
         </form>
 
-        <p style={{ marginTop: "15px", fontSize: "14px", color: "#555" }}>
-          Don't have an account?{" "}
-          <span
-            onClick={handleRegister}
-            style={{ color: "#A43259", cursor: "pointer", fontWeight: "bold" }}
-          >
-            Register here
-          </span>
-        </p>
+        {/* Show register link only for residents */}
+        {role === "Resident" && (
+          <p style={{ marginTop: "15px", fontSize: "14px", color: "#555" }}>
+            Don't have an account?{" "}
+            <span
+              onClick={handleRegister}
+              style={{ color: "#A43259", cursor: "pointer", fontWeight: "bold" }}
+            >
+              Register here
+            </span>
+          </p>
+        )}
+
+        {/* Show message for staff/admin */}
+        {(role === "Staff" || role === "Admin") && (
+          <p style={{ 
+            marginTop: "15px", 
+            fontSize: "14px", 
+            color: "#666",
+            fontStyle: "italic" 
+          }}>
+            {role === "Staff" 
+              ? "Staff accounts are created by administrators" 
+              : "Admin accounts are pre-configured"}
+          </p>
+        )}
+
+        {/* Show instruction when no role selected */}
+        {!role && (
+          <p style={{ 
+            marginTop: "15px", 
+            fontSize: "14px", 
+            color: "#666",
+            fontStyle: "italic" 
+          }}>
+            Select your role to continue
+          </p>
+        )}
       </div>
     </div>
   );

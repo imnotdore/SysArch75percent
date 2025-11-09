@@ -1,0 +1,394 @@
+/* =================== Scheduled Tab Styles =================== */
+.scheduled-list {
+  background: white;
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+  border: 1px solid #e2e8f0;
+}
+
+.scheduled-list h2 {
+  color: #1f2937;
+  font-weight: 700;
+  margin-bottom: 32px;
+  font-size: 1.75rem;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.scheduled-list h2::before {
+  content: "📅";
+  font-size: 1.5rem;
+}
+
+.scheduled-list > p {
+  text-align: center;
+  color: #6b7280;
+  font-style: italic;
+  padding: 60px 20px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 2px dashed #e2e8f0;
+  margin: 0;
+}
+
+/* Table Styles */
+.scheduled-list table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+  border: 1px solid #e2e8f0;
+}
+
+.scheduled-list th,
+.scheduled-list td {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.scheduled-list th {
+  background-color: #f8fafc;
+  font-weight: 600;
+  color: #374151;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+}
+
+.scheduled-list tr {
+  transition: all 0.3s ease;
+}
+
+.scheduled-list tr:hover {
+  background-color: #f8fafc;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.scheduled-list tr:last-child td {
+  border-bottom: none;
+}
+
+/* Resident Column */
+.scheduled-list td:first-child {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+/* Item Column */
+.scheduled-list td:nth-child(2) {
+  color: #374151;
+  font-weight: 500;
+}
+
+/* Quantity Column */
+.scheduled-list td:nth-child(3) {
+  text-align: center;
+  font-weight: 600;
+  color: #059669;
+}
+
+/* Staff Column */
+.scheduled-list td:nth-child(4) {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* Date Column */
+.scheduled-list td:last-child {
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Resident Info */
+.resident-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.resident-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+}
+
+.resident-name {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+/* Item Info */
+.item-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.item-icon {
+  color: #f59e0b;
+  font-size: 1.1rem;
+}
+
+.item-name {
+  font-weight: 500;
+  color: #374151;
+}
+
+/* Quantity Badge */
+.quantity-badge {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  min-width: 40px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+/* Staff Info */
+.staff-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #6b7280;
+}
+
+.staff-badge {
+  background: #f1f5f9;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #475569;
+}
+
+/* Date Styling */
+.date-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.date-main {
+  font-weight: 600;
+  color: #374151;
+}
+
+.date-time {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 80px 20px;
+  color: #6b7280;
+}
+
+.empty-state::before {
+  content: "📋";
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.empty-state h3 {
+  color: #374151;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.empty-state p {
+  font-style: italic;
+  margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .scheduled-list {
+    padding: 24px;
+  }
+  
+  .scheduled-list table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  
+  .scheduled-list th,
+  .scheduled-list td {
+    padding: 14px 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .scheduled-list {
+    padding: 20px;
+    margin: 0 -5px;
+  }
+  
+  .scheduled-list h2 {
+    font-size: 1.5rem;
+    margin-bottom: 24px;
+  }
+  
+  .scheduled-list th,
+  .scheduled-list td {
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+  
+  .resident-avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 0.8rem;
+  }
+  
+  .quantity-badge {
+    padding: 4px 10px;
+    font-size: 11px;
+    min-width: 35px;
+  }
+}
+
+@media (max-width: 480px) {
+  .scheduled-list {
+    padding: 16px;
+  }
+  
+  .scheduled-list h2 {
+    font-size: 1.3rem;
+  }
+  
+  .scheduled-list th,
+  .scheduled-list td {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  
+  .scheduled-list table {
+    font-size: 12px;
+  }
+  
+  .resident-info,
+  .item-info,
+  .staff-info {
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-start;
+  }
+  
+  .resident-avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 0.7rem;
+  }
+  
+  .date-cell {
+    font-size: 11px;
+  }
+}
+
+/* Animation for table rows */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.scheduled-list tr {
+  animation: fadeInUp 0.4s ease-out;
+}
+
+.scheduled-list tr:nth-child(even) {
+  animation-delay: 0.1s;
+}
+
+/* Hover effects for quantity badge */
+.quantity-badge {
+  transition: all 0.3s ease;
+}
+
+.scheduled-list tr:hover .quantity-badge {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+/* Loading state */
+.scheduled-list.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.scheduled-list.loading::after {
+  content: 'Loading scheduled items...';
+  display: block;
+  text-align: center;
+  padding: 60px 20px;
+  color: #6b7280;
+  font-style: italic;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 2px dashed #e2e8f0;
+}
+
+/* Print-specific styles */
+@media print {
+  .scheduled-list {
+    box-shadow: none;
+    border: 1px solid #000;
+  }
+  
+  .scheduled-list tr {
+    break-inside: avoid;
+  }
+}
+
+/* Section header with count */
+.section-header {
+  display: relative;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.section-count {
+  background: #3b82f6;
+  color: white;
+  border-radius: 12px;
+  padding: 4px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  left: auto;
+}

@@ -29,7 +29,7 @@ function Login() {
 
   const validateForm = () => {
     const newErrors = {};
-    if (!form.username.trim()) newErrors.username = "Username is required";
+    if (!form.username.trim()) newErrors.username = "Username/Staff ID is required";
     if (!form.password) newErrors.password = "Password is required";
     else if (form.password.length < 6) newErrors.password = "Password must be at least 6 characters";
     setErrors(newErrors);
@@ -48,22 +48,25 @@ function Login() {
       // Save token
       localStorage.setItem("token", res.data.token);
 
-      // Save username
-      const username = res.data.username || res.data.user?.username;
-      if (username) localStorage.setItem("username", username);
-
-      // Save staffId only if role is staff
-      if (role.toLowerCase() === "staff") {
-        const staffId = res.data.user?.id ?? res.data.id;
-        if (!staffId) {
-          setErrors({ submit: "Staff ID not returned. Contact admin." });
-          setIsLoading(false);
-          return;
+      // Save user data
+      const user = res.data.user;
+      if (user) {
+        localStorage.setItem("username", user.username || "");
+        localStorage.setItem("userId", user.id || "");
+        
+        // Save staff-specific data
+        if (role.toLowerCase() === "staff") {
+          localStorage.setItem("staffId", user.staff_id || "");
+          localStorage.setItem("staffName", user.name || "");
         }
-        localStorage.setItem("staffId", Number(staffId));
+        
+        // Save resident-specific data  
+        if (role.toLowerCase() === "resident") {
+          localStorage.setItem("residentName", user.full_name || "");
+        }
       }
 
-      // Redirect
+      // Redirect based on role
       switch (role.toLowerCase()) {
         case "resident":
           navigate("/resident/dashboard");
@@ -87,8 +90,17 @@ function Login() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("username");
+    localStorage.removeItem("userId");
     localStorage.removeItem("staffId");
+    localStorage.removeItem("staffName");
+    localStorage.removeItem("residentName");
     navigate("/");
+  };
+
+  // Update placeholder based on role
+  const getUsernamePlaceholder = () => {
+    if (role === "Staff") return "Staff ID or Username";
+    return "Username";
   };
 
   return (
@@ -114,25 +126,78 @@ function Login() {
 
         {step === 2 && (
           <form onSubmit={handleSubmit}>
-            <input name="username" placeholder="Username" value={form.username} onChange={(e)=>setForm({...form, username:e.target.value})} style={inputStyle(errors.username)} />
+            <input 
+              name="username" 
+              placeholder={getUsernamePlaceholder()} 
+              value={form.username} 
+              onChange={(e)=>setForm({...form, username:e.target.value})} 
+              style={inputStyle(errors.username)} 
+            />
             {errors.username && <p style={{ color:"#e74c3c", fontSize:"12px" }}>{errors.username}</p>}
 
             <div style={{ position:"relative", marginBottom:"15px" }}>
-              <input type={showPassword ? "text" : "password"} name="password" placeholder="Password" value={form.password} onChange={(e)=>setForm({...form, password:e.target.value})} style={inputStyle(errors.password)} />
-              <span onClick={() => setShowPassword(!showPassword)} style={{ position:"absolute", right:"15px", top:"14px", cursor:"pointer", color:"#777" }}>{showPassword ? <FaEyeSlash /> : <FaEye />}</span>
+              <input 
+                type={showPassword ? "text" : "password"} 
+                name="password" 
+                placeholder="Password" 
+                value={form.password} 
+                onChange={(e)=>setForm({...form, password:e.target.value})} 
+                style={inputStyle(errors.password)} 
+              />
+              <span onClick={() => setShowPassword(!showPassword)} style={{ position:"absolute", right:"15px", top:"14px", cursor:"pointer", color:"#777" }}>
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
+              </span>
               {errors.password && <p style={{ color:"#e74c3c", fontSize:"12px" }}>{errors.password}</p>}
             </div>
 
-            {errors.submit && <div style={{ color:"#e74c3c", fontSize:"14px", margin:"10px 0", padding:"10px", backgroundColor:"#fadbd8", borderRadius:"5px" }}>{errors.submit}</div>}
+            {errors.submit && (
+              <div style={{ color:"#e74c3c", fontSize:"14px", margin:"10px 0", padding:"10px", backgroundColor:"#fadbd8", borderRadius:"5px" }}>
+                {errors.submit}
+              </div>
+            )}
 
-            <button type="submit" disabled={isLoading} style={{ width:"100%", padding:"12px", borderRadius:"10px", border:"none", backgroundColor:isLoading?"#ccc":"#A43259", color:"white", fontWeight:"bold", cursor:isLoading?"not-allowed":"pointer", marginTop:"10px" }}>{isLoading?"Signing In...":"Login"}</button>
+            <button 
+              type="submit" 
+              disabled={isLoading} 
+              style={{ 
+                width:"100%", 
+                padding:"12px", 
+                borderRadius:"10px", 
+                border:"none", 
+                backgroundColor:isLoading?"#ccc":"#A43259", 
+                color:"white", 
+                fontWeight:"bold", 
+                cursor:isLoading?"not-allowed":"pointer", 
+                marginTop:"10px" 
+              }}
+            >
+              {isLoading?"Signing In...":"Login"}
+            </button>
 
-            <p style={{ marginTop:"15px", fontSize:"14px", color:"#555" }}>
-              Don't have an account? <span onClick={()=>navigate(`/${role.toLowerCase()}/register`)} style={{ color:"#A43259", cursor:"pointer", fontWeight:"bold" }}>Register here</span>
-            </p>
+            {/* Show register link only for residents */}
+            {role === "Resident" && (
+              <p style={{ marginTop:"15px", fontSize:"14px", color:"#555" }}>
+                Don't have an account?{" "}
+                <span 
+                  onClick={()=>navigate("/resident/register")} 
+                  style={{ color:"#A43259", cursor:"pointer", fontWeight:"bold" }}
+                >
+                  Register here
+                </span>
+              </p>
+            )}
+
+            {/* Hide staff register link since admin creates staff accounts */}
+            {role === "Staff" && (
+              <p style={{ marginTop:"15px", fontSize:"14px", color:"#666", fontStyle:"italic" }}>
+                Staff accounts are created by administrators
+              </p>
+            )}
 
             <p style={{ marginTop:"10px", fontSize:"14px", color:"#555" }}>
-              <span onClick={()=>setStep(1)} style={{ color:"#777", cursor:"pointer", textDecoration:"underline" }}>Back to Role Selection</span>
+              <span onClick={()=>setStep(1)} style={{ color:"#777", cursor:"pointer", textDecoration:"underline" }}>
+                Back to Role Selection
+              </span>
             </p>
           </form>
         )}

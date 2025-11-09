@@ -7,19 +7,18 @@ const multer = require("multer");
 
 // ---------------- Multer setup for ID uploads ----------------
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "uploads/ids"),
-  filename: (req, file, cb) =>
-    cb(null, Date.now() + "-" + file.originalname),
+  destination: (req, file, cb) => cb(null, "uploads/ids"),
+  filename: (req, file, cb) =>
+    cb(null, Date.now() + "-" + file.originalname),
 });
-// Ginamit ang 'id_picture' bilang field name, kahit sa staff,
-// para ma-parse pa rin ang formData.
+
 const upload = multer({ storage }); 
 
 // ================= RESIDENT ROUTES =================
 router.post(
-  "/resident/register",
-  upload.single("id_picture"),
-  authController.registerResident
+  "/resident/register",
+  upload.single("id_picture"),
+  authController.registerResident
 );
 router.post("/resident/login", authController.loginResident);
 router.put("/resident/approve/:id", authController.approveResident);
@@ -40,15 +39,15 @@ router.get("/admin/staff/approved", authController.getApprovedStaff);
 router.post("/admin/staff-requests/:id/accept", authController.approveStaff);
 router.post("/admin/staff-requests/:id/reject", authController.rejectStaff);
 router.get("/admin/staff-requests", authController.getAllStaffRequests);
-// Dito idinagdag ang upload.single() para ma-parse ang formData
+router.post('/admin/create-staff', authController.createStaffByAdmin);
 router.put("/admin/staff/:id", upload.single("id_picture"), authController.updateStaff); 
+router.delete("/admin/staff/:id", authController.deleteStaff);
 
 // --- Resident management for Admin ---
 router.get("/admin/residents/pending", authController.getPendingResidents);
 router.get("/admin/residents/approved", authController.getApprovedResidents);
-// Dito idinagdag ang upload.single() para ma-parse ang formData
 router.put("/admin/residents/:id", upload.single("id_picture"), authController.updateResident); 
 router.delete("/admin/residents/:id", authController.deleteResident);
-
+router.delete("/admin/residents/:id/reject", authController.rejectResident);
 
 module.exports = router;

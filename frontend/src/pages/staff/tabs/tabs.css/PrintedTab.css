@@ -1,0 +1,441 @@
+/* =================== Printed Tab Styles =================== */
+.printed-list {
+  background: white;
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+  border: 1px solid #e2e8f0;
+}
+
+.printed-list h2 {
+  color: #1f2937;
+  font-weight: 700;
+  margin-bottom: 32px;
+  font-size: 1.75rem;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.printed-list h2::before {
+  content: "🖨️";
+  font-size: 1.5rem;
+}
+
+.printed-list > p {
+  text-align: center;
+  color: #6b7280;
+  font-style: italic;
+  padding: 60px 20px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 2px dashed #e2e8f0;
+  margin: 0;
+}
+
+/* Table Styles */
+.printed-list table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 1px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.411), 0 1px 2px rgba(0,0,0,0.06);
+  border: 1px solid #e2e8f0;
+}
+
+.printed-list th,
+.printed-list td {
+  padding: 20px 8px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.printed-list th {
+  background-color: #f8fafc;
+  font-weight: 600;
+  color: #374151;
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+}
+
+.printed-list tr {
+  transition: all 0.3s ease;
+}
+
+.printed-list tr:hover {
+  background-color: #0f59a31f;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.printed-list tr:last-child td {
+  border-bottom: none;
+}
+
+/* Status Column */
+.printed-list td:nth-child(5) {
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+/* Action Column */
+.printed-list td:last-child {
+  text-align: center;
+}
+
+/* Action Buttons */
+.btn-green,
+.btn-yellow {
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-green {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+.btn-green:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+.btn-yellow {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+}
+
+.btn-yellow:hover {
+  background: linear-gradient(135deg, #d97706, #b45309);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+}
+
+.btn-green:active,
+.btn-yellow:active {
+  transform: translateY(0);
+}
+
+/* Status Badges */
+.status-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+  text-align: center;
+  min-width: 100px;
+  transition: all 0.2s ease;
+}
+
+.status-badge.printed {
+  background: #f0f9ff;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.status-badge.ready,
+.status-badge.ready.to.pick.up {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.status-badge.claimed {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.status-badge.pending {
+  background: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
+
+/* Claimed State */
+.claimed-row {
+  opacity: 0.6;
+  background: #f9fafb !important;
+}
+
+.claimed-row:hover {
+  background: #f3f4f6 !important;
+  transform: none !important;
+  cursor: default;
+}
+
+.claimed-text {
+  color: #6b7280;
+  font-style: italic;
+  font-weight: 500;
+}
+
+/* Resident Info */
+.resident-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.resident-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+}
+
+.resident-name {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+/* File Info */
+.file-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.file-icon {
+  color: #6b7280;
+  font-size: 1.1rem;
+}
+
+.file-name {
+  font-weight: 500;
+  color: #374151;
+  word-break: break-word;
+}
+
+/* Staff Info */
+.staff-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #6b7280;
+}
+
+.staff-badge {
+  background: #f1f5f9;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #475569;
+}
+
+/* Date Styling */
+.date-cell {
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 80px 20px;
+  color: #6b7280;
+}
+
+.empty-state::before {
+  content: "📄";
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.empty-state h3 {
+  color: #374151;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.empty-state p {
+  font-style: italic;
+  margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .printed-list {
+    padding: 24px;
+  }
+  
+  .printed-list table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  
+  .printed-list th,
+  .printed-list td {
+    padding: 14px 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .printed-list {
+    padding: 20px;
+    margin: 0 -5px;
+  }
+  
+  .printed-list h2 {
+    font-size: 1.5rem;
+    margin-bottom: 24px;
+  }
+  
+  .printed-list th,
+  .printed-list td {
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+  
+  .btn-green,
+  .btn-yellow {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  
+  .status-badge {
+    padding: 4px 10px;
+    font-size: 11px;
+    min-width: 80px;
+  }
+  
+  .resident-avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .printed-list {
+    padding: 16px;
+  }
+  
+  .printed-list h2 {
+    font-size: 1.3rem;
+  }
+  
+  .printed-list th,
+  .printed-list td {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  
+  .printed-list table {
+    font-size: 12px;
+  }
+  
+  .btn-green,
+  .btn-yellow {
+    padding: 4px 8px;
+    font-size: 11px;
+    gap: 4px;
+  }
+  
+  .resident-info,
+  .file-info,
+  .staff-info {
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-start;
+  }
+  
+  .resident-avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 0.7rem;
+  }
+}
+
+/* Animation for table rows */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.printed-list tr {
+  animation: slideInUp 0.4s ease-out;
+}
+
+.printed-list tr:nth-child(even) {
+  animation-delay: 0.1s;
+}
+
+/* Hover effects for status badges */
+.status-badge:hover {
+  transform: scale(1.05);
+}
+
+/* Loading state */
+.printed-list.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.printed-list.loading::after {
+  content: 'Loading printed files...';
+  display: block;
+  text-align: center;
+  padding: 60px 20px;
+  color: #6b7280;
+  font-style: italic;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 2px dashed #e2e8f0;
+}
+
+/* Print-specific styles */
+@media print {
+  .printed-list {
+    box-shadow: none;
+    border: 1px solid #000;
+  }
+  
+  .btn-green,
+  .btn-yellow {
+    display: none;
+  }
+  
+  .printed-list tr {
+    break-inside: avoid;
+  }
+}

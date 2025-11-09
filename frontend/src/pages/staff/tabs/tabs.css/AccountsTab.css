@@ -1,0 +1,264 @@
+/* =================== Accounts Tab Styles =================== */
+.accounts-list {
+  background: white;
+  border-radius: 10px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.accounts-list h2 {
+  color: #2563eb;
+  font-weight: 600;
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 10px;
+}
+
+.accounts-list > p {
+  text-align: center;
+  color: #6b7280;
+  font-style: italic;
+  padding: 40px 20px;
+  font-size: 1.1rem;
+}
+
+/* Table Styles */
+.accounts-list table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(60, 64, 67, 0.05);
+  margin-top: 10px;
+}
+
+.accounts-list th,
+.accounts-list td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  font-size: 14px;
+}
+
+.accounts-list th {
+  background-color: #f1f5f9;
+  font-weight: 600;
+  color: #374151;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.accounts-list tr:hover {
+  background-color: #f8fafc;
+  transition: background 0.2s ease;
+}
+
+.accounts-list tr:last-child td {
+  border-bottom: none;
+}
+
+/* ID Picture Styles */
+.accounts-list img {
+  width: 80px;
+  height: 60px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 2px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.accounts-list img:hover {
+  border-color: #2563eb;
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.2);
+}
+
+/* Button Styles */
+.accounts-list .btn-green,
+.accounts-list .btn-red {
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  font-size: 13px;
+  margin: 2px 4px;
+}
+
+.accounts-list .btn-green {
+  background: #16a34a;
+  color: #fff;
+}
+
+.accounts-list .btn-green:hover {
+  background: #15803d;
+  transform: scale(1.05);
+  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.3);
+}
+
+.accounts-list .btn-red {
+  background: #dc2626;
+  color: #fff;
+}
+
+.accounts-list .btn-red:hover {
+  background: #b91c1c;
+  transform: scale(1.05);
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.3);
+}
+
+/* Action Buttons Container */
+.accounts-list td:last-child {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Text Styles */
+.accounts-list td {
+  color: #374151;
+  font-weight: 500;
+}
+
+.accounts-list td:first-child {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .accounts-list {
+    padding: 16px;
+  }
+  
+  .accounts-list table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  
+  .accounts-list th,
+  .accounts-list td {
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 768px) {
+  .accounts-list {
+    padding: 12px;
+    margin: 0 -5px;
+  }
+  
+  .accounts-list h2 {
+    font-size: 1.3rem;
+    margin-bottom: 16px;
+  }
+  
+  .accounts-list th,
+  .accounts-list td {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  
+  .accounts-list img {
+    width: 60px;
+    height: 45px;
+  }
+  
+  .accounts-list .btn-green,
+  .accounts-list .btn-red {
+    padding: 6px 12px;
+    font-size: 12px;
+    margin: 1px 2px;
+  }
+  
+  .accounts-list td:last-child {
+    gap: 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .accounts-list {
+    border-radius: 8px;
+  }
+  
+  .accounts-list table {
+    font-size: 11px;
+  }
+  
+  .accounts-list th,
+  .accounts-list td {
+    padding: 8px 10px;
+  }
+  
+  .accounts-list img {
+    width: 50px;
+    height: 40px;
+  }
+  
+  .accounts-list .btn-green,
+  .accounts-list .btn-red {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+}
+
+/* Empty State Enhancement */
+.accounts-list > p {
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 2px dashed #e2e8f0;
+}
+
+/* Loading State */
+.accounts-loading {
+  text-align: center;
+  padding: 40px;
+  color: #6b7280;
+  font-size: 1.1rem;
+}
+/* Additional styles for enhanced component */
+.table-container {
+  overflow-x: auto;
+  border-radius: 8px;
+}
+
+.resident-name {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.no-id {
+  color: #6b7280;
+  font-style: italic;
+  font-size: 13px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+.id-preview {
+  width: 80px;
+  height: 60px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 2px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.id-preview:hover {
+  border-color: #2563eb;
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.2);
+}

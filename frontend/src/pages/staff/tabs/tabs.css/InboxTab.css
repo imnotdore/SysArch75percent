@@ -1,0 +1,444 @@
+/* =================== Inbox Tab Styles =================== */
+
+/* Search Bar */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 10px 16px;
+  background: white;
+  max-width: 400px;
+  margin-bottom: 20px;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.search-bar:focus-within {
+  border-color: #2563eb;
+  box-shadow: 0 0 4px rgba(37, 99, 235, 0.4);
+}
+
+.search-bar svg {
+  color: #6b7280;
+  font-size: 1rem;
+}
+
+.search-bar input {
+  border: none;
+  outline: none;
+  flex: 1;
+  font-size: 14px;
+  background: none;
+  color: #374151;
+}
+
+.search-bar input::placeholder {
+  color: #9ca3af;
+}
+
+/* Resident List */
+.resident-list {
+  background: white;
+  border-radius: 10px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+}
+
+.resident-list h2 {
+  color: #2563eb;
+  font-weight: 600;
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 10px;
+}
+
+.resident-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  margin-bottom: 8px;
+}
+
+.resident-item:hover {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  transform: translateX(4px);
+}
+
+.resident-item:last-child {
+  margin-bottom: 0;
+}
+
+.resident-item span:first-child {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 15px;
+}
+
+.pending-count {
+  background: #dc2626;
+  color: white;
+  border-radius: 12px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 24px;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.resident-item:hover .pending-count {
+  transform: scale(1.1);
+  background: #b91c1c;
+}
+
+/* Resident Requests */
+.resident-requests {
+  background: white;
+  border-radius: 10px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.resident-requests h2 {
+  color: #2563eb;
+  font-weight: 600;
+  margin-bottom: 24px;
+  font-size: 1.5rem;
+}
+
+.resident-requests h3 {
+  color: #374151;
+  font-weight: 600;
+  margin: 24px 0 16px 0;
+  font-size: 1.2rem;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 8px;
+}
+
+.resident-requests h3:first-child {
+  margin-top: 0;
+}
+
+/* Back Button */
+.back-btn {
+  background: #6b7280;
+  color: white;
+  font-weight: 500;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  margin-bottom: 16px !important;
+}
+
+.back-btn:hover {
+  background: #4b5563;
+  transform: translateX(-2px);
+}
+
+/* File and Schedule Cards */
+.file-card,
+.schedule-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.file-card:hover,
+.schedule-card:hover {
+  background: #ffffff;
+  border-color: #2563eb;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+}
+
+.file-card:last-child,
+.schedule-card:last-child {
+  margin-bottom: 0;
+}
+
+/* Icons */
+.file-icon,
+.schedule-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  width: 56px;
+  height: 56px;
+  transition: all 0.2s ease;
+}
+
+.file-icon {
+  background: #fef3c7;
+}
+
+.schedule-icon {
+  background: #dbeafe;
+}
+
+.file-card:hover .file-icon {
+  background: #fde68a;
+  transform: scale(1.05);
+}
+
+.schedule-card:hover .schedule-icon {
+  background: #bfdbfe;
+  transform: scale(1.05);
+}
+
+.file-icon svg,
+.schedule-icon svg {
+  transition: all 0.2s ease;
+}
+
+.file-card:hover .file-icon svg {
+  color: #d97706;
+}
+
+.schedule-card:hover .schedule-icon svg {
+  color: #1e40af;
+}
+
+/* Info Sections */
+.file-info,
+.schedule-info {
+  flex: 1;
+  cursor: pointer;
+}
+
+.file-title,
+.schedule-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: #1f2937;
+}
+
+.file-info p,
+.schedule-info p {
+  margin: 4px 0;
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.file-info strong,
+.schedule-info strong {
+  color: #374151;
+  font-weight: 600;
+}
+
+/* Status Badges */
+.file-status,
+.schedule-status {
+  align-self: center;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 20px;
+  text-transform: capitalize;
+  min-width: 80px;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+/* Status Colors */
+.file-status.pending,
+.schedule-status.pending {
+  background: #fef3c7;
+  color: #d97706;
+  border: 1px solid #fcd34d;
+}
+
+.file-status.approved,
+.schedule-status.approved {
+  background: #dcfce7;
+  color: #16a34a;
+  border: 1px solid #86efac;
+}
+
+.file-status.rejected,
+.schedule-status.rejected {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+}
+
+.file-status.claimed,
+.schedule-status.claimed {
+  background: #e0e7ff;
+  color: #4f46e5;
+  border: 1px solid #a5b4fc;
+}
+
+.file-status.in-progress,
+.schedule-status.in-progress {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border: 1px solid #93c5fd;
+}
+
+.file-card:hover .file-status,
+.schedule-card:hover .schedule-status {
+  transform: scale(1.05);
+}
+
+/* Empty States */
+.resident-files:empty,
+.resident-schedules:empty {
+  display: none;
+}
+
+.resident-files:not(:empty) + .resident-schedules:not(:empty) {
+  margin-top: 32px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .resident-list,
+  .resident-requests {
+    padding: 16px;
+    margin: 0 -5px;
+  }
+  
+  .resident-list h2,
+  .resident-requests h2 {
+    font-size: 1.3rem;
+    margin-bottom: 16px;
+  }
+  
+  .resident-item {
+    padding: 14px 16px;
+  }
+  
+  .file-card,
+  .schedule-card {
+    padding: 16px;
+    gap: 12px;
+  }
+  
+  .file-icon,
+  .schedule-icon {
+    width: 48px;
+    height: 48px;
+  }
+  
+  .file-icon svg,
+  .schedule-icon svg {
+    font-size: 1.3rem;
+  }
+  
+  .file-title,
+  .schedule-title {
+    font-size: 15px;
+  }
+  
+  .file-info p,
+  .schedule-info p {
+    font-size: 13px;
+  }
+  
+  .file-status,
+  .schedule-status {
+    font-size: 11px;
+    padding: 4px 10px;
+    min-width: 70px;
+  }
+  
+  .search-bar {
+    max-width: 100%;
+    margin-bottom: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .file-card,
+  .schedule-card {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+  
+  .file-info,
+  .schedule-info {
+    text-align: center;
+  }
+  
+  .file-status,
+  .schedule-status {
+    align-self: center;
+  }
+  
+  .resident-item {
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+  
+  .pending-count {
+    align-self: center;
+  }
+}
+
+/* Animation for card hover */
+@keyframes cardLift {
+  from {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  to {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+  }
+}
+
+.file-card:hover,
+.schedule-card:hover {
+  animation: cardLift 0.2s ease forwards;
+}
+
+/* Loading state for cards */
+.file-card.loading,
+.schedule-card.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* Disabled state for claimed items */
+.file-card[data-status="claimed"],
+.schedule-card[data-status="claimed"] {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.file-card[data-status="claimed"]:hover,
+.schedule-card[data-status="claimed"]:hover {
+  transform: none;
+  border-color: #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
