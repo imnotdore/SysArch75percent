@@ -57,7 +57,7 @@ const Sidebar = ({ sidebarRef, sidebarOpen, activeTab, setActiveTab, setSidebarO
           <FaUsers/> All Users
         </button>
         
-        <button onClick={handleLogout} className="logout-btn">
+        <button onClick={handleLogout} className="log-btn">
           <FaSignOutAlt/> Logout
         </button>
       </nav>

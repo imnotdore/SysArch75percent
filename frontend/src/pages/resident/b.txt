@@ -10,9 +10,9 @@ import {
   FaBars,
   FaUserCircle,
 } from "react-icons/fa";
-import { API_URL } from "../config";
-import { FileContext } from "../context/Filecontext";
-import { ScheduleContext } from "../context/ScheduleContext";
+import { API_URL } from "../../config";
+import { FileContext } from "../../context/Filecontext";
+import { ScheduleContext } from "../../context/ScheduleContext";
 
 // Cancel Request Modal (for uploaded files)
 const CancelRequestModal = ({ show, onClose, request, onSuccess }) => {

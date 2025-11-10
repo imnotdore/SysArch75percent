@@ -4,7 +4,7 @@ import axios from "axios";
 
 // Context Providers
 import { AuthProvider } from "./context/AuthContext";
-import { FileProvider } from "./context/FileContext"; 
+import { FileProvider } from "./context/Filecontext"; 
 import { ScheduleProvider } from "./context/ScheduleContext";
 import { ComputerBorrowingProvider } from "./context/ComputerBorrowingContext"; 
 
@@ -17,12 +17,12 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import PrivateRoute from "./components/PrivateRoute";
 
 // Resident Pages
-import ResidentDashboard from "./pages/ResidentDashboard";
-import DisclosureBoard from "./pages/DisclosureBoard";
-import Request from "./pages/Request";
-import Schedule from "./pages/Schedule";
-import YourAccount from "./pages/YourAccount";
-import ComputerBorrowing from "./pages/ComputerBorrowing";
+import ResidentDashboard from "./pages//resident/ResidentDashboard";
+import DisclosureBoard from "./pages//resident/DisclosureBoard";
+import Request from "./pages//resident/Request";
+import Schedule from "./pages/resident/Schedule";
+import YourAccount from "./pages/resident/YourAccount";
+import ComputerBorrowing from "./pages/resident/ComputerBorrowing";
 
 // Staff Pages - CORRECTED IMPORT PATHS
 import StaffDashboard from "./pages/staff/tabs/StaffDashboard"; // ✅ TAMA NA ITO
