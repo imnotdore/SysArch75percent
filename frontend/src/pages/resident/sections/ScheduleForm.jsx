@@ -2,12 +2,14 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
-import { API_URL } from "../../../config";
+import "./ScheduleForm.css";
 
 export default function ScheduleForm() {
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+  
   const [form, setForm] = useState({
-    dateFrom: "",
-    dateTo: "",
+    borrowDate: "",
+    returnDate: "",
     timeFrom: "",
     timeTo: "",
     item: "",
@@ -18,368 +20,836 @@ export default function ScheduleForm() {
 
   const [items, setItems] = useState([]);
   const [itemAvailability, setItemAvailability] = useState([]);
-  const [selectedDates, setSelectedDates] = useState([]);
+  const [selectedBorrowDate, setSelectedBorrowDate] = useState(null);
+  const [selectedReturnDate, setSelectedReturnDate] = useState(null);
   const [maxAvailable, setMaxAvailable] = useState(1);
   const [availableTimes, setAvailableTimes] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [currentView, setCurrentView] = useState("borrow");
+  const [selectedRange, setSelectedRange] = useState([]);
+  
+  // New states for step navigation
+  const [currentStep, setCurrentStep] = useState(1);
+  const [submitted, setSubmitted] = useState(false);
+  const [showPolicy, setShowPolicy] = useState(false);
 
+  // ========== FUNCTIONS ==========
+  
   useEffect(() => {
     const fetchItems = async () => {
       try {
         const res = await axios.get(`${API_URL}/api/items`, {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
-        setItems(res.data);
+        setItems(res.data.filter(item => item.available > 0));
       } catch (err) {
         console.error("Error fetching items:", err);
       }
     };
     fetchItems();
-  }, []);
+  }, [API_URL]);
 
   useEffect(() => {
-    if (!form.item) return setItemAvailability([]);
+    if (!form.item) {
+      setItemAvailability([]);
+      setSelectedBorrowDate(null);
+      setSelectedReturnDate(null);
+      setSelectedRange([]);
+      return;
+    }
 
     const fetchAvailability = async () => {
       try {
         const res = await axios.get(`${API_URL}/api/items/availability?item=${form.item}`, {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
+        
         setItemAvailability(res.data.dates || []);
         const maxQty = res.data.max_quantity || 1;
-        setMaxAvailable(maxQty);
 
-        const today = new Date();
-        const tomorrow = new Date(today);
-        tomorrow.setDate(today.getDate() + 1);
-
-        const todayISO = formatDate(today);
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
         const tomorrowISO = formatDate(tomorrow);
-
-        const todayAvailable = res.data.dates.find((d) => d.date === todayISO)?.available ?? maxQty;
         const tomorrowAvailable = res.data.dates.find((d) => d.date === tomorrowISO)?.available ?? maxQty;
-        const minAvailable = Math.min(todayAvailable, tomorrowAvailable);
 
         setForm((prev) => ({
           ...prev,
-          dateFrom: todayISO,
-          dateTo: tomorrowISO,
-          quantity: minAvailable > 0 ? 1 : 0,
+          borrowDate: tomorrowISO,
+          returnDate: tomorrowISO,
+          quantity: Math.min(1, tomorrowAvailable),
         }));
-        setSelectedDates([today, tomorrow]);
-        setMaxAvailable(minAvailable);
-        generateTimesForSelectedDate(today, minAvailable);
+        
+        setSelectedBorrowDate(tomorrow);
+        setSelectedReturnDate(tomorrow);
+        setSelectedRange([tomorrow, tomorrow]);
+        setMaxAvailable(tomorrowAvailable);
+        generateTimesForSelectedDate(tomorrow, tomorrowAvailable);
       } catch (err) {
         console.error("Error fetching availability:", err);
       }
     };
 
     fetchAvailability();
-  }, [form.item]);
+  }, [form.item, API_URL]);
 
   const formatDate = (date) => {
     const tzOffset = date.getTimezoneOffset() * 60000;
     return new Date(date - tzOffset).toISOString().split("T")[0];
   };
 
+  const formatDisplayDate = (date) => {
+    return new Date(date).toLocaleDateString("en-PH", {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
   const getDatesBetween = (start, end) => {
-    const s = new Date(start);
-    const e = new Date(end);
     const dates = [];
-    while (s <= e) {
-      dates.push(formatDate(s));
-      s.setDate(s.getDate() + 1);
+    const current = new Date(start);
+    const endDate = new Date(end);
+    
+    while (current <= endDate) {
+      dates.push(formatDate(new Date(current)));
+      current.setDate(current.getDate() + 1);
     }
     return dates;
   };
 
-  const handleSelectDate = (date) => {
+  const handleBorrowDateSelect = (date) => {
     const iso = formatDate(date);
-    const dayAvailable = itemAvailability.find((a) => a.date === iso)?.available ?? 1;
-    setSelectedDates([date]);
-    setForm((prev) => ({ ...prev, dateFrom: iso, dateTo: iso, quantity: dayAvailable > 0 ? 1 : 0 }));
-    setMaxAvailable(dayAvailable);
-    generateTimesForSelectedDate(date, dayAvailable);
+    const dayAvailability = itemAvailability.find((a) => a.date === iso);
+    const availableToday = dayAvailability?.available ?? 0;
+    
+    setSelectedBorrowDate(date);
+    
+    const newReturnDate = !selectedReturnDate || new Date(selectedReturnDate) < date ? date : selectedReturnDate;
+    
+    setForm((prev) => ({ 
+      ...prev, 
+      borrowDate: iso,
+      returnDate: formatDate(newReturnDate)
+    }));
+    
+    setSelectedReturnDate(newReturnDate);
+    setSelectedRange([date, newReturnDate]);
+    
+    updateMaxAvailable(iso, formatDate(newReturnDate));
+    generateTimesForSelectedDate(date, availableToday);
+  };
+
+  const handleReturnDateSelect = (date) => {
+    if (!selectedBorrowDate) {
+      alert("⚠️ Please select a borrow date first!");
+      setCurrentView("borrow");
+      return;
+    }
+
+    const iso = formatDate(date);
+    
+    if (date < selectedBorrowDate) {
+      alert("⚠️ Return date cannot be before borrow date!");
+      return;
+    }
+    
+    setSelectedReturnDate(date);
+    setForm((prev) => ({ ...prev, returnDate: iso }));
+    setSelectedRange([selectedBorrowDate, date]);
+    
+    updateMaxAvailable(form.borrowDate, iso);
+  };
+
+  const updateMaxAvailable = (borrowDate, returnDate) => {
+    if (!borrowDate || !returnDate) return;
+    
+    const datesToCheck = getDatesBetween(new Date(borrowDate), new Date(returnDate));
+    const minAvailable = Math.min(
+      ...datesToCheck.map(date => {
+        const day = itemAvailability.find(a => a.date === date);
+        return day?.available ?? 0;
+      })
+    );
+    
+    setMaxAvailable(minAvailable);
+    setForm(prev => ({
+      ...prev,
+      quantity: Math.min(prev.quantity, minAvailable) || 1
+    }));
   };
 
   const generateTimesForSelectedDate = (date, availableStock) => {
     const today = new Date();
     const selected = new Date(date);
-    const slots = [];
     const isToday = selected.toDateString() === today.toDateString();
+    const currentHour = today.getHours();
+    
+    const timeSlots = [];
+    const startHour = 8;
+    const endHour = 17;
 
-    const periods = [
-      { label: "Morning", start: 8, end: 12 },
-      { label: "Afternoon", start: 13, end: 17 },
-    ];
+    for (let hour = startHour; hour <= endHour; hour++) {
+      if (isToday && hour <= currentHour) continue;
+      if (hour === 12) continue;
+      
+      const displayHour = hour <= 12 ? hour : hour - 12;
+      const ampm = hour < 12 ? "AM" : "PM";
+      const timeString = `${displayHour}:00 ${ampm}`;
+      
+      timeSlots.push(timeString);
+    }
 
-    periods.forEach((p) => {
-      for (let h = p.start; h <= p.end; h++) {
-        if (isToday && h <= today.getHours()) continue;
-        if (availableStock < form.quantity) continue;
-        const displayHour = h <= 12 ? h : h - 12;
-        const ampm = h < 12 ? "AM" : "PM";
-        slots.push(`${displayHour}:00 ${ampm}`);
-      }
+    setAvailableTimes(timeSlots);
+    
+    if (timeSlots.length > 0) {
+      setForm(prev => ({
+        ...prev,
+        timeFrom: timeSlots[0],
+        timeTo: timeSlots[Math.min(3, timeSlots.length - 1)]
+      }));
+    }
+  };
+
+  const checkAvailabilityForSelectedRange = () => {
+    if (!form.borrowDate || !form.returnDate) return true;
+    
+    const datesToCheck = getDatesBetween(new Date(form.borrowDate), new Date(form.returnDate));
+    return datesToCheck.every(date => {
+      const day = itemAvailability.find(a => a.date === date);
+      return day && day.available >= form.quantity;
     });
-
-    setAvailableTimes(slots);
-    setForm((prev) => ({ ...prev, timeFrom: slots[0] || "", timeTo: slots[slots.length - 1] || "" }));
   };
 
   const handleSubmit = async () => {
-    const { dateFrom, dateTo, timeFrom, timeTo, item, quantity, reason, acceptPolicy } = form;
+    const { borrowDate, returnDate, timeFrom, timeTo, item, quantity, reason, acceptPolicy } = form;
     
-    if (!dateFrom || !dateTo || !timeFrom || !timeTo || !item) {
-      return alert("⚠️ Please fill out all fields!");
+    if (!borrowDate || !returnDate || !timeFrom || !timeTo || !item || !reason.trim()) {
+      return alert("⚠️ Please fill out all required fields!");
     }
     
     if (!acceptPolicy) {
-      return alert("⚠️ You must accept the policy before submitting the schedule!");
+      return alert("⚠️ You must accept the borrowing policy!");
     }
 
-    const datesToBook = getDatesBetween(dateFrom, dateTo);
-    const insufficient = datesToBook.some((date) => {
-      const day = itemAvailability.find((a) => a.date === date);
-      return !day || day.available < quantity;
-    });
-    
-    if (insufficient) return alert("⚠️ Not enough items available for selected dates");
+    if (quantity < 1) {
+      return alert("⚠️ Quantity must be at least 1!");
+    }
 
+    if (new Date(borrowDate) > new Date(returnDate)) {
+      return alert("⚠️ Return date cannot be before borrow date!");
+    }
+
+    if (!checkAvailabilityForSelectedRange()) {
+      return alert("⚠️ Not enough items available for the selected dates!");
+    }
+
+    setLoading(true);
     try {
       await axios.post(
         `${API_URL}/api/schedules`,
-        { date_from: dateFrom, date_to: dateTo, time_from: timeFrom, time_to: timeTo, item, quantity, reason },
+        { 
+          date_from: borrowDate, 
+          date_to: returnDate, 
+          time_from: timeFrom, 
+          time_to: timeTo, 
+          item, 
+          quantity, 
+          reason: reason.trim() 
+        },
         { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
       );
-      alert("✅ Booking request submitted!");
-      setSelectedDates([]);
-      setForm({ dateFrom: "", dateTo: "", timeFrom: "", timeTo: "", item: "", quantity: 1, reason: "", acceptPolicy: false });
+      
+      setSubmitted(true);
+      
     } catch (err) {
-      alert(err.response?.data?.error || "❌ Failed to submit booking");
+      alert(err.response?.data?.error || "❌ Failed to submit borrowing request");
+    } finally {
+      setLoading(false);
     }
   };
 
-  return (
-    <section style={styles.formSection}>
-      <h2 style={styles.formTitle}>Submit Schedule</h2>
+  const getTileClassName = ({ date, view }) => {
+    if (view !== 'month') return '';
+    
+    const iso = formatDate(date);
+    const today = formatDate(new Date());
+    const day = itemAvailability.find((a) => a.date === iso);
+    
+    if (iso < today) return 'past-date';
+    if (!day || day.available <= 0) return 'unavailable-date';
+    
+    if (formatDate(selectedBorrowDate) === iso) return 'borrow-date';
+    if (formatDate(selectedReturnDate) === iso) return 'return-date';
+    
+    if (selectedRange.length === 2) {
+      const start = formatDate(selectedRange[0]);
+      const end = formatDate(selectedRange[1]);
+      if (iso >= start && iso <= end) return 'selected-range';
+    }
+    
+    return 'available-date';
+  };
 
-      {/* Item Selection */}
-      <div style={styles.formGroup}>
-        <label style={styles.label}>Item</label>
-        <select 
-          value={form.item} 
-          onChange={(e) => setForm({ ...form, item: e.target.value })} 
-          style={styles.select}
-        >
-          <option value="">-- Select Item --</option>
-          {items.map((item) => (
-            <option key={item.id} value={item.item_name} disabled={item.available <= 0}>
-              {item.item_name} {item.available <= 0 ? "(Fully booked)" : ""}
-            </option>
-          ))}
-        </select>
+  const isDateDisabled = (date) => {
+    const iso = formatDate(date);
+    const today = formatDate(new Date());
+    const day = itemAvailability.find((a) => a.date === iso);
+    return iso < today || !day || day.available <= 0;
+  };
+
+  const getDurationDays = () => {
+    if (!selectedBorrowDate || !selectedReturnDate) return 0;
+    return Math.ceil((new Date(selectedReturnDate) - new Date(selectedBorrowDate)) / (1000 * 60 * 60 * 24)) + 1;
+  };
+
+  const handleTabSwitch = (tab) => {
+    if (tab === "return" && !selectedBorrowDate) {
+      alert("⚠️ Please select a borrow date first!");
+      return;
+    }
+    setCurrentView(tab);
+  };
+
+  const getTabButtonClass = (tab) => {
+    let className = "schedule-tab-button";
+    if (currentView === tab) {
+      className += " active";
+    }
+    if (tab === "return" && !selectedBorrowDate) {
+      className += " disabled";
+    }
+    return className;
+  };
+
+  const nextStep = () => {
+    if (currentStep === 1 && !form.item) {
+      alert("⚠️ Please select an item first!");
+      return;
+    }
+    if (currentStep === 1 && (!selectedBorrowDate || !selectedReturnDate)) {
+      alert("⚠️ Please select both borrow and return dates!");
+      return;
+    }
+    setCurrentStep(currentStep + 1);
+  };
+
+  const prevStep = () => {
+    setCurrentStep(currentStep - 1);
+  };
+
+  const resetForm = () => {
+    setForm({
+      borrowDate: "",
+      returnDate: "",
+      timeFrom: "",
+      timeTo: "",
+      item: "",
+      quantity: 1,
+      reason: "",
+      acceptPolicy: false,
+    });
+    setSelectedBorrowDate(null);
+    setSelectedReturnDate(null);
+    setSelectedRange([]);
+    setItemAvailability([]);
+    setCurrentStep(1);
+    setSubmitted(false);
+  };
+
+  // Step 1: Item and Date Selection
+  const renderStep1 = () => (
+    <div className="schedule-step-container">
+      <div className="schedule-step-header">
+        <div className="schedule-step-title">
+          <span className="schedule-step-number">1</span>
+          <h3>Select Item & Dates</h3>
+        </div>
+        <div className="schedule-step-nav">
+          <span className="schedule-step-current">Step 1 of 3</span>
+        </div>
       </div>
 
-      {/* Calendar */}
-      {form.item && (
-        <div style={styles.formGroup}>
-          <label style={styles.label}>Select Date Range</label>
-          <Calendar
-            minDate={new Date()}
-            value={selectedDates}
-            tileDisabled={({ date }) => {
-              const iso = formatDate(date);
-              const today = formatDate(new Date());
-              const day = itemAvailability.find((a) => a.date === iso);
-              if (iso < today) return true;
-              if (!day || day.available <= 0) return true;
-              return false;
-            }}
-            onClickDay={handleSelectDate}
-          />
-          {selectedDates.length > 0 && (
-            <p style={styles.selectedDates}>
-              Selected Dates: <strong>{selectedDates.map((d) => formatDate(d)).join(", ")}</strong>
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* Time Selection */}
-      {selectedDates.length > 0 && (
-        <div style={styles.timeGroup}>
-          <div style={styles.timeInput}>
-            <label style={styles.label}>Start Time</label>
-            <select
-              value={form.timeFrom}
-              onChange={(e) => setForm({ ...form, timeFrom: e.target.value })}
-              style={styles.select}
+      <div className="schedule-form-columns">
+        <div className="schedule-form-left">
+          {/* Item Selection */}
+          <div className="schedule-form-group">
+            <label className="schedule-label">Select Item to Borrow *</label>
+            <select 
+              value={form.item} 
+              onChange={(e) => {
+                setForm({ ...form, item: e.target.value, quantity: 1 });
+                setSelectedBorrowDate(null);
+                setSelectedReturnDate(null);
+                setSelectedRange([]);
+              }} 
+              className="schedule-select"
+              required
             >
-              {availableTimes.map((time) => (
-                <option key={time} value={time}>{time}</option>
+              <option value="">-- Choose an Item --</option>
+              {items.map((item) => (
+                <option key={item.id} value={item.item_name}>
+                  {item.item_name} ({item.available} available)
+                </option>
               ))}
             </select>
+            {items.length === 0 && (
+              <div className="schedule-warning-box">
+                <span className="schedule-warning-icon">⚠️</span>
+                No items available for borrowing at the moment.
+              </div>
+            )}
           </div>
-          <div style={styles.timeInput}>
-            <label style={styles.label}>End Time</label>
-            <select
-              value={form.timeTo}
-              onChange={(e) => setForm({ ...form, timeTo: e.target.value })}
-              style={styles.select}
-            >
-              {availableTimes.map((time) => (
-                <option key={time} value={time}>{time}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-      )}
 
-      {/* Reason */}
-      {selectedDates.length > 0 && (
-        <div style={styles.formGroup}>
-          <label style={styles.label}>Reason for Borrowing</label>
-          <textarea 
-            value={form.reason} 
-            onChange={(e) => setForm({ ...form, reason: e.target.value })} 
-            style={styles.textarea}
-            placeholder="Enter your reason..."
-          />
-        </div>
-      )}
+          {/* Date Selection */}
+          {form.item && (
+            <div className="schedule-form-group">
+              <label className="schedule-label">Select Borrowing Period *</label>
+              
+              <div className="schedule-date-tabs">
+                <button
+                  type="button"
+                  className={getTabButtonClass("borrow")}
+                  onClick={() => setCurrentView("borrow")}
+                >
+                  <span className="schedule-tab-icon">📅</span>
+                  Borrow Date
+                </button>
+                <button
+                  type="button"
+                  className={getTabButtonClass("return")}
+                  onClick={() => handleTabSwitch("return")}
+                  disabled={!selectedBorrowDate}
+                >
+                  <span className="schedule-tab-icon">📅</span>
+                  Return Date
+                  {!selectedBorrowDate && <span className="schedule-lock-icon">🔒</span>}
+                </button>
+              </div>
 
-      {/* Policy Agreement */}
-      {selectedDates.length > 0 && (
-        <div style={styles.policyGroup}>
-          <input
-            type="checkbox"
-            checked={form.acceptPolicy}
-            onChange={(e) => setForm({ ...form, acceptPolicy: e.target.checked })}
-            style={styles.checkbox}
-          />
-          <span style={styles.policyText}>
-            I acknowledge that I am fully responsible for any damage or loss of the borrowed item. 
-            Any costs to repair or replace the item will be charged based on the actual damage value.
-            I agree to comply with this policy.
-          </span>
-        </div>
-      )}
-
-      {/* Quantity */}
-      {selectedDates.length > 0 && (
-        <div style={styles.formGroup}>
-          <label style={styles.label}>Quantity</label>
-          <input
-            type="number"
-            min="0"
-            max={maxAvailable}
-            value={form.quantity}
-            onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) })}
-            style={styles.input}
-            disabled={maxAvailable === 0}
-          />
-          {maxAvailable === 0 && (
-            <p style={styles.warning}>⚠️ No items available for the selected date.</p>
+              <div className="schedule-calendar-container">
+                <Calendar
+                  minDate={new Date()}
+                  onChange={currentView === "borrow" ? handleBorrowDateSelect : handleReturnDateSelect}
+                  value={currentView === "borrow" ? selectedBorrowDate : selectedReturnDate}
+                  tileClassName={getTileClassName}
+                  tileDisabled={({ date, view }) => view === 'month' && isDateDisabled(date)}
+                  showNeighboringMonth={false}
+                />
+              </div>
+            </div>
           )}
         </div>
-      )}
 
-      {/* Submit Button */}
-      {selectedDates.length > 0 && (
-        <button onClick={handleSubmit} style={styles.submitButton}>
-          Submit Schedule
+        <div className="schedule-form-right">
+          {/* Selected Dates Display */}
+          {(selectedBorrowDate || selectedReturnDate) && (
+            <div className="schedule-selection-info">
+              <h4>Selected Dates</h4>
+              <div className="schedule-date-cards">
+                <div className="schedule-date-card">
+                  <div className="schedule-date-card-header">
+                    <span className="schedule-date-card-icon">⏰</span>
+                    <strong>Borrow Date</strong>
+                  </div>
+                  <div className="schedule-date-card-value">
+                    {selectedBorrowDate ? formatDisplayDate(selectedBorrowDate) : "Not selected"}
+                  </div>
+                </div>
+                
+                <div className="schedule-date-card">
+                  <div className="schedule-date-card-header">
+                    <span className="schedule-date-card-icon">🔄</span>
+                    <strong>Return Date</strong>
+                  </div>
+                  <div className="schedule-date-card-value">
+                    {selectedReturnDate ? formatDisplayDate(selectedReturnDate) : "Not selected"}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="schedule-stats-container">
+                <div className="schedule-stat-item">
+                  <span className="schedule-stat-label">Duration:</span>
+                  <span className="schedule-stat-value">{getDurationDays()} days</span>
+                </div>
+                <div className="schedule-stat-item">
+                  <span className="schedule-stat-label">Max Available:</span>
+                  <span className="schedule-stat-value">{maxAvailable} items</span>
+                </div>
+              </div>
+              
+              {!checkAvailabilityForSelectedRange() && (
+                <div className="schedule-warning-box">
+                  <span className="schedule-warning-icon">⚠️</span>
+                  Not enough items available for all selected dates
+                </div>
+              )}
+            </div>
+          )}
+
+          {!selectedBorrowDate && form.item && (
+            <div className="schedule-info-box">
+              <span className="schedule-info-icon">ℹ️</span>
+              Please select a borrow date first before choosing a return date
+            </div>
+          )}
+
+          <div className="schedule-step-actions">
+            <button 
+              className="schedule-next-button"
+              onClick={nextStep}
+              disabled={!form.item || !selectedBorrowDate || !selectedReturnDate}
+            >
+              Continue to Time Selection →
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Step 2: Time and Details
+  const renderStep2 = () => (
+    <div className="schedule-step-container">
+      <div className="schedule-step-header">
+        <div className="schedule-step-title">
+          <span className="schedule-step-number">2</span>
+          <h3>Time & Details</h3>
+        </div>
+        <div className="schedule-step-nav">
+          <span className="schedule-step-current">Step 2 of 3</span>
+        </div>
+      </div>
+
+      <div className="schedule-form-columns">
+        <div className="schedule-form-left">
+          {/* Selected Item and Dates Summary */}
+          <div className="schedule-summary-box">
+            <h4>📋 Current Selection</h4>
+            <div className="schedule-summary-content">
+              <div className="schedule-summary-item">
+                <strong>Item:</strong> {form.item}
+              </div>
+              <div className="schedule-summary-item">
+                <strong>Borrow Date:</strong> {formatDisplayDate(selectedBorrowDate)}
+              </div>
+              <div className="schedule-summary-item">
+                <strong>Return Date:</strong> {formatDisplayDate(selectedReturnDate)}
+              </div>
+              <div className="schedule-summary-item">
+                <strong>Duration:</strong> {getDurationDays()} days
+              </div>
+            </div>
+          </div>
+
+          {/* Time Selection */}
+          <div className="schedule-form-group">
+            <label className="schedule-label">
+              ⏰ Borrowing Time on {formatDisplayDate(selectedBorrowDate)} *
+            </label>
+            <div className="schedule-time-group">
+              <div className="schedule-time-input">
+                <label className="schedule-time-label">From</label>
+                <select
+                  value={form.timeFrom}
+                  onChange={(e) => setForm({ ...form, timeFrom: e.target.value })}
+                  className="schedule-select"
+                  required
+                >
+                  <option value="">Select start time</option>
+                  {availableTimes.map((time) => (
+                    <option key={`from-${time}`} value={time}>{time}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="schedule-time-input">
+                <label className="schedule-time-label">To</label>
+                <select
+                  value={form.timeTo}
+                  onChange={(e) => setForm({ ...form, timeTo: e.target.value })}
+                  className="schedule-select"
+                  required
+                >
+                  <option value="">Select end time</option>
+                  {availableTimes
+                    .filter(time => {
+                      if (!form.timeFrom) return true;
+                      const fromIndex = availableTimes.indexOf(form.timeFrom);
+                      const toIndex = availableTimes.indexOf(time);
+                      return toIndex > fromIndex;
+                    })
+                    .map((time) => (
+                      <option key={`to-${time}`} value={time}>{time}</option>
+                    ))
+                  }
+                </select>
+              </div>
+            </div>
+            <div className="schedule-info-box">
+              <span className="schedule-info-icon">ℹ️</span>
+              Office hours: 8:00 AM - 5:00 PM (excluding 12:00-1:00 PM lunch break)
+            </div>
+          </div>
+        </div>
+
+        <div className="schedule-form-right">
+          {/* Quantity and Reason */}
+          <div className="schedule-form-group">
+            <label className="schedule-label">📦 Quantity *</label>
+            <div className="schedule-quantity-container">
+              <input
+                type="number"
+                min="1"
+                max={maxAvailable}
+                value={form.quantity}
+                onChange={(e) => setForm({ ...form, quantity: Math.max(1, Math.min(maxAvailable, Number(e.target.value))) })}
+                className="schedule-input"
+                disabled={maxAvailable === 0}
+              />
+              <div className="schedule-quantity-info">
+                Maximum: <strong>{maxAvailable}</strong> items available
+              </div>
+            </div>
+          </div>
+
+          <div className="schedule-form-group">
+            <label className="schedule-label">📝 Purpose / Reason for Borrowing *</label>
+            <textarea 
+              value={form.reason} 
+              onChange={(e) => setForm({ ...form, reason: e.target.value })} 
+              className="schedule-textarea"
+              placeholder="Please describe what you'll use the item for (e.g., community event, personal project, etc.)..."
+              rows="4"
+              required
+            />
+          </div>
+
+          <div className="schedule-step-actions">
+            <button 
+              className="schedule-back-button"
+              onClick={prevStep}
+            >
+              ← Back to Dates
+            </button>
+            <button 
+              className="schedule-next-button"
+              onClick={nextStep}
+              disabled={!form.timeFrom || !form.timeTo || !form.reason.trim()}
+            >
+              Continue to Review →
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Step 3: Policy and Submission
+  const renderStep3 = () => (
+    <div className="schedule-step-container">
+      <div className="schedule-step-header">
+        <div className="schedule-step-title">
+          <span className="schedule-step-number">3</span>
+          <h3>Review & Submit</h3>
+        </div>
+        <div className="schedule-step-nav">
+          <span className="schedule-step-current">Step 3 of 3</span>
+        </div>
+      </div>
+
+      <div className="schedule-form-columns">
+        <div className="schedule-form-left">
+          {/* Final Summary */}
+          <div className="schedule-final-summary">
+            <h4>📋 Request Summary</h4>
+            <div className="schedule-summary-grid">
+              <div className="schedule-summary-item">
+                <strong>Item:</strong>
+                <span>{form.item}</span>
+              </div>
+              <div className="schedule-summary-item">
+                <strong>Borrow Date:</strong>
+                <span>{formatDisplayDate(selectedBorrowDate)}</span>
+              </div>
+              <div className="schedule-summary-item">
+                <strong>Return Date:</strong>
+                <span>{formatDisplayDate(selectedReturnDate)}</span>
+              </div>
+              <div className="schedule-summary-item">
+                <strong>Time:</strong>
+                <span>{form.timeFrom} - {form.timeTo}</span>
+              </div>
+              <div className="schedule-summary-item">
+                <strong>Quantity:</strong>
+                <span>{form.quantity}</span>
+              </div>
+              <div className="schedule-summary-item">
+                <strong>Purpose:</strong>
+                <span>{form.reason}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="schedule-form-right">
+          {/* Policy Agreement */}
+          <div className="schedule-policy-group">
+            <div className="schedule-policy-header">
+              <h4>📋 Borrowing Policy Agreement</h4>
+              <button 
+                type="button" 
+                className="schedule-policy-read-button"
+                onClick={() => setShowPolicy(!showPolicy)}
+              >
+                {showPolicy ? "▲ Hide Policy" : "▼ Read Policy First"}
+              </button>
+            </div>
+
+            {showPolicy && (
+              <div className="schedule-policy-content">
+                <div className="schedule-policy-section">
+                  <h5>📝 Terms and Conditions:</h5>
+                  <ul>
+                    <li>✅ I am fully responsible for the borrowed item during the borrowing period</li>
+                    <li>✅ I agree to return the item in the same condition as when borrowed</li>
+                    <li>✅ I will cover any repair costs for damages caused by misuse or negligence</li>
+                    <li>✅ I agree to replace the item if it gets lost or damaged beyond repair</li>
+                    <li>✅ I understand that late returns may affect my future borrowing privileges</li>
+                    <li>✅ I will use the item only for its intended purpose as stated in my reason</li>
+                    <li>✅ I agree to follow all safety guidelines and instructions for the item</li>
+                    <li>✅ I understand that the borrowing period cannot be extended without prior approval</li>
+                  </ul>
+                </div>
+                
+                <div className="schedule-policy-section">
+                  <h5>⚠️ Important Notes:</h5>
+                  <ul>
+                    <li>• Borrowing requests are subject to approval</li>
+                    <li>• You will be notified via email about the status of your request</li>
+                    <li>• Please inspect the item before leaving the premises</li>
+                    <li>• Report any issues immediately to the equipment manager</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+
+            <label className="schedule-policy-label">
+              <input
+                type="checkbox"
+                checked={form.acceptPolicy}
+                onChange={(e) => setForm({ ...form, acceptPolicy: e.target.checked })}
+                className="schedule-checkbox"
+                required
+                disabled={!showPolicy}
+              />
+              <span className="schedule-policy-text">
+                ✅ I have read and understood the borrowing policy above and agree to all terms and conditions.
+                {!showPolicy && (
+                  <span className="schedule-policy-note">
+                    {" "}(Please read the policy first)
+                  </span>
+                )}
+              </span>
+            </label>
+          </div>
+
+          <div className="schedule-step-actions">
+            <button 
+              className="schedule-back-button"
+              onClick={prevStep}
+            >
+              ← Back to Details
+            </button>
+            <button 
+              onClick={handleSubmit} 
+              className="schedule-submit-button"
+              disabled={loading || !form.acceptPolicy}
+            >
+              {loading ? (
+                <>
+                  <span className="schedule-loading-spinner"></span>
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <span className="schedule-submit-icon">📨</span>
+                  Submit Borrowing Request
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Success Screen
+  const renderSuccess = () => (
+    <div className="schedule-success-container">
+      <div className="schedule-success-content">
+        <div className="schedule-success-icon">✅</div>
+        <h2>Request Submitted Successfully!</h2>
+        <div className="schedule-success-message">
+          <p>Your borrowing request has been submitted and is now <strong>waiting for approval</strong>.</p>
+          
+          <div className="schedule-success-details">
+            <h4>Request Details:</h4>
+            <div className="schedule-summary-grid">
+              <div className="schedule-summary-item">
+                <strong>Item:</strong>
+                <span>{form.item}</span>
+              </div>
+              <div className="schedule-summary-item">
+                <strong>Period:</strong>
+                <span>
+                  {formatDisplayDate(selectedBorrowDate)} to {formatDisplayDate(selectedReturnDate)}
+                </span>
+              </div>
+              <div className="schedule-summary-item">
+                <strong>Time:</strong>
+                <span>{form.timeFrom} - {form.timeTo}</span>
+              </div>
+              <div className="schedule-summary-item">
+                <strong>Reference ID:</strong>
+                <span>#{Date.now().toString().slice(-6)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="schedule-next-steps">
+            <h4>📋 What happens next?</h4>
+            <ol>
+              <li>Your request will be reviewed by the equipment manager</li>
+              <li>You will receive an email notification once approved</li>
+              <li>Pick up the item on the scheduled date and time</li>
+              <li>Return the item in the same condition</li>
+            </ol>
+          </div>
+        </div>
+
+        <button 
+          className="schedule-new-request-button"
+          onClick={resetForm}
+        >
+          📅 Make Another Borrowing Request
         </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <section className="schedule-form-container">
+      <h2 className="schedule-form-title">📅 Schedule Item Borrowing</h2>
+
+      {submitted ? renderSuccess() : (
+        <>
+          {currentStep === 1 && renderStep1()}
+          {currentStep === 2 && renderStep2()}
+          {currentStep === 3 && renderStep3()}
+        </>
       )}
     </section>
   );
 }
-
-const styles = {
-  formSection: {
-    marginBottom: "30px",
-    maxWidth: "600px",
-    margin: "20px auto",
-    padding: "20px",
-    backgroundColor: "#fff",
-    borderRadius: "10px",
-    boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
-  },
-  formTitle: {
-    color: "#28D69F",
-    textAlign: "center",
-    marginBottom: "20px",
-  },
-  formGroup: {
-    marginBottom: "15px",
-  },
-  label: {
-    display: "block",
-    marginBottom: "5px",
-    fontWeight: "bold",
-  },
-  select: {
-    width: "100%",
-    padding: "8px 10px",
-    borderRadius: "6px",
-    border: "1px solid #ccc",
-  },
-  input: {
-    width: "100%",
-    padding: "8px 10px",
-    borderRadius: "6px",
-    border: "1px solid #ccc",
-  },
-  textarea: {
-    width: "100%",
-    padding: "8px 10px",
-    borderRadius: "6px",
-    border: "1px solid #ccc",
-    minHeight: "80px",
-    resize: "vertical",
-  },
-  timeGroup: {
-    display: "flex",
-    gap: "10px",
-    marginBottom: "15px",
-  },
-  timeInput: {
-    flex: 1,
-  },
-  selectedDates: {
-    marginTop: "5px",
-    fontSize: "14px",
-  },
-  policyGroup: {
-    marginBottom: "15px",
-    padding: "10px",
-    backgroundColor: "#FFF3CD",
-    border: "1px solid #FFEEBA",
-    borderRadius: "6px",
-    display: "flex",
-    alignItems: "flex-start",
-    gap: "8px",
-  },
-  checkbox: {
-    marginTop: "3px",
-  },
-  policyText: {
-    fontSize: "14px",
-    lineHeight: "1.4",
-  },
-  warning: {
-    fontSize: "12px",
-    color: "red",
-    marginTop: "5px",
-  },
-  submitButton: {
-    width: "100%",
-    padding: "10px",
-    backgroundColor: "#28D69F",
-    color: "#fff",
-    border: "none",
-    borderRadius: "6px",
-    cursor: "pointer",
-    fontWeight: "bold",
-    fontSize: "16px",
-  },
-};

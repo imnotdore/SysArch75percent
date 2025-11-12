@@ -12,6 +12,9 @@ const {
   staffCancelSchedule,
 } = require("../controllers/scheduleController");
 
+// ✅ IDAGDAG ITO - Import from staffController
+const { getAcceptedSchedules } = require("../controllers/staffController");
+
 // ------------------- Resident -------------------
 // Create a new schedule
 router.post("/", authMiddleware(["resident"]), createSchedule);
@@ -29,6 +32,9 @@ router.put("/:id/status", authMiddleware(["admin"]), updateScheduleStatus);
 // ------------------- Staff -------------------
 // Get all pending schedules (inbox)
 router.get("/pending", authMiddleware(["staff"]), getPendingSchedules);
+
+// ✅ FIXED - Make sure getAcceptedSchedules is properly imported
+router.get('/accepted-schedules', authMiddleware(["staff"]), getAcceptedSchedules);
 
 // Get pending schedules of a specific resident
 router.get("/resident/:id", authMiddleware(["staff"]), async (req, res) => {

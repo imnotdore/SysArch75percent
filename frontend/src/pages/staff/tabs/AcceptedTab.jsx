@@ -1,4 +1,6 @@
 import axios from "axios";
+import { useState } from "react";
+
 
 export default function AcceptedTab({
   acceptedFiles,
@@ -7,6 +9,8 @@ export default function AcceptedTab({
   fetchPrintedFiles
 }) {
   const token = localStorage.getItem("token");
+  const [sendingEmail, setSendingEmail] = useState(null);
+  
   const axiosAuth = axios.create({
     baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000",
     headers: { Authorization: `Bearer ${token}` },
@@ -21,6 +25,47 @@ export default function AcceptedTab({
       alert("Failed to notify resident.");
     }
   };
+
+  const handleEmailResident = async (schedule) => {
+  setSendingEmail(schedule.id);
+  
+  try {
+    const response = await axiosAuth.post(`/api/staff/schedules/${schedule.id}/email`, {
+      subject: "Your Borrowed Item is Ready for Pickup",
+      message: `Dear ${schedule.resident_username || 'Resident'},
+
+Your requested item "${schedule.item}" (Quantity: ${schedule.quantity}) is now ready for pickup.
+
+Borrowing Details:
+- Item: ${schedule.item}
+- Quantity: ${schedule.quantity}
+- Borrow Date: ${new Date(schedule.date_from).toLocaleDateString('en-PH')}
+- Return Date: ${new Date(schedule.date_to).toLocaleDateString('en-PH')}
+- Time: ${schedule.time_from} - ${schedule.time_to}
+
+Please visit the office during office hours to pick up your item.
+
+Thank you,
+Equipment Management System`
+    });
+
+    if (response.data.success) {
+      alert("✅ Resident notified successfully! Status updated to 'Ready'.");
+      
+      // Refresh the data
+      if (fetchPrintedFiles) {
+        fetchPrintedFiles();
+      }
+    }
+  } catch (err) {
+    console.error("Email error:", err);
+    alert(`❌ Failed to notify resident: ${err.response?.data?.error || 'Please try again.'}`);
+  } finally {
+    setSendingEmail(null);
+  }
+};
+
+
 
   return (
     <section className="accepted-list">
@@ -78,6 +123,7 @@ export default function AcceptedTab({
               <th>Approved By</th>
               <th>Date Approved</th>
               <th>Status</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -89,14 +135,21 @@ export default function AcceptedTab({
               return (
                 <tr
                   key={`accepted-schedule-${s.id}`}
-                  onClick={() => setSelectedAccepted({ ...s, type: "Schedule" })}
                   style={{ cursor: "pointer", opacity: isClaimed ? 0.5 : 1 }}
                 >
-                  <td>{s.resident_username || `Resident#${s.user_id}`}</td>
-                  <td>{s.item}</td>
-                  <td>{s.quantity}</td>
-                  <td>{s.staff_username}</td>
-                  <td>
+                  <td onClick={() => setSelectedAccepted({ ...s, type: "Schedule" })}>
+                    {s.resident_username || `Resident#${s.user_id}`}
+                  </td>
+                  <td onClick={() => setSelectedAccepted({ ...s, type: "Schedule" })}>
+                    {s.item}
+                  </td>
+                  <td onClick={() => setSelectedAccepted({ ...s, type: "Schedule" })}>
+                    {s.quantity}
+                  </td>
+                  <td onClick={() => setSelectedAccepted({ ...s, type: "Schedule" })}>
+                    {s.staff_username}
+                  </td>
+                  <td onClick={() => setSelectedAccepted({ ...s, type: "Schedule" })}>
                     {s.approved_at
                       ? s.approved_at.toLocaleString("en-PH", {
                           month: "2-digit",
@@ -107,8 +160,34 @@ export default function AcceptedTab({
                         })
                       : "N/A"}
                   </td>
+                  <td onClick={() => setSelectedAccepted({ ...s, type: "Schedule" })}>
+                    <span className={`status-badge ${status.replace(' ', '-')}`}>
+                      {status}
+                    </span>
+                  </td>
                   <td>
-                    <span className={`status-badge ${status}`}>{status}</span>
+                    {!isClaimed && !isNotified && (
+                      <button
+                        className="email-button"
+                        onClick={() => handleEmailResident(s)}
+                        disabled={sendingEmail === s.id}
+                        title="Email resident that item is ready for pickup"
+                      >
+                        {sendingEmail === s.id ? (
+                          <>
+                            <span className="loading-spinner"></span>
+                            Sending...
+                          </>
+                        ) : (
+                          <>
+                            📧 Email Resident
+                          </>
+                        )}
+                      </button>
+                    )}
+                    {isNotified && (
+                      <span className="email-sent-badge">✅ Emailed</span>
+                    )}
                   </td>
                 </tr>
               );

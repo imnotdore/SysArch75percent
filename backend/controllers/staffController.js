@@ -31,6 +31,26 @@ const getStaffInbox = async (req, res) => {
   }
 };
 
+
+
+// ---------------- Get Accepted Schedules ----------------
+const getAcceptedSchedules = async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT s.*, r.username AS resident_username, st.username AS staff_username
+      FROM schedules s
+      JOIN residents r ON s.user_id = r.id
+      LEFT JOIN staff st ON s.approved_by = st.id
+      WHERE s.status = 'Approved'
+      ORDER BY s.approved_at DESC
+    `);
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching accepted schedules:", err);
+    res.status(500).json({ error: "Failed to fetch accepted schedules" });
+  }
+};
+
 // ---------------- Release Schedule ----------------
 const releaseSchedule = async (req, res) => {
   const { id } = req.params;
@@ -40,12 +60,16 @@ const releaseSchedule = async (req, res) => {
   }
 
   try {
-    await db.query(
+    const [result] = await db.query(
       `UPDATE schedules
        SET status = 'Released', released_at = NOW(), released_by = ?
-       WHERE id = ?`,
+       WHERE id = ? AND status = 'Approved'`,
       [req.user.id, id]
     );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Schedule not found or not approved" });
+    }
 
     res.json({ message: "Schedule released successfully." });
   } catch (err) {
@@ -57,18 +81,28 @@ const releaseSchedule = async (req, res) => {
 // ---------------- Return Schedule ----------------
 const returnSchedule = async (req, res) => {
   const { id } = req.params;
+  const { condition, damage_description, damage_cost } = req.body;
 
   if (!req.user || req.user.role !== "staff") {
     return res.status(403).json({ error: "Access denied" });
   }
 
   try {
-    await db.query(
+    const [result] = await db.query(
       `UPDATE schedules
-       SET status = 'Returned', returned_at = NOW(), approved_by = ?
-       WHERE id = ?`,
-      [req.user.id, id]
+       SET status = 'Returned', 
+           returned_at = NOW(), 
+           returned_by = ?,
+           return_condition = ?,
+           damage_description = ?,
+           damage_cost = ?
+       WHERE id = ? AND status = 'Released'`,
+      [req.user.id, condition, damage_description, damage_cost || null, id]
     );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Schedule not found or not released" });
+    }
 
     res.json({ message: "Schedule marked as returned." });
   } catch (err) {
@@ -77,20 +111,35 @@ const returnSchedule = async (req, res) => {
   }
 };
 
+// ---------------- Get Released Schedules ----------------
+const getReleasedSchedules = async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT s.*, r.username AS resident_username, st.username AS released_by_username
+      FROM schedules s
+      JOIN residents r ON s.user_id = r.id
+      LEFT JOIN staff st ON s.released_by = st.id
+      WHERE s.status = 'Released'
+      ORDER BY s.released_at DESC
+    `);
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching released schedules:", err);
+    res.status(500).json({ error: "Failed to fetch released schedules" });
+  }
+};
+
 // ---------------- Get Returned Schedules ----------------
 const getReturnedSchedules = async (req, res) => {
   try {
     const [rows] = await db.query(`
-      SELECT s.id, s.user_id, r.username AS resident_username, s.item, s.quantity,
-             s.date_from, s.date_to, s.time_from, s.time_to, s.status,
-             s.returned_at, st.username AS staff_username
+      SELECT s.*, r.username AS resident_username, st.username AS returned_by_username
       FROM schedules s
       JOIN residents r ON s.user_id = r.id
-      LEFT JOIN staff st ON s.approved_by = st.id
+      LEFT JOIN staff st ON s.returned_by = st.id
       WHERE s.status = 'Returned'
       ORDER BY s.returned_at DESC
     `);
-
     res.json(rows);
   } catch (err) {
     console.error("Error fetching returned schedules:", err);
@@ -98,26 +147,6 @@ const getReturnedSchedules = async (req, res) => {
   }
 };
 
-// ---------------- Get Released Schedules ----------------
-const getReleasedSchedules = async (req, res) => {
-  try {
-    const [rows] = await db.query(`
-      SELECT s.id, s.user_id, r.username AS resident_username, s.item, s.quantity,
-             s.date_from, s.date_to, s.time_from, s.time_to, s.status,
-             s.released_at, st.username AS released_by_username
-      FROM schedules s
-      JOIN residents r ON s.user_id = r.id
-      LEFT JOIN staff st ON s.released_by = st.id
-      WHERE s.status = 'Released'
-      ORDER BY s.released_at DESC
-    `);
-
-    res.json(rows);
-  } catch (err) {
-    console.error("Error fetching released schedules:", err);
-    res.status(500).json({ error: "Failed to fetch released schedules" });
-  }
-};
 
 // ---------------- Mark File as Printed ----------------
 const markFileAsPrinted = async (req, res) => {
@@ -267,6 +296,7 @@ module.exports = {
   getStaffInbox,
   releaseSchedule,
   returnSchedule,
+  getAcceptedSchedules, 
   getReleasedSchedules,
   getReturnedSchedules,
   markFileAsPrinted,

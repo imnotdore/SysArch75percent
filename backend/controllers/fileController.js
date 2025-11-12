@@ -2,6 +2,50 @@ const db = require("../config/db");
 
 // ---------------- Resident Routes ---------------- //
 
+
+// Cancel/delete a file request (resident only)
+exports.cancelFileRequest = async (req, res) => {
+  try {
+    const fileId = req.params.id;
+    const residentId = req.user.id;
+
+    // Check if file exists and belongs to the resident
+    const [fileRows] = await db.query(
+      `SELECT * FROM resident_requests 
+       WHERE id = ? AND resident_id = ?`,
+      [fileId, residentId]
+    );
+
+    if (fileRows.length === 0) {
+      return res.status(404).json({ error: "File request not found" });
+    }
+
+    const file = fileRows[0];
+
+    // Check if file is already approved (can't cancel approved requests)
+    if (file.status === 'approved') {
+      return res.status(400).json({ 
+        error: "Cannot cancel approved request. Please contact staff." 
+      });
+    }
+
+    // Delete the file request
+    await db.query(
+      `DELETE FROM resident_requests 
+       WHERE id = ? AND resident_id = ?`,
+      [fileId, residentId]
+    );
+
+    res.json({ 
+      message: "Request cancelled successfully",
+      cancelledRequest: file
+    });
+  } catch (err) {
+    console.error("Cancel error:", err);
+    res.status(500).json({ error: "Failed to cancel request" });
+  }
+};
+
 // Get total pages for a specific date (query param: ?date=YYYY-MM-DD)
 exports.getDailyTotal = async (req, res) => {
   const { date } = req.query;

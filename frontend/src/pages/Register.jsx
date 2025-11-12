@@ -18,6 +18,7 @@ function Register() {
   const [form, setForm] = useState({
     username: "",
     password: "",
+    email: "",
     full_name: "",
     age: "",
     birthday: "",
@@ -78,11 +79,14 @@ function Register() {
     if (errors[name]) setErrors({ ...errors, [name]: "" });
   };
 
+ // Add email validation
   const validateForm = () => {
     const newErrors = {};
 
     // Common fields
     if (!form.username.trim()) newErrors.username = "Username is required";
+    if (!form.email.trim()) newErrors.email = "Email is required";
+    else if (!/\S+@\S+\.\S+/.test(form.email)) newErrors.email = "Email is invalid";
     if (!form.password) newErrors.password = "Password is required";
     else if (form.password.length < 6)
       newErrors.password = "Password must be at least 6 characters";
@@ -143,6 +147,7 @@ function Register() {
       setForm({
         username: "",
         password: "",
+        email: "",
         full_name: "",
         age: "",
         birthday: "",
@@ -314,7 +319,17 @@ function Register() {
             style={inputStyle(errors.username)}
           />
           {errors.username && <p style={{ color: "#1b0402ff", fontSize: "12px" }}>{errors.username}</p>}
-
+ {/* Add Email Field */}
+      <input
+        type="email"
+        name="email"
+        placeholder="Email Address"
+        value={form.email}
+        onChange={handleChange}
+        style={inputStyle(errors.email)}
+      />
+      {errors.email && <p style={{ color: "#e74c3c", fontSize: "12px" }}>{errors.email}</p>}
+      
           <div style={{ position: "relative", marginBottom: "15px" }}>
             <input
               type={showPassword ? "text" : "password"}

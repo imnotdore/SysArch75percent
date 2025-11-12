@@ -6,7 +6,6 @@ import Sidebar from "../components/StaffSidebar";
 import Header from "../components/StaffHeader";
 import Footer from "../components/StaffFooter";
 
-
 // Import tabs
 import InboxTab from "./InboxTab";
 import AcceptedTab from "./AcceptedTab";
@@ -39,49 +38,71 @@ export default function StaffDashboard() {
   const navigate = useNavigate();
   const sidebarRef = useRef(null);
   
-  // State management - similar to admin
-  const [activeTab, setActiveTab] = useState("dashboard");
+  // State management - get from localStorage or default to "inbox"
+  const [activeTab, setActiveTab] = useState(() => {
+    const savedTab = localStorage.getItem("staffActiveTab");
+    return savedTab || "inbox";
+  });
+  
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // Custom hooks
   const { isMobile } = useResponsive(sidebarRef);
   const { username, staffId, token, handleLogout } = useStaffAuth(navigate);
   
-  // Staff data hook
-  const {
-    // State
-    residents,
-    selectedResident,
-    selectedResidentRequests,
-    selectedFile,
-    selectedSchedule,
-    selectedAccepted,
-    selectedPendingAccount,
-    acceptedFiles,
-    acceptedSchedules,
-    returnedSchedules,
-    releasedSchedules,
-    printedFiles,
-    pendingAccounts,
-    searchTerm,
-    modalLoading,
-    
-    // Setters
-    setSelectedResident,
-    setSelectedFile,
-    setSelectedSchedule,
-    setSelectedAccepted,
-    setSelectedPendingAccount,
-    setSearchTerm,
-    setModalLoading,
-    
-    // Functions
-    fetchResidentRequests,
-    handleFileStatusChange,
-    handleScheduleStatusChange,
-    handleAccountAction,
-    fetchPrintedFiles
-  } = useStaffData(staffId, activeTab);
+
+const {
+  // State
+  residents,
+  selectedResident,
+  selectedResidentRequests,
+  selectedFile,
+  selectedSchedule,
+  selectedAccepted,
+  selectedPendingAccount,
+  acceptedFiles,
+  acceptedSchedules,
+  returnedSchedules,
+  releasedSchedules,
+  printedFiles,
+  pendingAccounts,
+  searchTerm,
+  modalLoading,
+  
+  // Setters
+  setSelectedResident,
+  setSelectedFile,
+  setSelectedSchedule,
+  setSelectedAccepted,
+  setSelectedPendingAccount,
+  setSearchTerm,
+  setModalLoading,
+  
+  // Functions
+  fetchResidentRequests,
+  handleFileStatusChange,
+  handleScheduleStatusChange,
+  handleAccountAction,
+  fetchPrintedFiles,
+  releaseSchedule, 
+  returnSchedule   
+} = useStaffData(staffId, activeTab);
+
+  // Save active tab to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem("staffActiveTab", activeTab);
+  }, [activeTab]);
+
+  // Calculate badge counts for sidebar - AUTOMATICALLY UPDATED
+  const badgeCounts = {
+    inbox: residents?.length || 0,
+    accepted: acceptedFiles?.length || 0,
+    scheduled: acceptedSchedules?.length || 0,
+    printed: printedFiles?.length || 0,
+    released: releasedSchedules?.length || 0,
+    returned: returnedSchedules?.length || 0,
+    accounts: pendingAccounts?.length || 0
+  };
 
   // Sidebar click outside - same as admin
   useEffect(() => {
@@ -113,6 +134,12 @@ export default function StaffDashboard() {
     document.addEventListener("keydown", handleEsc);
     return () => document.removeEventListener("keydown", handleEsc);
   }, []);
+
+  // Custom setActiveTab function to handle tab changes
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    setSidebarOpen(false);
+  };
 
   // Render active tab content
   const renderActiveTab = () => {
@@ -154,13 +181,13 @@ export default function StaffDashboard() {
         );
       
       case "scheduled":
-        return <ScheduledTab acceptedSchedules={acceptedSchedules} />;
+        return <ScheduledTab acceptedSchedules={acceptedSchedules}  onReleaseSchedule={releaseSchedule}/>;
       
       case "printed":
         return <PrintedTab printedFiles={printedFiles} />;
       
       case "released":
-        return <ReleasedTab releasedSchedules={releasedSchedules} />;
+        return <ReleasedTab releasedSchedules={releasedSchedules} onReturnSchedule={returnSchedule}  />;
       
       case "returned":
         return <ReturnedTab returnedSchedules={returnedSchedules} />;
@@ -178,7 +205,6 @@ export default function StaffDashboard() {
         return (
           <div className="dashboard-welcome">
             <h2>Welcome, {username}!</h2>
-            
           </div>
         );
     }
@@ -197,10 +223,11 @@ export default function StaffDashboard() {
         sidebarRef={sidebarRef}
         sidebarOpen={sidebarOpen}
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleTabChange} // Use the custom function
         setSidebarOpen={setSidebarOpen}
         handleLogout={handleLogout}
         username={username}
+        badgeCounts={badgeCounts} // Pass badge counts
       />
 
       {/* Main Content */}
@@ -246,8 +273,6 @@ export default function StaffDashboard() {
             <AcceptedModal
               selectedAccepted={selectedAccepted}
               setSelectedAccepted={setSelectedAccepted}
-              acceptedFiles={acceptedFiles}
-              acceptedSchedules={acceptedSchedules}
               fetchPrintedFiles={fetchPrintedFiles}
             />
           )}

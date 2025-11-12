@@ -1,12 +1,9 @@
+// AcceptedModal.jsx - SIMPLIFIED VERSION
 import axios from "axios";
 
 export default function AcceptedModal({
   selectedAccepted,
   setSelectedAccepted,
-  acceptedFiles,
-  setAcceptedFiles,
-  acceptedSchedules,
-  setAcceptedSchedules,
   fetchPrintedFiles
 }) {
   const token = localStorage.getItem("token");
@@ -23,16 +20,9 @@ export default function AcceptedModal({
         `/api/staff/print/${selectedAccepted.type.toLowerCase()}/${selectedAccepted.id}`
       );
 
-      // Immediately update printed files
+      // Refresh the data
       fetchPrintedFiles();
-
-      // Remove from accepted requests list
-      if (selectedAccepted.type === "File") {
-        setAcceptedFiles((prev) => prev.filter((f) => f.id !== selectedAccepted.id));
-      } else {
-        setAcceptedSchedules((prev) => prev.filter((s) => s.id !== selectedAccepted.id));
-      }
-
+      
       setSelectedAccepted(null);
       alert(`${selectedAccepted.type} marked as printed!`);
     } catch (err) {

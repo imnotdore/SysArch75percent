@@ -40,6 +40,8 @@ const upload = multer({
 
 // ---------------- Resident Routes ---------------- //
 
+router.delete("/:id", authMiddleware(), fileController.cancelFileRequest);
+
 // Get files uploaded by the logged-in resident
 router.get("/", authMiddleware(), fileController.getResidentFiles);
 

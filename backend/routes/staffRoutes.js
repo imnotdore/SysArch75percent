@@ -49,6 +49,89 @@ router.get("/residents/pending", async (req, res) => {
   }
 });
 
+// ✅ ADD THIS EMAIL NOTIFICATION ROUTE
+// ✅ ADD THIS EMAIL ROUTE - MISSING FROM YOUR CODE
+router.post("/schedules/:id/email", authMiddleware(["staff"]), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { subject, message } = req.body;
+    const staffId = req.user.id;
+
+    console.log(`📧 Sending email for schedule ${id}`);
+
+    // Get schedule details
+    const [schedule] = await db.query(`
+      SELECT s.*, r.username as resident_username, r.full_name as resident_name, r.email,
+             st.username as staff_username, st.name as staff_name
+      FROM schedules s
+      LEFT JOIN residents r ON s.user_id = r.id
+      LEFT JOIN staff st ON s.approved_by = st.id
+      WHERE s.id = ?
+    `, [id]);
+
+    if (!schedule || schedule.length === 0) {
+      return res.status(404).json({ error: 'Schedule not found' });
+    }
+
+    const scheduleData = schedule[0];
+
+    // Mock email sending
+    console.log('📧 Email would be sent:');
+    console.log('To:', scheduleData.email || 'No email found');
+    console.log('Resident:', scheduleData.resident_username);
+    console.log('Item:', scheduleData.item);
+    console.log('Subject:', subject);
+    console.log('Message:', message);
+
+    // Update schedule status to "Ready"
+    await db.query(
+      'UPDATE schedules SET status = ?, updated_at = NOW() WHERE id = ?',
+      ['Ready', id]
+    );
+
+    res.json({ 
+      success: true, 
+      message: 'Resident notified successfully - status updated to Ready',
+      details: {
+        resident: scheduleData.resident_username,
+        item: scheduleData.item,
+        email: scheduleData.email
+      }
+    });
+
+  } catch (error) {
+    console.error('Email notification error:', error);
+    res.status(500).json({ 
+      error: 'Failed to notify resident',
+      details: error.message 
+    });
+  }
+});
+
+// ✅ FIXED NOTIFY ROUTE
+router.put("/schedules/:id/notify", authMiddleware(["staff"]), async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const [result] = await db.query(
+      'UPDATE schedules SET status = "Ready", updated_at = NOW() WHERE id = ?',
+      [id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Schedule not found" });
+    }
+
+    res.json({ 
+      success: true, 
+      message: "Schedule status updated to Ready" 
+    });
+  } catch (err) {
+    console.error("Notify error:", err);
+    res.status(500).json({ error: "Failed to update schedule status" });
+  }
+});
+
 // ---------------- Files ----------------
 // Get files of a specific resident
 router.get("/files/resident/:residentId", fileController.getFilesByResident);

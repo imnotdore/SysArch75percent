@@ -127,24 +127,32 @@ body {
   color: #ffffff;
 }
 
-.logout-btn {
-  background: #ff0000;
+/* FIXED: Logout button styles - corrected class names and alignment */
+.sidebar-footer {
+  padding: 20px;
+  border-top: 1px solid #334155;
+  margin-top: auto;
+}
+
+.log-btn {
+  background: #dc2626;
   color: white;
   font-weight: 600;
-  padding: 14px 20px;
+  padding: 12px 20px;
   border: none;
   border-radius: 8px;
   cursor: pointer;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 12px;
   transition: all 0.2s ease;
   font-size: 14px;
-  margin: auto;
-  justify-content: center;
+  width: 100%;
+  min-height: 44px;
 }
 
-.logout-btn:hover {
+.log-btn:hover {
   background: #b91c1c;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
@@ -197,7 +205,21 @@ body {
   }
   
 }
-
+/* Badge styles for notifications - add this to your existing CSS */
+.menu-badge {
+  background: #ef4444;
+  color: white;
+  border-radius: 50%;
+  padding: 2px 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  min-width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+}
 /* Tablet */
 @media (max-width: 900px) {
   .staff-sidebar {
@@ -787,5 +809,328 @@ body {
 @media (max-width: 768px) {
   .staff-search {
     font-size: 16px; /* Prevents zoom on iOS */
+  }
+}
+
+/* InboxTab.css */
+.search-bar {
+  margin-bottom: 24px;
+}
+
+.search-input-wrapper {
+  position: relative;
+  max-width: 400px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6b7280;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px 16px 12px 40px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.total-count {
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.resident-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.resident-item {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  gap: 12px;
+}
+
+.resident-item:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.resident-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+.resident-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.resident-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.resident-name strong {
+  color: #1f2937;
+  font-size: 14px;
+}
+
+.request-badge {
+  background: #ef4444;
+  color: white;
+  border-radius: 10px;
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  min-width: 18px;
+  text-align: center;
+}
+
+.resident-meta {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.resident-time {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+/* Requests Section */
+.requests-header {
+  margin-bottom: 24px;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  color: #3b82f6;
+  cursor: pointer;
+  padding: 8px 0;
+  margin-bottom: 16px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.back-btn:hover {
+  color: #2563eb;
+}
+
+.resident-info h2 {
+  color: #1f2937;
+  margin-bottom: 8px;
+}
+
+.request-summary {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.requests-section {
+  margin-bottom: 32px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #1f2937;
+  margin-bottom: 16px;
+  font-size: 18px;
+}
+
+.section-badge {
+  background: #6b7280;
+  color: white;
+  border-radius: 10px;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.requests-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.request-card {
+  display: flex;
+  align-items: flex-start;
+  padding: 16px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  gap: 12px;
+}
+
+.request-card:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.request-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+.file-card .request-icon {
+  color: #e37400;
+  background: #fef3e2;
+}
+
+.schedule-card .request-icon {
+  color: #1a73e8;
+  background: #e8f0fe;
+}
+
+.request-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.request-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.request-title {
+  color: #1f2937;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+  flex: 1;
+}
+
+.request-time {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+.request-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail-item {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.detail-item strong {
+  color: #374151;
+}
+
+.request-status {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.request-status.pending {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.request-status.accepted {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.request-status.claimed {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6b7280;
+}
+
+.empty-state p {
+  margin-top: 12px;
+  font-style: italic;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .request-header {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .request-time {
+    align-self: flex-end;
+  }
+  
+  .resident-item {
+    padding: 12px;
+  }
+  
+  .request-card {
+    padding: 12px;
   }
 }

@@ -5,63 +5,65 @@ export default function StaffSidebar({
   sidebarRef, 
   sidebarOpen, 
   activeTab, 
-  setActiveTab, // This now receives our custom function
+  setActiveTab, 
   setSidebarOpen,
   handleLogout,
   username,
-  badgeCounts = {}
+  badgeCounts // Add this prop for badge counts
 }) {
   const menuItems = [
     { 
       id: "inbox", 
       label: "Inbox", 
       icon: <FaInbox />, 
-      badge: badgeCounts.inbox || 0 
+      badge: badgeCounts?.inbox || 0 
     },
     { 
       id: "accepted", 
       label: "Accepted", 
       icon: <FaCheckCircle />,
-      badge: badgeCounts.accepted || 0
+      badge: badgeCounts?.accepted || 0
     },
     { 
       id: "scheduled", 
       label: "Scheduled", 
       icon: <FaCalendarAlt />,
-      badge: badgeCounts.scheduled || 0
+      badge: badgeCounts?.scheduled || 0
     },
     { 
       id: "printed", 
       label: "Printed", 
       icon: <FaPrint />,
-      badge: badgeCounts.printed || 0
+      badge: badgeCounts?.printed || 0
     },
     { 
       id: "released", 
       label: "Released", 
       icon: <FaBoxOpen />,
-      badge: badgeCounts.released || 0
+      badge: badgeCounts?.released || 0
     },
     { 
       id: "returned", 
       label: "Returned", 
       icon: <FaUndo />,
-      badge: badgeCounts.returned || 0
+      badge: badgeCounts?.returned || 0
     },
     { 
       id: "accounts", 
       label: "Accounts", 
       icon: <FaUsers />,
-      badge: badgeCounts.accounts || 0
+      badge: badgeCounts?.accounts || 0
     },
   ];
 
   return (
     <>
-      <aside ref={sidebarRef} className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+      <aside ref={sidebarRef} className={`staff-sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
           <h2>Staff Panel</h2>
-          <FaTimes className="close-icon" onClick={() => setSidebarOpen(false)} />
+          <button className="close-icon" onClick={() => setSidebarOpen(false)}>
+            <FaTimes />
+          </button>
         </div>
 
         <nav className="sidebar-nav">
@@ -69,7 +71,10 @@ export default function StaffSidebar({
             <button
               key={item.id}
               className={activeTab === item.id ? 'active' : ''}
-              onClick={() => setActiveTab(item.id)} // Just call the function directly
+              onClick={() => {
+                setActiveTab(item.id);
+                setSidebarOpen(false);
+              }}
             >
               {item.icon}
               <span>{item.label}</span>
@@ -79,6 +84,9 @@ export default function StaffSidebar({
         </nav>
 
         <div className="sidebar-footer">
+          <div className="user-info" style={{padding: '10px 0', color: '#cbd5e1', fontSize: '14px'}}>
+            Logged in as: <strong>{username}</strong>
+          </div>
           <button className="log-btn" onClick={handleLogout}>
             <FaSignOutAlt />
             <span>Logout</span>

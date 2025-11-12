@@ -11,9 +11,9 @@ export default function useStaffData(staffId, activeTab) {
   const [selectedPendingAccount, setSelectedPendingAccount] = useState(null);
   const [acceptedFiles, setAcceptedFiles] = useState([]);
   const [acceptedSchedules, setAcceptedSchedules] = useState([]);
+  const [printedFiles, setPrintedFiles] = useState([]);
   const [returnedSchedules, setReturnedSchedules] = useState([]);
   const [releasedSchedules, setReleasedSchedules] = useState([]);
-  const [printedFiles, setPrintedFiles] = useState([]);
   const [pendingAccounts, setPendingAccounts] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [modalLoading, setModalLoading] = useState(false);
@@ -26,47 +26,18 @@ export default function useStaffData(staffId, activeTab) {
     headers: { Authorization: `Bearer ${token}` },
   });
 
-  // Fetch printed files
-  const fetchPrintedFiles = async () => {
-    try {
-      const res = await axios.get(`${baseUrl}/api/staff/printed-files`, {
-        headers: { Authorization: `Bearer ${token}` },
-        withCredentials: true,
-      });
-      setPrintedFiles(res.data);
-    } catch (err) {
-      console.error("Error fetching printed files:", err.response?.data || err);
-    }
-  };
-
-  // Fetch pending accounts
-  useEffect(() => {
-    if (activeTab === "accounts") {
-      const fetchPendingAccounts = async () => {
-        try {
-          const res = await axiosAuth.get("/api/staff/residents/accounts");
-          setPendingAccounts(res.data.filter(acc => acc.status === "pending"));
-        } catch (err) {
-          console.error("Error fetching accounts:", err.response?.data || err.message);
-        }
-      };
-      fetchPendingAccounts();
-    }
-  }, [activeTab]);
+  // ==================== FETCH FUNCTIONS ====================
 
   // Fetch residents with pending requests
-  useEffect(() => {
-    const fetchResidents = async () => {
-      if (!token) return;
-      try {
-        const res = await axiosAuth.get("/api/staff/residents/pending");
-        setResidents(res.data);
-      } catch (err) {
-        console.error("Error fetching residents:", err.response?.data || err.message);
-      }
-    };
-    fetchResidents();
-  }, [token]);
+  const fetchResidents = async () => {
+    if (!token) return;
+    try {
+      const res = await axiosAuth.get("/api/staff/residents/pending");
+      setResidents(res.data);
+    } catch (err) {
+      console.error("Error fetching residents:", err.response?.data || err.message);
+    }
+  };
 
   // Fetch accepted requests
   const fetchAcceptedRequests = async () => {
@@ -108,18 +79,9 @@ export default function useStaffData(staffId, activeTab) {
   const fetchReturnedSchedules = async () => {
     try {
       const res = await axiosAuth.get("/api/staff/returned-schedules");
-      setReturnedSchedules(
-        Array.isArray(res.data)
-          ? res.data.map((s, idx) => ({
-              ...s,
-              id: s.id ?? idx,
-              returned_at: s.returned_at ? new Date(s.returned_at) : null,
-              staff_username: s.staff_username || `Staff#${s.approved_by}`,
-            }))
-          : []
-      );
+      setReturnedSchedules(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      console.error("Error fetching returned schedules:", err.response?.data || err.message);
+      console.error("Error fetching returned schedules:", err);
       setReturnedSchedules([]);
     }
   };
@@ -128,29 +90,25 @@ export default function useStaffData(staffId, activeTab) {
   const fetchReleasedSchedules = async () => {
     try {
       const res = await axiosAuth.get("/api/staff/released-schedules");
-      setReleasedSchedules(
-        Array.isArray(res.data)
-          ? res.data.map((s, idx) => ({
-              ...s,
-              id: s.id ?? idx,
-              released_at: s.released_at ? new Date(s.released_at) : null,
-              released_by_username: s.released_by_username || `Staff#${s.released_by}`,
-            }))
-          : []
-      );
+      setReleasedSchedules(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      console.error("Error fetching released schedules:", err.response?.data || err.message);
+      console.error("Error fetching released schedules:", err);
       setReleasedSchedules([]);
     }
   };
 
-  // Auto-fetch data when tab changes
-  useEffect(() => {
-    if (["accepted", "scheduled", "released"].includes(activeTab)) fetchAcceptedRequests();
-    if (activeTab === "returned") fetchReturnedSchedules();
-    if (activeTab === "released") fetchReleasedSchedules();
-    if (activeTab === "printed") fetchPrintedFiles();
-  }, [activeTab]);
+  // Fetch printed files
+  const fetchPrintedFiles = async () => {
+    try {
+      const res = await axios.get(`${baseUrl}/api/staff/printed-files`, {
+        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true,
+      });
+      setPrintedFiles(res.data);
+    } catch (err) {
+      console.error("Error fetching printed files:", err.response?.data || err);
+    }
+  };
 
   // Fetch resident requests
   const fetchResidentRequests = async (residentId) => {
@@ -174,15 +132,33 @@ export default function useStaffData(staffId, activeTab) {
     }
   };
 
-  // Update inbox when requests are processed
-  const updateInboxIfNoPending = (residentId, updatedFiles, updatedSchedules) => {
-    const hasPending = updatedFiles.length > 0 || updatedSchedules.length > 0;
-    if (!hasPending) {
-      setResidents((prev) => prev.filter((r) => r.id !== residentId));
-      setSelectedResident(null);
-      setSelectedResidentRequests({ files: [], schedules: [] });
-    } else {
-      setSelectedResidentRequests({ files: updatedFiles, schedules: updatedSchedules });
+  // ==================== ACTION FUNCTIONS ====================
+
+  // Release schedule (Go to Pickup)
+  const releaseSchedule = async (scheduleId) => {
+    try {
+      await axiosAuth.put(`/api/staff/schedules/${scheduleId}/release`);
+      fetchAcceptedRequests(); // Refresh the lists
+      fetchReleasedSchedules();
+      return true;
+    } catch (err) {
+      console.error("Error releasing schedule:", err);
+      alert(err.response?.data?.error || "Failed to release schedule");
+      return false;
+    }
+  };
+
+  // Return schedule
+  const returnSchedule = async (scheduleId, returnData) => {
+    try {
+      await axiosAuth.put(`/api/staff/schedules/${scheduleId}/return`, returnData);
+      fetchReleasedSchedules(); // Refresh the lists
+      fetchReturnedSchedules();
+      return true;
+    } catch (err) {
+      console.error("Error returning schedule:", err);
+      alert(err.response?.data?.error || "Failed to return schedule");
+      return false;
     }
   };
 
@@ -235,6 +211,68 @@ export default function useStaffData(staffId, activeTab) {
     }
   };
 
+  // ==================== HELPER FUNCTIONS ====================
+
+  // Update inbox when requests are processed
+  const updateInboxIfNoPending = (residentId, updatedFiles, updatedSchedules) => {
+    const hasPending = updatedFiles.length > 0 || updatedSchedules.length > 0;
+    if (!hasPending) {
+      setResidents((prev) => prev.filter((r) => r.id !== residentId));
+      setSelectedResident(null);
+      setSelectedResidentRequests({ files: [], schedules: [] });
+    } else {
+      setSelectedResidentRequests({ files: updatedFiles, schedules: updatedSchedules });
+    }
+  };
+
+  // ==================== USE EFFECTS ====================
+
+  // Fetch residents on component mount
+  useEffect(() => {
+    fetchResidents();
+  }, [token]);
+
+  // Fetch pending accounts when accounts tab is active
+  useEffect(() => {
+    if (activeTab === "accounts") {
+      const fetchPendingAccounts = async () => {
+        try {
+          const res = await axiosAuth.get("/api/staff/residents/accounts");
+          setPendingAccounts(res.data.filter(acc => acc.status === "pending"));
+        } catch (err) {
+          console.error("Error fetching accounts:", err.response?.data || err.message);
+        }
+      };
+      fetchPendingAccounts();
+    }
+  }, [activeTab]);
+
+  // Auto-fetch data when tab changes
+  useEffect(() => {
+    switch (activeTab) {
+      case "inbox":
+        fetchResidents();
+        break;
+      case "accepted":
+      case "scheduled":
+        fetchAcceptedRequests();
+        break;
+      case "released":
+        fetchReleasedSchedules();
+        break;
+      case "returned":
+        fetchReturnedSchedules();
+        break;
+      case "printed":
+        fetchPrintedFiles();
+        break;
+      default:
+        break;
+    }
+  }, [activeTab]);
+
+  // ==================== RETURN OBJECT ====================
+
   return {
     // State
     residents,
@@ -268,11 +306,12 @@ export default function useStaffData(staffId, activeTab) {
     handleScheduleStatusChange,
     handleAccountAction,
     fetchPrintedFiles,
+    releaseSchedule,
+    returnSchedule,
     
     // For main component to set active tab
     setActiveTab: (tab) => {
       // You can add any tab-specific logic here if needed
-      // For now, just pass through to useState setter
     }
   };
 }

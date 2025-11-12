@@ -5,24 +5,37 @@ const db = require("../config/db");
 // Create a schedule (resident)
 const createSchedule = async (req, res) => {
   try {
+    console.log("=== SCHEDULE CREATION DEBUG ===");
+    console.log("Received schedule creation request:", req.body);
+    console.log("User ID:", req.user.id);
+    
     const userId = req.user.id;
     const { date_from, date_to, time_from, time_to, item, quantity, reason } = req.body;
 
     // Validate required fields
     if (!date_from || !date_to || !time_from || !time_to || !item) {
+      console.log("Missing fields:", { date_from, date_to, time_from, time_to, item });
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    // Check current bookings for the item in the selected date range
+    console.log("Checking availability for:", { item, date_from, date_to, requested_quantity: quantity || 1 });
+
+    // FIXED: Check current bookings for the item in the selected date range
     const [existing] = await db.query(
-      `SELECT SUM(quantity) AS total_booked
+      `SELECT COALESCE(SUM(quantity), 0) AS total_booked
        FROM schedules
-       WHERE item = ? AND status != 'Cancelled'
-         AND NOT (date_to < ? OR date_from > ?)`,
-      [item, date_from, date_to]
+       WHERE item = ? 
+       AND status IN ('Pending', 'Approved')
+       AND (
+         (date_from <= ? AND date_to >= ?) OR
+         (date_from BETWEEN ? AND ?) OR
+         (date_to BETWEEN ? AND ?)
+       )`,
+      [item, date_to, date_from, date_from, date_to, date_from, date_to]
     );
 
-    const bookedQty = existing[0].total_booked || 0;
+    const bookedQty = existing[0].total_booked;
+    console.log("Already booked quantity for date range:", bookedQty);
 
     // Get the max available quantity of the item
     const [itemData] = await db.query(
@@ -30,28 +43,52 @@ const createSchedule = async (req, res) => {
       [item]
     );
 
+    console.log("Item data from database:", itemData[0]);
+
     if (!itemData[0]) {
+      console.log("Item not found in database:", item);
       return res.status(404).json({ error: "Item not found" });
     }
 
+    const maxQuantity = itemData[0].max_quantity;
+    const requestedQuantity = quantity || 1;
+    
+    console.log("Max quantity:", maxQuantity);
+    console.log("Requested quantity:", requestedQuantity);
+    console.log("Total after booking:", bookedQty + requestedQuantity);
+
     // Check if enough quantity is available
-    if (bookedQty + (quantity || 1) > itemData[0].max_quantity) {
-      return res.status(400).json({ error: "Not enough quantity available" });
+    if (bookedQty + requestedQuantity > maxQuantity) {
+      console.log("❌ Not enough quantity available!");
+      console.log(`Booked: ${bookedQty}, Requested: ${requestedQuantity}, Max: ${maxQuantity}`);
+      return res.status(400).json({ 
+        error: "Not enough quantity available",
+        details: {
+          booked: bookedQty,
+          requested: requestedQuantity,
+          max: maxQuantity,
+          available: maxQuantity - bookedQty
+        }
+      });
     }
+
+    console.log("✅ Quantity available, creating schedule...");
 
     // Insert new schedule
     const [result] = await db.query(
       `INSERT INTO schedules 
         (user_id, item, quantity, date_from, date_to, time_from, time_to, status, reason) 
        VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending', ?)`,
-      [userId, item, quantity || 1, date_from, date_to, time_from, time_to, reason || null]
+      [userId, item, requestedQuantity, date_from, date_to, time_from, time_to, reason || null]
     );
+
+    console.log("✅ Schedule created successfully, ID:", result.insertId);
 
     res.json({
       id: result.insertId,
       user_id: userId,
       item,
-      quantity: quantity || 1,
+      quantity: requestedQuantity,
       date_from,
       date_to,
       time_from,

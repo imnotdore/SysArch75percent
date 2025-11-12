@@ -1,6 +1,6 @@
-import { FaUser, FaBox, FaUserCheck, FaCalendarAlt } from "react-icons/fa";
+import { FaUser, FaBox, FaUserCheck, FaShippingFast } from "react-icons/fa";
 
-export default function ScheduledTab({ acceptedSchedules }) {
+export default function ScheduledTab({ acceptedSchedules, onReleaseSchedule }) {
   const getInitials = (name) => {
     if (!name) return "R";
     return name.charAt(0).toUpperCase();
@@ -22,10 +22,16 @@ export default function ScheduledTab({ acceptedSchedules }) {
     };
   };
 
+  const handleRelease = async (scheduleId) => {
+    if (window.confirm("Mark this item as ready for pickup?")) {
+      await onReleaseSchedule(scheduleId);
+    }
+  };
+
   return (
     <section className="scheduled-list">
       <div className="section-header">
-        <h2>Scheduled Items</h2>
+        <h2>Approved Items - Ready for Release</h2>
         <span className="section-count">
           {acceptedSchedules.length}
         </span>
@@ -33,7 +39,7 @@ export default function ScheduledTab({ acceptedSchedules }) {
       
       {acceptedSchedules.length === 0 ? (
         <div className="empty-state">
-          <h3>No Scheduled Items</h3>
+          <h3>No Approved Items</h3>
           <p>Approved schedule requests will appear here.</p>
         </div>
       ) : (
@@ -43,8 +49,10 @@ export default function ScheduledTab({ acceptedSchedules }) {
               <th>Resident</th>
               <th>Item</th>
               <th>Quantity</th>
+              <th>Borrow Period</th>
               <th>Approved By</th>
               <th>Date Approved</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>
@@ -77,6 +85,13 @@ export default function ScheduledTab({ acceptedSchedules }) {
                     </span>
                   </td>
                   <td>
+                    <div className="date-range">
+                      <div>{new Date(schedule.date_from).toLocaleDateString()}</div>
+                      <div>to</div>
+                      <div>{new Date(schedule.date_to).toLocaleDateString()}</div>
+                    </div>
+                  </td>
+                  <td>
                     <div className="staff-info">
                       <FaUserCheck size={12} />
                       <span className="staff-badge">
@@ -89,6 +104,15 @@ export default function ScheduledTab({ acceptedSchedules }) {
                       <span className="date-main">{formattedDate.date}</span>
                       <span className="date-time">{formattedDate.time}</span>
                     </div>
+                  </td>
+                  <td>
+                    <button 
+                      className="btn-primary"
+                      onClick={() => handleRelease(schedule.id)}
+                      title="Mark as ready for pickup"
+                    >
+                      <FaShippingFast /> Release
+                    </button>
                   </td>
                 </tr>
               );

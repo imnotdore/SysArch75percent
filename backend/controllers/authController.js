@@ -47,26 +47,26 @@ exports.getPendingResidents = async (req, res) => {
 exports.registerResident = async (req, res) => {
   try {
     const {
-      username, password, full_name, address, age, gender,
+      username, password, email, full_name, address, age, gender, // Add email
       contact, civil_status, youth_classification, education,
       registered_sk, registered_national,
     } = req.body;
 
     const id_picture = req.file ? req.file.filename : null;
-    if (!username || !password || !full_name || !id_picture)
+    if (!username || !password || !email || !full_name || !id_picture) // Add email check
       return res.status(400).json({ error: "Missing required fields or ID picture" });
 
     const hashed = await bcrypt.hash(password, 10);
 
     const fields = [
-      "username", "password", "full_name", "age", "address",
+      "username", "password", "email", "full_name", "age", "address", // Add email
       "gender", "contact", "civil_status", "youth_classification",
       "education", "registered_sk", "registered_national",
       "status", "id_picture"
     ];
 
     const values = [
-      username, hashed, full_name, age || 0, address || "",
+      username, hashed, email, full_name, age || 0, address || "", // Add email
       gender || "Male", contact || "", civil_status || "Single",
       youth_classification || "In School Youth", education || "",
       registered_sk || "No", registered_national || "No",

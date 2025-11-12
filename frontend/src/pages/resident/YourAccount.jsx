@@ -4,21 +4,21 @@ import { FileContext } from "../../context/Filecontext";
 import { ScheduleContext } from "../../context/ScheduleContext";
 import ResidentLayout from "./ResidentLayout";
 import CancelRequestModal from "./modals/CancelRequestModal";
-import StatusBadge from "./common/StatusBadge";
-import DateFormatter from "./common/DateFormatter";
+import FileUploadsSection from "./sections/FileUploadsSection";
 import SchedulesSection from "./sections/SchedulesSection";
 import { API_URL } from "../../config";
 
 export default function YourAccount() {
   const [uploadedFiles, setUploadedFiles] = useState([]);
-  const { schedules, fetchSchedules } = useContext(ScheduleContext); // ADD fetchSchedules here
+  const { schedules, fetchSchedules } = useContext(ScheduleContext);
   const { fetchFiles: fetchContextFiles } = useContext(FileContext);
   const [showCancel, setShowCancel] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [schedulesLoading, setSchedulesLoading] = useState(true); // ADD loading state for schedules
+  const [schedulesLoading, setSchedulesLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [schedulesError, setSchedulesError] = useState(null); // ADD error state for schedules
+  const [schedulesError, setSchedulesError] = useState(null);
+  const [hoveredStat, setHoveredStat] = useState(null);
 
   // Fetch uploaded files
   const fetchFiles = async () => {
@@ -47,12 +47,11 @@ export default function YourAccount() {
       if (fetchSchedules) {
         await fetchSchedules();
       } else {
-        // Fallback: fetch schedules manually if context doesn't have fetchSchedules
         const token = localStorage.getItem("token");
         const response = await axios.get(`${API_URL}/api/schedules`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        console.log("Schedules data:", response.data); // Debug log
+        console.log("Schedules data:", response.data);
       }
     } catch (err) {
       console.error("Failed to fetch schedules:", err);
@@ -67,99 +66,178 @@ export default function YourAccount() {
     fetchUserSchedules();
   }, []);
 
-  // Debug: Check what's in schedules
-  useEffect(() => {
-    console.log("Schedules in YourAccount:", schedules);
-    console.log("Schedules length:", schedules?.length);
-  }, [schedules]);
-
   return (
-    <ResidentLayout title="YOUR ACCOUNT">
-      {/* Uploaded Files Section */}
-      <section style={{ marginTop: 40 }}>
-        <h2 style={{ color: "#1E90FF" }}>Your Uploaded Files</h2>
-        
-        {loading && <p>Loading files...</p>}
-        {error && <p style={{ color: "red" }}>Error: {error}</p>}
-        
-        {!loading && !error && uploadedFiles.length === 0 ? (
-          <p>No uploaded files yet.</p>
-        ) : (
-          <table style={styles.table}>
-            <thead>
-              <tr style={{ backgroundColor: "#1E90FF", color: "black" }}>
-                <th style={styles.tableCell}>Filename</th>
-                <th style={styles.tableCell}>Date Needed</th>
-                <th style={styles.tableCell}>Page Count</th>
-                <th style={styles.tableCell}>Uploaded At</th>
-                <th style={styles.tableCell}>Status</th>
-                <th style={styles.tableCell}>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {uploadedFiles.map((file) => (
-                <tr key={file.id}>
-                  <td style={styles.tableCell}>{file.original_name || file.filename}</td>
-                  <td style={styles.tableCell}>
-                    <DateFormatter date={file.date_needed} />
-                  </td>
-                  <td style={styles.tableCell}>{file.page_count}</td>
-                  <td style={styles.tableCell}>
-                    <DateFormatter date={file.created_at} />
-                  </td>
-                  <td style={styles.tableCell}>
-                    <StatusBadge status={file.status} />
-                  </td>
-                  <td style={styles.tableCell}>
-                    {file.status?.toLowerCase() === "pending" && (
-                      <button
-                        onClick={() => {
-                          setSelectedFile(file);
-                          setShowCancel(true);
-                        }}
-                        style={styles.cancelBtn}
-                      >
-                        Cancel Request
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
+    <ResidentLayout title="">
+      <div style={styles.container}>
+        {/* Welcome Section */}
+        <div style={styles.welcomeSection}>
+          <h1 style={styles.welcomeTitle}>Your Account Dashboard</h1>
+        </div>
 
-      {/* Schedules Section - USING THE NEW COMPONENT */}
-      <SchedulesSection />
+        {/* Stats Overview */}
+        <div style={styles.statsContainer}>
+          <div 
+            style={{
+              ...styles.statCard,
+              transform: hoveredStat === 'files' ? 'translateY(-5px)' : 'translateY(0)',
+              boxShadow: hoveredStat === 'files' ? '0 8px 25px rgba(0,0,0,0.15)' : '0 4px 15px rgba(0,0,0,0.1)'
+            }}
+            onMouseEnter={() => setHoveredStat('files')}
+            onMouseLeave={() => setHoveredStat(null)}
+          >
+            <div style={styles.statIcon}>📄</div>
+            <div style={styles.statContent}>
+              <h3 style={styles.statNumber}>{uploadedFiles.length}</h3>
+              <p style={styles.statLabel}>Total Files</p>
+            </div>
+          </div>
+          <div 
+            style={{
+              ...styles.statCard,
+              transform: hoveredStat === 'schedules' ? 'translateY(-5px)' : 'translateY(0)',
+              boxShadow: hoveredStat === 'schedules' ? '0 8px 25px rgba(0,0,0,0.15)' : '0 4px 15px rgba(0,0,0,0.1)'
+            }}
+            onMouseEnter={() => setHoveredStat('schedules')}
+            onMouseLeave={() => setHoveredStat(null)}
+          >
+            <div style={styles.statIcon}>📅</div>
+            <div style={styles.statContent}>
+              <h3 style={styles.statNumber}>{schedules?.length || 0}</h3>
+              <p style={styles.statLabel}>Schedules</p>
+            </div>
+          </div>
+          <div 
+            style={{
+              ...styles.statCard,
+              transform: hoveredStat === 'pending' ? 'translateY(-5px)' : 'translateY(0)',
+              boxShadow: hoveredStat === 'pending' ? '0 8px 25px rgba(0,0,0,0.15)' : '0 4px 15px rgba(0,0,0,0.1)'
+            }}
+            onMouseEnter={() => setHoveredStat('pending')}
+            onMouseLeave={() => setHoveredStat(null)}
+          >
+            <div style={styles.statIcon}>⏳</div>
+            <div style={styles.statContent}>
+              <h3 style={styles.statNumber}>
+                {uploadedFiles.filter(f => f.status === 'pending').length}
+              </h3>
+              <p style={styles.statLabel}>Pending</p>
+            </div>
+          </div>
+          <div 
+            style={{
+              ...styles.statCard,
+              transform: hoveredStat === 'approved' ? 'translateY(-5px)' : 'translateY(0)',
+              boxShadow: hoveredStat === 'approved' ? '0 8px 25px rgba(0,0,0,0.15)' : '0 4px 15px rgba(0,0,0,0.1)'
+            }}
+            onMouseEnter={() => setHoveredStat('approved')}
+            onMouseLeave={() => setHoveredStat(null)}
+          >
+            <div style={styles.statIcon}>✅</div>
+            <div style={styles.statContent}>
+              <h3 style={styles.statNumber}>
+                {uploadedFiles.filter(f => f.status === 'approved').length}
+              </h3>
+              <p style={styles.statLabel}>Approved</p>
+            </div>
+          </div>
+        </div>
 
-      <CancelRequestModal
-        show={showCancel}
-        onClose={() => setShowCancel(false)}
-        request={selectedFile}
-        onSuccess={fetchFiles}
-      />
+        {/* File Uploads Section */}
+        <FileUploadsSection 
+          uploadedFiles={uploadedFiles}
+          loading={loading}
+          error={error}
+          onCancelFile={(file) => {
+            setSelectedFile(file);
+            setShowCancel(true);
+          }}
+        />
+
+        {/* Schedules Section */}
+        <SchedulesSection 
+          schedules={schedules}
+          loading={schedulesLoading}
+          error={schedulesError}
+        />
+
+        <CancelRequestModal
+          show={showCancel}
+          onClose={() => setShowCancel(false)}
+          request={selectedFile}
+          onSuccess={fetchFiles}
+        />
+      </div>
     </ResidentLayout>
   );
 }
 
 const styles = {
-  table: { 
-    width: "100%", 
-    borderCollapse: "collapse",
-    marginTop: "10px"
+  container: {
+    maxWidth: "1200px",
+    margin: "0 auto",
+    padding: "20px",
   },
-  tableCell: { 
-    border: "1px solid #ccc", 
-    padding: "8px", 
-    textAlign: "center" 
+  welcomeSection: {
+    textAlign: "center",
+    marginBottom: "40px",
+    padding: "30px",
+    borderRadius: "15px",
+    color: "white",
+    background: "linear-gradient(100deg, #A43249 10%, #F4Be2A 50%)",
+    boxShadow: "0 8px 25px rgba(0,0,0,0.1)",
   },
-  cancelBtn: { 
-    backgroundColor: "#ff4d4f", 
-    color: "#fff", 
-    border: "none", 
-    padding: "5px 10px", 
-    borderRadius: 5, 
-    cursor: "pointer" 
+  welcomeTitle: {
+    fontSize: "2.5rem",
+    fontWeight: "700",
+    marginBottom: "10px",
+    textShadow: "2px 2px 4px rgba(0,0,0,0.3)",
+  },
+  welcomeSubtitle: {
+    fontSize: "1.1rem",
+    opacity: 0.9,
+    fontWeight: "300",
+  },
+  statsContainer: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+    gap: "20px",
+    marginBottom: "40px",
+  },
+  statCard: {
+    backgroundColor: "white",
+    padding: "25px",
+    borderRadius: "12px",
+    boxShadow: "0 4px 15px rgba(0,0,0,0.1)",
+    display: "flex",
+    alignItems: "center",
+    gap: "15px",
+    transition: "transform 0.3s ease, box-shadow 0.3s ease",
+    border: "1px solid #f0f0f0",
+  },
+  statIcon: {
+    fontSize: "2.5rem",
+    width: "60px",
+    height: "60px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F8FAFC",
+    borderRadius: "50%",
+  },
+  statContent: {
+    flex: 1,
+  },
+  statNumber: {
+    fontSize: "2rem",
+    fontWeight: "700",
+    color: "#1E90FF",
+    margin: "0",
+    lineHeight: "1",
+  },
+  statLabel: {
+    fontSize: "0.9rem",
+    color: "#666",
+    margin: "5px 0 0 0",
+    fontWeight: "500",
   },
 };

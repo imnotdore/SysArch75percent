@@ -5,62 +5,96 @@ import { API_URL } from "../../../config";
 const CancelRequestModal = ({ show, onClose, request, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   
-  if (!request) return null;
+  if (!show || !request) return null;
 
   const handleCancel = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
-      await axios.post(
-        `${API_URL}/api/files/${request.id}/cancel`,
-        {},
+      
+      // Check if the endpoint exists in your backend
+      // If not, you might need to implement this endpoint
+      await axios.delete(
+        `${API_URL}/api/files/${request.id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      
       onSuccess();
       onClose();
+      alert("Request cancelled successfully!");
     } catch (err) {
       console.error("Cancel failed", err);
-      alert("Failed to cancel request.");
+      if (err.response?.status === 404) {
+        alert("Cancel endpoint not found. Please contact administrator.");
+      } else {
+        alert("Failed to cancel request: " + (err.response?.data?.error || err.message));
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className={`modal fade ${show ? "show d-block" : ""}`} style={styles.modal} tabIndex="-1">
-      <div className="modal-dialog modal-dialog-centered">
-        <div className="modal-content rounded-3 shadow" style={styles.modalContent}>
-          <div className="modal-header" style={styles.modalHeader}>
-            <h5 className="modal-title">Cancel Request</h5>
-            <button 
-              type="button" 
-              className="btn-close" 
-              onClick={onClose}
-              style={styles.closeButton}
-            ></button>
+    <div style={styles.modalOverlay}>
+      <div style={styles.modal}>
+        <div style={styles.modalHeader}>
+          <h3 style={styles.modalTitle}>Cancel Request</h3>
+          <button 
+            onClick={onClose}
+            style={styles.closeButton}
+          >
+            ×
+          </button>
+        </div>
+        
+        <div style={styles.modalBody}>
+          <div style={styles.requestInfo}>
+            <div style={styles.infoRow}>
+              <span style={styles.label}>Filename:</span>
+              <span style={styles.value}>{request.original_name || request.filename}</span>
+            </div>
+            <div style={styles.infoRow}>
+              <span style={styles.label}>Date Needed:</span>
+              <span style={styles.value}>{formatDate(request.date_needed)}</span>
+            </div>
+            <div style={styles.infoRow}>
+              <span style={styles.label}>Purpose:</span>
+              <span style={styles.value}>{request.purpose}</span>
+            </div>
+            <div style={styles.infoRow}>
+              <span style={styles.label}>Status:</span>
+              <span style={{
+                ...styles.status,
+                color: request.status === 'pending' ? '#F59E0B' : 
+                       request.status === 'approved' ? '#10B981' : '#EF4444'
+              }}>
+                {request.status?.charAt(0).toUpperCase() + request.status?.slice(1)}
+              </span>
+            </div>
           </div>
-          <div className="modal-body" style={styles.modalBody}>
-            <p><strong>Filename:</strong> {request.original_name || request.filename}</p>
-            <p><strong>Date Needed:</strong> {formatDate(request.date_needed)}</p>
-            <p><strong>Purpose:</strong> {request.purpose}</p>
+          
+          <div style={styles.warningBox}>
+            <p style={styles.warningText}>
+              ⚠️ Are you sure you want to cancel this request? This action cannot be undone.
+            </p>
           </div>
-          <div className="modal-footer" style={styles.modalFooter}>
-            <button 
-              className="btn btn-secondary" 
-              onClick={onClose}
-              style={styles.secondaryButton}
-            >
-              Close
-            </button>
-            <button
-              className="btn btn-danger"
-              onClick={handleCancel}
-              disabled={loading}
-              style={styles.dangerButton}
-            >
-              {loading ? "Cancelling..." : "Cancel Request"}
-            </button>
-          </div>
+        </div>
+        
+        <div style={styles.modalFooter}>
+          <button 
+            onClick={onClose}
+            style={styles.cancelButton}
+            disabled={loading}
+          >
+            Go Back
+          </button>
+          <button
+            onClick={handleCancel}
+            disabled={loading}
+            style={loading ? styles.disabledButton : styles.confirmButton}
+          >
+            {loading ? "⏳ Cancelling..." : "🗑️ Confirm Cancel"}
+          </button>
         </div>
       </div>
     </div>
@@ -69,61 +103,197 @@ const CancelRequestModal = ({ show, onClose, request, onSuccess }) => {
 
 // Date formatting function
 const formatDate = (dateStr) => {
-  if (!dateStr) return "";
+  if (!dateStr) return "Not specified";
   const date = new Date(dateStr);
-  const months = ["Jan.", "Feb.", "Mar.", "Apr.", "May", "Jun.", "Jul.", "Aug.", "Sept.", "Oct.", "Nov.", "Dec."];
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
 };
 
-// Styles
+// Modern CSS-in-JS styles
 const styles = {
-  modal: {
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  modalOverlay: {
     position: 'fixed',
     top: 0,
     left: 0,
-    width: '100%',
-    height: '100%',
-    zIndex: 1050,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000,
+    padding: '20px',
+    animation: 'fadeIn 0.3s ease',
   },
-  modalContent: {
-    border: 'none',
-    boxShadow: '0 0.5rem 1rem rgba(0, 0, 0, 0.15)',
+  modal: {
+    background: 'white',
+    borderRadius: '12px',
+    boxShadow: '0 20px 40px rgba(0, 0, 0, 0.2)',
+    maxWidth: '500px',
+    width: '100%',
+    overflow: 'hidden',
+    animation: 'slideUp 0.3s ease',
   },
   modalHeader: {
-    borderBottom: '1px solid #dee2e6',
-    padding: '1rem',
-    backgroundColor: '#f8f9fa',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '20px 24px',
+    borderBottom: '1px solid #E5E7EB',
+    backgroundColor: '#F8FAFC',
   },
-  modalBody: {
-    padding: '1rem',
-  },
-  modalFooter: {
-    borderTop: '1px solid #dee2e6',
-    padding: '1rem',
+  modalTitle: {
+    fontSize: '20px',
+    fontWeight: '600',
+    color: '#1F2937',
+    margin: 0,
   },
   closeButton: {
-    border: 'none',
     background: 'none',
-    fontSize: '1.5rem',
-    cursor: 'pointer',
-  },
-  secondaryButton: {
-    backgroundColor: '#6c757d',
-    color: 'white',
     border: 'none',
-    padding: '0.5rem 1rem',
-    borderRadius: '0.375rem',
+    fontSize: '24px',
+    color: '#6B7280',
     cursor: 'pointer',
+    padding: '4px',
+    borderRadius: '4px',
+    transition: 'all 0.2s ease',
   },
-  dangerButton: {
-    backgroundColor: '#dc3545',
-    color: 'white',
-    border: 'none',
-    padding: '0.5rem 1rem',
-    borderRadius: '0.375rem',
+  modalBody: {
+    padding: '24px',
+  },
+  requestInfo: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+    marginBottom: '20px',
+  },
+  infoRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '8px 0',
+    borderBottom: '1px solid #F3F4F6',
+  },
+  label: {
+    fontWeight: '500',
+    color: '#374151',
+    fontSize: '14px',
+  },
+  value: {
+    fontWeight: '400',
+    color: '#6B7280',
+    fontSize: '14px',
+    textAlign: 'right',
+  },
+  status: {
+    fontWeight: '600',
+    fontSize: '14px',
+  },
+  warningBox: {
+    backgroundColor: '#FEF3F2',
+    border: '1px solid #FECACA',
+    borderRadius: '8px',
+    padding: '16px',
+    textAlign: 'center',
+  },
+  warningText: {
+    color: '#DC2626',
+    fontSize: '14px',
+    fontWeight: '500',
+    margin: 0,
+    lineHeight: '1.5',
+  },
+  modalFooter: {
+    display: 'flex',
+    gap: '12px',
+    justifyContent: 'flex-end',
+    padding: '20px 24px',
+    borderTop: '1px solid #E5E7EB',
+    backgroundColor: '#F9FAFB',
+  },
+  cancelButton: {
+    padding: '10px 20px',
+    border: '1px solid #D1D5DB',
+    borderRadius: '8px',
+    backgroundColor: 'white',
+    color: '#374151',
+    fontSize: '14px',
+    fontWeight: '500',
     cursor: 'pointer',
+    transition: 'all 0.2s ease',
+  },
+  confirmButton: {
+    padding: '10px 20px',
+    border: 'none',
+    borderRadius: '8px',
+    backgroundColor: '#DC2626',
+    color: 'white',
+    fontSize: '14px',
+    fontWeight: '500',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+  },
+  disabledButton: {
+    padding: '10px 20px',
+    border: 'none',
+    borderRadius: '8px',
+    backgroundColor: '#9CA3AF',
+    color: 'white',
+    fontSize: '14px',
+    fontWeight: '500',
+    cursor: 'not-allowed',
+    opacity: 0.7,
   },
 };
+
+// Add CSS animations
+const addGlobalStyles = () => {
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes slideUp {
+      from { 
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to { 
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  `;
+  document.head.appendChild(style);
+};
+
+// Add styles once
+if (typeof document !== 'undefined') {
+  addGlobalStyles();
+}
+
+// Add hover effects
+Object.assign(styles.closeButton, {
+  ':hover': {
+    backgroundColor: '#F3F4F6',
+    color: '#374151',
+  }
+});
+
+Object.assign(styles.cancelButton, {
+  ':hover': {
+    backgroundColor: '#F3F4F6',
+    borderColor: '#9CA3AF',
+  }
+});
+
+Object.assign(styles.confirmButton, {
+  ':hover': {
+    backgroundColor: '#B91C1C',
+    transform: 'translateY(-1px)',
+    boxShadow: '0 4px 12px rgba(220, 38, 38, 0.3)',
+  }
+});
 
 export default CancelRequestModal;
