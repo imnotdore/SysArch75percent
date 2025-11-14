@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Nov 09, 2025 at 11:05 PM
+-- Generation Time: Nov 12, 2025 at 10:34 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -177,6 +177,7 @@ CREATE TABLE `printed_logs` (
 CREATE TABLE `residents` (
   `id` int(11) NOT NULL,
   `username` varchar(50) NOT NULL,
+  `email` varchar(255) DEFAULT NULL,
   `password` varchar(255) NOT NULL,
   `full_name` varchar(255) NOT NULL,
   `address` varchar(255) NOT NULL,
@@ -198,9 +199,8 @@ CREATE TABLE `residents` (
 -- Dumping data for table `residents`
 --
 
-INSERT INTO `residents` (`id`, `username`, `password`, `full_name`, `address`, `age`, `gender`, `contact`, `civil_status`, `youth_classification`, `education`, `registered_sk`, `registered_national`, `id_picture`, `status`, `created_at`, `birthday`) VALUES
-(26, 'john', '$2b$10$RdrMQvMrybhT3jty2FbSs.fbF47p8ppRiYCH0XO2QR1AjVNTlm3Q2', 'john doe', '4b', 24, 'male', '123123123', 'Single', 'In School Youth', 'High School', 'Yes', 'Yes', '1762710186128-sample.jpg', 'approved', '2025-11-09 17:43:06', NULL),
-(27, 'hh', '$2b$10$X.hVWSA0aItsXan9PDkks.R7bhtxtqBgxmrUSE0/Bs/jh8/bB1dWm', 'asd', '123123', 24, 'male', '123123123', 'Separated', 'In School Youth', 'College', 'Yes', 'Yes', '1762721493192-sample.jpg', 'approved', '2025-11-09 20:51:33', NULL);
+INSERT INTO `residents` (`id`, `username`, `email`, `password`, `full_name`, `address`, `age`, `gender`, `contact`, `civil_status`, `youth_classification`, `education`, `registered_sk`, `registered_national`, `id_picture`, `status`, `created_at`, `birthday`) VALUES
+(28, 'ken', 'kengalvan4@gmail.com', '$2b$10$9xN5xu2aCOV8cw/w4FXNtOnD700Y4jKg8Df7fVZxnBK/W/GVT1wvW', 'kenneth', 'b4', 24, 'male', '12123', 'Single', 'In School Youth', 'College', 'Yes', 'Yes', '1762981392883-sample.jpg', 'approved', '2025-11-12 21:03:13', NULL);
 
 -- --------------------------------------------------------
 
@@ -250,7 +250,11 @@ CREATE TABLE `resident_requests` (
 
 INSERT INTO `resident_requests` (`id`, `resident_id`, `filename`, `original_name`, `status`, `created_at`, `date_needed`, `page_count`, `purpose`, `approved_by`, `approved_at`, `released_by`, `released_at`, `claimed_at`, `claimed_by`, `printed_by`, `printed_at`, `notified_at`, `notified_by`) VALUES
 (85, 22, '1761642975391-GALVAN_GEELECDS.pdf', NULL, 'go_to_pickup', '2025-10-28 09:16:15', '2025-10-29', 2, NULL, 11, '2025-11-10 02:48:06', NULL, NULL, NULL, NULL, NULL, NULL, '2025-11-10 03:24:08', 11),
-(86, 22, '1762719403649-CH2-Web-Based-Integrated-Equipment-Scheduling-Print-Request-user-profiling-for-SK-of-Barangay-Sto.-Domingo.pdf', NULL, 'go_to_pickup', '2025-11-09 20:16:43', '2025-11-11', 9, NULL, 11, '2025-11-10 04:39:58', NULL, NULL, NULL, NULL, NULL, NULL, '2025-11-10 04:47:40', 11);
+(86, 22, '1762719403649-CH2-Web-Based-Integrated-Equipment-Scheduling-Print-Request-user-profiling-for-SK-of-Barangay-Sto.-Domingo.pdf', NULL, 'go_to_pickup', '2025-11-09 20:16:43', '2025-11-11', 9, NULL, 11, '2025-11-10 04:39:58', NULL, NULL, NULL, NULL, NULL, NULL, '2025-11-10 04:47:40', 11),
+(92, 26, '1762958817831-IAAS2_Midterm Activity No 2 Aryas_Galvan.pdf', NULL, 'go_to_pickup', '2025-11-12 14:46:57', '2025-11-12', 2, NULL, 4, '2025-11-12 23:40:37', NULL, NULL, NULL, NULL, NULL, NULL, '2025-11-12 23:41:29', 4),
+(93, 26, '1762960120942-IAAS2_Midterm Activity No 2 Aryas_Galvan.pdf', NULL, 'go_to_pickup', '2025-11-12 15:08:41', '2025-11-12', 2, NULL, 4, '2025-11-12 23:40:14', NULL, NULL, NULL, NULL, NULL, NULL, '2025-11-13 00:04:45', 4),
+(94, 26, '1762964321436-IAAS2_Midterm Activity No 2 Aryas_Galvan.pdf', NULL, 'approved', '2025-11-12 16:18:41', '2025-11-13', 2, NULL, 4, '2025-11-13 00:19:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(95, 26, '1762971283807-IAAS2_Midterm Activity No 2 Aryas_Galvan.pdf', NULL, 'pending', '2025-11-12 18:14:43', '2025-11-13', 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -284,25 +288,29 @@ CREATE TABLE `schedules` (
   `date_to` date NOT NULL,
   `time_from` time NOT NULL,
   `time_to` time NOT NULL,
-  `status` enum('Pending','Approved','Rejected') DEFAULT 'Pending',
+  `status` enum('Pending','Approved','Rejected','Released','Returned') NOT NULL DEFAULT 'Pending',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `approved_by` int(11) DEFAULT NULL,
   `approved_at` datetime DEFAULT NULL,
   `returned_at` datetime DEFAULT NULL,
-  `reason` varchar(255) DEFAULT NULL
+  `reason` varchar(255) DEFAULT NULL,
+  `released_at` datetime DEFAULT NULL,
+  `released_by` int(11) DEFAULT NULL,
+  `return_condition` enum('good','damaged','missing') DEFAULT NULL,
+  `damage_description` text DEFAULT NULL,
+  `damage_cost` decimal(10,2) DEFAULT NULL,
+  `returned_by` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `schedules`
 --
 
-INSERT INTO `schedules` (`id`, `user_id`, `item`, `quantity`, `date_from`, `date_to`, `time_from`, `time_to`, `status`, `created_at`, `updated_at`, `approved_by`, `approved_at`, `returned_at`, `reason`) VALUES
-(55, 18, 'Projector', 4, '2025-10-17', '2025-10-17', '08:00:00', '05:00:00', 'Approved', '2025-10-15 18:12:09', '2025-10-17 11:12:31', 4, '2025-10-17 19:12:31', NULL, 'presentation'),
-(56, 15, 'Chairs', 20, '2025-10-18', '2025-10-18', '08:00:00', '05:00:00', 'Approved', '2025-10-17 11:04:30', '2025-10-17 11:07:59', 4, '2025-10-17 19:07:59', NULL, 'BIRTHDAY NI BUDOY'),
-(57, 17, 'Tent', 3, '2025-10-19', '2025-10-19', '08:00:00', '03:00:00', 'Approved', '2025-10-17 11:38:23', '2025-10-17 11:42:28', 4, '2025-10-17 19:42:28', NULL, 'BIRTHDAY'),
-(59, 27, 'Chairs', 10, '2025-11-10', '2025-11-10', '08:00:00', '05:00:00', 'Approved', '2025-11-09 20:53:39', '2025-11-09 20:54:03', 4, '2025-11-10 04:54:03', NULL, 'bday'),
-(60, 22, 'Tent', 1, '2025-11-11', '2025-11-11', '08:00:00', '05:00:00', 'Approved', '2025-11-09 21:00:21', '2025-11-09 21:00:55', 4, '2025-11-10 05:00:55', NULL, 'bday');
+INSERT INTO `schedules` (`id`, `user_id`, `item`, `quantity`, `date_from`, `date_to`, `time_from`, `time_to`, `status`, `created_at`, `updated_at`, `approved_by`, `approved_at`, `returned_at`, `reason`, `released_at`, `released_by`, `return_condition`, `damage_description`, `damage_cost`, `returned_by`) VALUES
+(65, 26, 'Sound System', 1, '2025-11-14', '2025-11-16', '08:00:00', '05:00:00', 'Approved', '2025-11-12 18:13:27', '2025-11-12 20:38:59', 4, '2025-11-13 04:38:59', '2025-11-13 03:04:16', 'vday', '2025-11-13 03:01:33', 4, 'good', NULL, NULL, 4),
+(66, 26, 'Chairs', 15, '2025-11-14', '2025-11-16', '08:00:00', '05:00:00', 'Released', '2025-11-12 20:25:01', '2025-11-12 20:36:40', 4, '2025-11-13 04:36:26', NULL, 'mass', '2025-11-13 04:36:40', 4, NULL, NULL, NULL, NULL),
+(67, 28, 'Projector', 3, '2025-11-14', '2025-11-16', '08:00:00', '11:00:00', '', '2025-11-12 21:23:43', '2025-11-12 21:32:58', 4, '2025-11-13 05:24:06', NULL, 'bday', NULL, NULL, NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -479,7 +487,9 @@ ALTER TABLE `resident_schedules`
 -- Indexes for table `schedules`
 --
 ALTER TABLE `schedules`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `released_by` (`released_by`),
+  ADD KEY `returned_by` (`returned_by`);
 
 --
 -- Indexes for table `staff`
@@ -559,7 +569,7 @@ ALTER TABLE `printed_logs`
 -- AUTO_INCREMENT for table `residents`
 --
 ALTER TABLE `residents`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
 
 --
 -- AUTO_INCREMENT for table `resident_files`
@@ -571,7 +581,7 @@ ALTER TABLE `resident_files`
 -- AUTO_INCREMENT for table `resident_requests`
 --
 ALTER TABLE `resident_requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=87;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=96;
 
 --
 -- AUTO_INCREMENT for table `resident_schedules`
@@ -583,7 +593,7 @@ ALTER TABLE `resident_schedules`
 -- AUTO_INCREMENT for table `schedules`
 --
 ALTER TABLE `schedules`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=61;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=68;
 
 --
 -- AUTO_INCREMENT for table `staff`
@@ -643,6 +653,14 @@ ALTER TABLE `resident_files`
 ALTER TABLE `resident_schedules`
   ADD CONSTRAINT `resident_schedules_ibfk_1` FOREIGN KEY (`resident_id`) REFERENCES `residents` (`id`),
   ADD CONSTRAINT `resident_schedules_ibfk_2` FOREIGN KEY (`approved_by`) REFERENCES `staff` (`id`);
+
+--
+-- Constraints for table `schedules`
+--
+ALTER TABLE `schedules`
+  ADD CONSTRAINT `schedules_ibfk_1` FOREIGN KEY (`released_by`) REFERENCES `staff` (`id`),
+  ADD CONSTRAINT `schedules_ibfk_2` FOREIGN KEY (`released_by`) REFERENCES `staff` (`id`),
+  ADD CONSTRAINT `schedules_ibfk_3` FOREIGN KEY (`returned_by`) REFERENCES `staff` (`id`);
 
 --
 -- Constraints for table `uploaded_files`
