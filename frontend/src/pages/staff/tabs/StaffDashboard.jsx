@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 
 // Import components
 import Sidebar from "../components/StaffSidebar";
-import Header from "../components/StaffHeader";
 import Footer from "../components/StaffFooter";
 
 // Import tabs
@@ -44,49 +43,50 @@ export default function StaffDashboard() {
     return savedTab || "inbox";
   });
   
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Set sidebarOpen to true by default
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   
   // Custom hooks
   const { isMobile } = useResponsive(sidebarRef);
   const { username, staffId, token, handleLogout } = useStaffAuth(navigate);
-  
 
-const {
-  // State
-  residents,
-  selectedResident,
-  selectedResidentRequests,
-  selectedFile,
-  selectedSchedule,
-  selectedAccepted,
-  selectedPendingAccount,
-  acceptedFiles,
-  acceptedSchedules,
-  returnedSchedules,
-  releasedSchedules,
-  printedFiles,
-  pendingAccounts,
-  searchTerm,
-  modalLoading,
-  
-  // Setters
-  setSelectedResident,
-  setSelectedFile,
-  setSelectedSchedule,
-  setSelectedAccepted,
-  setSelectedPendingAccount,
-  setSearchTerm,
-  setModalLoading,
-  
-  // Functions
-  fetchResidentRequests,
-  handleFileStatusChange,
-  handleScheduleStatusChange,
-  handleAccountAction,
-  fetchPrintedFiles,
-  releaseSchedule, 
-  returnSchedule   
-} = useStaffData(staffId, activeTab);
+  const {
+    // State
+    residents,
+    selectedResident,
+    selectedResidentRequests,
+    selectedFile,
+    selectedSchedule,
+    selectedAccepted,
+    selectedPendingAccount,
+    acceptedFiles,
+    acceptedSchedules,
+    returnedSchedules,
+    releasedSchedules,
+    printedFiles,
+    pendingAccounts,
+    searchTerm,
+    modalLoading,
+    
+    // Setters
+    setSelectedResident,
+    setSelectedFile,
+    setSelectedSchedule,
+    setSelectedAccepted,
+    setSelectedPendingAccount,
+    setSearchTerm,
+    setModalLoading,
+    
+    // Functions
+    fetchResidentRequests,
+    handleFileStatusChange,
+    handleScheduleStatusChange,
+    handleAccountAction,
+    fetchPrintedFiles,
+    releaseSchedule, 
+    returnSchedule   
+  } = useStaffData(staffId, activeTab);
 
   // Save active tab to localStorage whenever it changes
   useEffect(() => {
@@ -104,22 +104,22 @@ const {
     accounts: pendingAccounts?.length || 0
   };
 
-  // Sidebar click outside - same as admin
+  // Sidebar click outside - only close on mobile
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (sidebarRef.current && !sidebarRef.current.contains(e.target)) {
+      if (isMobile && sidebarRef.current && !sidebarRef.current.contains(e.target)) {
         setSidebarOpen(false);
       }
     };
     
-    if (sidebarOpen) {
+    if (sidebarOpen && isMobile) {
       document.addEventListener("mousedown", handleClickOutside);
     }
     
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [sidebarOpen]);
+  }, [sidebarOpen, isMobile]);
 
   // Close modals with Escape key
   useEffect(() => {
@@ -138,7 +138,26 @@ const {
   // Custom setActiveTab function to handle tab changes
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
-    setSidebarOpen(false);
+    // Only close sidebar on mobile when changing tabs
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
+  };
+
+  // Toggle sidebar function - FIXED VERSION
+  const toggleSidebar = () => {
+    const isDesktop = window.innerWidth > 900;
+    
+    if (isDesktop) {
+      // Desktop: toggle between expanded and collapsed
+      const newCollapsedState = !sidebarCollapsed;
+      setSidebarCollapsed(newCollapsedState);
+      setSidebarOpen(true); // Always keep sidebar "open" on desktop, just collapsed
+    } else {
+      // Mobile: toggle between open and closed
+      setSidebarOpen(!sidebarOpen);
+      setSidebarCollapsed(false); // Always expanded on mobile when open
+    }
   };
 
   // Render active tab content
@@ -181,13 +200,13 @@ const {
         );
       
       case "scheduled":
-        return <ScheduledTab acceptedSchedules={acceptedSchedules}  onReleaseSchedule={releaseSchedule}/>;
+        return <ScheduledTab acceptedSchedules={acceptedSchedules} onReleaseSchedule={releaseSchedule}/>;
       
       case "printed":
         return <PrintedTab printedFiles={printedFiles} />;
       
       case "released":
-        return <ReleasedTab releasedSchedules={releasedSchedules} onReturnSchedule={returnSchedule}  />;
+        return <ReleasedTab releasedSchedules={releasedSchedules} onReturnSchedule={returnSchedule} />;
       
       case "returned":
         return <ReturnedTab returnedSchedules={returnedSchedules} />;
@@ -222,20 +241,21 @@ const {
       <Sidebar
         sidebarRef={sidebarRef}
         sidebarOpen={sidebarOpen}
+        sidebarCollapsed={sidebarCollapsed}
         activeTab={activeTab}
-        setActiveTab={handleTabChange} // Use the custom function
+        setActiveTab={handleTabChange}
         setSidebarOpen={setSidebarOpen}
         handleLogout={handleLogout}
         username={username}
-        badgeCounts={badgeCounts} // Pass badge counts
+        badgeCounts={badgeCounts}
       />
 
       {/* Main Content */}
-      <div className="staff-main">
+      <div className={`staff-main ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
         <header className="staff-header">
           <button 
             className="menu-icon" 
-            onClick={() => setSidebarOpen(true)}
+            onClick={toggleSidebar}
           >
             ☰
           </button>

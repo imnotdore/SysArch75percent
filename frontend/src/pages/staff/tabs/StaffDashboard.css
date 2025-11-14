@@ -9,7 +9,7 @@ body {
   font-family: "Lexend", sans-serif;
   background-color: #f8fafc;
   color: #1f2937;
-  overflow-x: hidden; /* Prevent horizontal scroll */
+  overflow-x: hidden;
 }
 
 /* =================== Layout =================== */
@@ -22,10 +22,10 @@ body {
   overflow-x: hidden;
 }
 
-/* =================== Sidebar Specific Styles =================== */
-.staff-sidebar {
+/* =================== Sidebar Styles =================== */
+.sidebar {
   position: fixed;
-  left: -280px;
+  left: 0;
   top: 0;
   width: 280px;
   height: 100vh;
@@ -33,17 +33,86 @@ body {
   color: #fff;
   display: flex;
   flex-direction: column;
-  transition: left 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); /* Smoother transition */
   z-index: 1000;
   box-shadow: 2px 0 10px rgba(0,0,0,0.1);
   overflow-y: auto;
+  transform: translateX(0);
 }
 
-.staff-sidebar.open {
-  left: 0;
+/* Sidebar collapsed state */
+.sidebar.collapsed {
+  width: 70px;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); /* Consistent timing */
 }
 
-.staff-sidebar .sidebar-header {
+.sidebar.collapsed .sidebar-header h2,
+.sidebar.collapsed .sidebar-nav button span,
+.sidebar.collapsed .log-btn span,
+.sidebar.collapsed .menu-badge {
+  display: none;
+  transition: opacity 0.3s ease; /* Smooth fade out */
+}
+
+.sidebar.collapsed .sidebar-nav button {
+  justify-content: center;
+  padding: 16px 12px;
+  transition: all 0.3s ease; /* Smooth padding transition */
+}
+
+/* BETTER APPROACH: Consistent icon sizing for all sidebar items */
+.sidebar-nav button svg,
+.log-btn svg {
+  font-size: 1.3rem; /* Same size for all icons */
+  min-width: 24px; /* Consistent width */
+  text-align: center;
+  transition: all 0.3s ease; /* Smoother icon transition */
+}
+
+/* When sidebar is collapsed */
+.sidebar.collapsed .sidebar-nav button svg,
+.sidebar.collapsed .log-btn svg {
+  font-size: 1.4rem; /* Slightly larger when collapsed for better visibility */
+  margin: 0 auto;
+  transition: all 0.3s ease;
+}
+
+.sidebar.collapsed .log-btn {
+  justify-content: center;
+  padding: 16px 12px;
+  transition: all 0.3s ease;
+}
+
+/* =================== Main Content =================== */
+.staff-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #f8fafc;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); /* Smoother transition */
+  margin-left: 280px;
+  width: calc(100% - 280px);
+}
+
+/* When sidebar is collapsed */
+.staff-main.sidebar-collapsed {
+  margin-left: 70px;
+  width: calc(100% - 70px);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); /* Consistent timing */
+}
+
+.sidebar.collapsed .sidebar-nav button {
+  justify-content: center;
+  padding: 16px 12px; /* Slightly more padding for better touch */
+}
+
+.sidebar.collapsed .log-btn {
+  justify-content: center;
+  padding: 16px 12px;
+}
+.sidebar-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -56,14 +125,14 @@ body {
   z-index: 1;
 }
 
-.staff-sidebar .sidebar-header h2 {
+.sidebar-header h2 {
   font-size: 1.2rem;
   font-weight: 600;
   margin: 0;
   color: #f1f5f9;
 }
 
-.staff-sidebar .close-icon {
+.close-icon {
   cursor: pointer;
   font-size: 1.2rem;
   padding: 5px;
@@ -72,21 +141,22 @@ body {
   background: none;
   border: none;
   color: #cbd5e1;
+  display: none;
 }
 
-.staff-sidebar .close-icon:hover {
+.close-icon:hover {
   background-color: rgba(255, 255, 255, 0.1);
   color: #ffffff;
 }
 
-.staff-sidebar .sidebar-nav {
+.sidebar-nav {
   display: flex;
   flex-direction: column;
   padding: 10px 0;
   flex: 1;
 }
 
-.staff-sidebar .sidebar-nav button {
+.sidebar-nav button {
   background: none;
   color: #cbd5e1;
   border: none;
@@ -101,33 +171,50 @@ body {
   font-size: 14px;
   border-left: 3px solid transparent;
   margin: 2px 0;
+  position: relative;
 }
 
-.staff-sidebar .sidebar-nav button:hover {
+.sidebar-nav button:hover {
   background: #334155;
   color: #ffffff;
   border-left-color: #3b82f6;
 }
 
-.staff-sidebar .sidebar-nav button.active {
+.sidebar-nav button.active {
   background: #374151;
   color: #ffffff;
   font-weight: 600;
   border-left-color: #3b82f6;
 }
 
-.staff-sidebar .sidebar-nav button svg {
+.sidebar-nav button svg {
   font-size: 1.1rem;
   min-width: 20px;
   color: #9ca3af;
 }
 
-.staff-sidebar .sidebar-nav button.active svg,
-.staff-sidebar .sidebar-nav button:hover svg {
+.sidebar-nav button.active svg,
+.sidebar-nav button:hover svg {
   color: #ffffff;
 }
 
-/* FIXED: Logout button styles - corrected class names and alignment */
+/* Badge styles */
+.menu-badge {
+  background: #ef4444;
+  color: white;
+  border-radius: 50%;
+  padding: 2px 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  min-width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+}
+
+/* Sidebar Footer */
 .sidebar-footer {
   padding: 20px;
   border-top: 1px solid #334155;
@@ -158,7 +245,7 @@ body {
   box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
 }
 
-/* Sidebar overlay */
+/* Sidebar Overlay */
 .sidebar-overlay {
   position: fixed;
   top: 0;
@@ -167,88 +254,146 @@ body {
   height: 100%;
   background: rgba(0, 0, 0, 0.5);
   z-index: 999;
-  display: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
 }
 
 .sidebar-overlay.active {
-  display: block;
+  opacity: 1;
+  visibility: visible;
+}
+
+/* =================== Main Content =================== */
+.staff-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #f8fafc;
+  transition: all 0.3s ease;
+  margin-left: 280px;
+  width: calc(100% - 280px);
+}
+
+/* When sidebar is collapsed */
+.staff-main.sidebar-collapsed {
+  margin-left: 70px;
+  width: calc(100% - 70px);
+}
+
+/* Header Styles */
+.staff-header {
+  display: flex;
+  align-items: center;
+  background: white;
+  padding: 15px 24px;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  margin-bottom: 24px;
+  border: 1px solid #e2e8f0;
+  gap: 15px;
+}
+
+.menu-icon {
+  cursor: pointer;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  color: #374151;
+  transition: all 0.2s ease;
+  font-size: 1.3rem;
+  padding: 8px;
+  min-height: 44px;
+  min-width: 44px;
+  flex-shrink: 0;
+}
+
+.menu-icon:hover {
+  background-color: #f1f5f9;
+  color: #1d4ed8;
+}
+
+.staff-header h1 {
+  color: #1f2937;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.025em;
+  font-size: 1.5rem;
+  flex: 1;
+  text-align: left;
+}
+
+.staff-info {
+  display: flex;
+  align-items: center;
+  background: #f8fafc;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  font-weight: 500;
+  color: #374151;
+  margin-left: auto;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.staff-info span {
+  font-weight: 500;
+  color: #0865fa;
+}
+
+/* Content Area */
+.staff-content {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+  flex: 1;
+  margin-bottom: 24px;
+  border: 1px solid #e2e8f0;
+  min-height: 400px;
+  padding: 24px;
 }
 
 /* =================== RESPONSIVE BREAKPOINTS =================== */
 
-/* Desktop First Approach */
-@media (min-width: 901px) {
-  .staff-sidebar {
-    position: relative !important;
-    left: 0 !important;
-    height: 100vh;
+/* Tablet and Mobile */
+@media (max-width: 900px) {
+  .sidebar {
+    transform: translateX(-100%);
     width: 280px;
-    flex-shrink: 0;
   }
   
-  .sidebar-overlay {
-    display: none !important;
+  .sidebar.open {
+    transform: translateX(0);
   }
   
-  .staff-sidebar .close-icon {
-    display: none;
-  }
-  
-  .menu-icon {
-    display: none !important;
+  .sidebar.collapsed {
+    width: 280px;
   }
   
   .staff-main {
-    margin-left: 0;
-    width: calc(100% - 280px);
-    padding: 24px;
+    margin-left: 0 !important;
+    width: 100% !important;
   }
   
-}
-/* Badge styles for notifications - add this to your existing CSS */
-.menu-badge {
-  background: #ef4444;
-  color: white;
-  border-radius: 50%;
-  padding: 2px 6px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  min-width: 18px;
-  height: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-left: auto;
-}
-/* Tablet */
-@media (max-width: 900px) {
-  .staff-sidebar {
-    position: fixed;
-    left: -280px;
-    height: 100vh;
-    width: 280px;
-  }
-  
-  .staff-sidebar.open {
-    left: 0;
-  }
-  
-  .sidebar-overlay.active {
-    display: block;
+  .staff-main.sidebar-collapsed {
+    margin-left: 0 !important;
+    width: 100% !important;
   }
   
   .menu-icon {
     display: flex !important;
   }
   
-  .staff-main {
-    width: 100%;
-    padding: 16px;
-    margin-left: 0;
-  }
-  
-  .staff-content {
-    padding: 20px;
+  .close-icon {
+    display: block;
   }
 }
 
@@ -262,7 +407,6 @@ body {
     font-size: 1.2rem;
     padding: 8px;
   }
-  
   
   .staff-content {
     padding: 16px;
@@ -278,66 +422,24 @@ body {
     font-size: 1.5rem;
   }
   
-  .dashboard-welcome p {
-    font-size: 1rem;
-  }
-  
   .staff-search {
     max-width: 100%;
     margin-bottom: 16px;
   }
-}
-
-/* Mobile Small */
-@media (max-width: 480px) {
-  .staff-main {
-    padding: 8px;
-  }
   
- 
-  .staff-header h1 {
-    font-size: 1.1rem;
-    order: 2;
-    flex: 100%;
-    text-align: right;
-    margin-top: 8px;
-  }
-  
-  .menu-icon {
-    order: 1;
-    font-size: 1.1rem;
-    padding: 6px;
-  }
-
-  
-  .staff-content {
-    padding: 12px;
-    margin-bottom: 12px;
-  }
-  
-  .dashboard-welcome {
-    padding: 30px 12px;
-  }
-  
-  .dashboard-welcome h2 {
-    font-size: 1.3rem;
-  }
-  
-  .dashboard-welcome p {
-    font-size: 0.9rem;
-  }
-  
-  /* Table responsive fixes */
+  /* Mobile table fixes */
   .staff-table {
-    font-size: 11px;
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
   }
   
-  .staff-table th,
-  .staff-table td {
-    padding: 8px 10px;
+  .staff-table table {
+    min-width: 600px;
   }
   
-  /* Cards responsive */
+  /* Mobile cards */
   .staff-cards {
     grid-template-columns: 1fr;
     gap: 12px;
@@ -352,156 +454,52 @@ body {
   .staff-card .card-left h2 {
     font-size: 1.8rem;
   }
-  
-  .staff-card .card-left span {
-    font-size: 0.8rem;
-  }
-  
-  .staff-card .card-right .growth {
-    font-size: 1rem;
-  }
 }
 
-/* Mobile Extra Small */
-@media (max-width: 360px) {
+/* Mobile Small */
+@media (max-width: 480px) {
   .staff-main {
-    padding: 6px;
+    padding: 8px;
   }
   
   .staff-header {
-    padding: 10px;
+    flex-wrap: wrap;
   }
   
   .staff-header h1 {
-    font-size: 1rem;
+    font-size: 1.1rem;
+    order: 2;
+    flex: 100%;
+    text-align: right;
+    margin-top: 8px;
+  }
+  
+  .menu-icon {
+    order: 1;
+    font-size: 1.1rem;
+    padding: 6px;
+  }
+
+  .staff-info {
+    order: 3;
+    margin-left: 0;
+    width: 100%;
+    justify-content: center;
+    margin-top: 8px;
   }
   
   .staff-content {
-    padding: 10px;
+    padding: 12px;
+    margin-bottom: 12px;
   }
   
-  .staff-table {
-    font-size: 10px;
+  .dashboard-welcome {
+    padding: 30px 12px;
   }
   
-  .staff-table th,
-  .staff-table td {
-    padding: 6px 8px;
+  .dashboard-welcome h2 {
+    font-size: 1.3rem;
   }
-  
-  .btn-primary,
-  .btn-secondary,
-  .btn-success,
-  .btn-danger {
-    padding: 8px 12px;
-    font-size: 12px;
-  }
-}
-
-/* ---------------- Main Content ---------------- */
-.staff-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  background: #f8fafc;
-  transition: all 0.3s ease;
-}
-
-/* FIXED HEADER STYLES */
-.staff-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between; /* Ito ang key para sa spacing */
-  background: white;
-  padding: 15px 24px;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  margin-bottom: 24px;
-  border: 1px solid #e2e8f0;
-  gap: 15px;
-}
-
-/* FIXED HAMBURGER ICON STYLES */
-.menu-icon {
-  cursor: pointer;
-  background: none;
-  border: none;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 101;
-  position: relative;
-  color: #374151;
-  transition: all 0.2s ease;
-  font-size: 1.3rem;
-  padding: 8px;
-  min-height: 44px;
-  min-width: 44px;
-  flex-shrink: 0; /* Prevent shrinking */
-}
-
-.menu-icon:hover {
-  background-color: #f1f5f9;
-  color: #1d4ed8;
-}
-
-.staff-header h1 {
-  color: #1f2937;
-  font-weight: 700;
-  margin: 0;
-  letter-spacing: -0.025em;
-  font-size: 1.5rem;
-  flex: 1; /* Take remaining space */
-  text-align: left;
-}
-
-.staff-info {
-  display: flex;
-  align-items: center;
-  background: #f8fafc;
-  padding: 8px 16px;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-  font-weight: 500;
-  color: #374151;
-  margin-left: auto; /* Ito ang magpu-push sa kanan */
-  flex-shrink: 0; /* Prevent shrinking */
-  white-space: nowrap; /* Prevent text wrapping */
-}
-
-.staff-info span {
-  font-weight: 500;
-  color: #0865fa;
-}
-
-/* =================== Content Area =================== */
-.staff-content {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
-  flex: 1;
-  margin-bottom: 24px;
-  border: 1px solid #e2e8f0;
-  min-height: 400px; /* Reduced for mobile */
-}
-
-/* =================== Dashboard Welcome =================== */
-.dashboard-welcome {
-  text-align: center;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border-radius: 12px;
-  margin: 20px 0;
-}
-
-.dashboard-welcome h2 {
-  color: #1e40af;
-  font-weight: 700;
-  letter-spacing: -0.025em;
 }
 
 .dashboard-welcome p {
@@ -511,7 +509,7 @@ body {
   margin: 0 auto;
 }
 
-/* =================== Search =================== */
+/* Search */
 .staff-search {
   width: 100%;
   padding: 12px 16px;
@@ -531,7 +529,7 @@ body {
   background: white;
 }
 
-/* =================== Buttons =================== */
+/* Buttons */
 .btn-primary,
 .btn-secondary,
 .btn-success,
@@ -545,6 +543,8 @@ body {
   align-items: center;
   gap: 8px;
   box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  padding: 12px 20px;
+  font-size: 14px;
 }
 
 .btn-primary { 
@@ -587,7 +587,7 @@ body {
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
-/* =================== Table =================== */
+/* Table */
 .staff-table {
   width: 100%;
   border-collapse: collapse;
@@ -603,6 +603,7 @@ body {
 .staff-table td {
   border-bottom: 1px solid #e2e8f0;
   text-align: left;
+  padding: 12px 16px;
 }
 
 .staff-table th {
@@ -612,6 +613,7 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   border-bottom: 2px solid #e2e8f0;
+  font-size: 12px;
 }
 
 .staff-table tr:hover {
@@ -623,9 +625,10 @@ body {
   border-bottom: none;
 }
 
-/* =================== Cards =================== */
+/* Cards */
 .staff-cards {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 24px;
   margin: 24px 0;
 }
@@ -643,6 +646,7 @@ body {
   border: 1px solid #e2e8f0;
   position: relative;
   overflow: hidden;
+  padding: 20px;
 }
 
 .staff-card:hover {
@@ -655,11 +659,13 @@ body {
   margin-bottom: 8px;
   color: #1f2937;
   line-height: 1;
+  font-size: 2rem;
 }
 
 .staff-card .card-left span {
   color: #6b7280;
   font-weight: 500;
+  font-size: 14px;
 }
 
 .staff-card .card-right {
@@ -670,11 +676,13 @@ body {
   font-weight: 700;
   margin-bottom: 6px;
   display: block;
+  font-size: 1.1rem;
 }
 
 .staff-card .card-right span {
   color: #9ca3af;
   font-weight: 500;
+  font-size: 12px;
 }
 
 /* Card Color Variants */
@@ -702,13 +710,14 @@ body {
   color: #f59e0b;
 }
 
-/* =================== Footer =================== */
+/* Footer */
 .staff-footer {
   background-color: #ffffff;
   color: #374151;
   border-top: 1px solid #e2e8f0;
   margin-top: auto;
   box-shadow: 0 -1px 3px rgba(0,0,0,0.1);
+  padding: 16px 24px;
 }
 
 .footer-content {
@@ -738,6 +747,7 @@ body {
   background: white;
   border-radius: 12px;
   margin: 20px 0;
+  padding: 40px;
 }
 
 /* Animation */
@@ -757,25 +767,89 @@ body {
 }
 
 /* Scrollbar Styling */
-.staff-sidebar::-webkit-scrollbar {
+.sidebar::-webkit-scrollbar {
   width: 6px;
 }
 
-.staff-sidebar::-webkit-scrollbar-track {
+.sidebar::-webkit-scrollbar-track {
   background: #1e293b;
 }
 
-.staff-sidebar::-webkit-scrollbar-thumb {
+.sidebar::-webkit-scrollbar-thumb {
   background: #4b5563;
   border-radius: 3px;
 }
 
-.staff-sidebar::-webkit-scrollbar-thumb:hover {
+.sidebar::-webkit-scrollbar-thumb:hover {
   background: #6b7280;
 }
 
-/* Mobile-specific table fixes */
+/* =================== RESPONSIVE BREAKPOINTS =================== */
+
+/* Tablet and Mobile */
+@media (max-width: 900px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+  
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  
+  .staff-main {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+  
+  .menu-icon {
+    display: flex !important;
+  }
+
+  .staff-main {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+  
+  .close-icon {
+    display: block;
+  }
+}
+
+/* Mobile Large */
 @media (max-width: 768px) {
+  .staff-main {
+    padding: 12px;
+  }
+  
+  .menu-icon {
+    font-size: 1.2rem;
+    padding: 8px;
+  }
+  
+  .staff-content {
+    padding: 16px;
+    margin-bottom: 16px;
+    border-radius: 8px;
+  }
+  
+  .dashboard-welcome {
+    padding: 40px 16px;
+  }
+  
+  .dashboard-welcome h2 {
+    font-size: 1.5rem;
+  }
+  
+  .dashboard-welcome p {
+    font-size: 1rem;
+  }
+  
+  .staff-search {
+    max-width: 100%;
+    margin-bottom: 16px;
+  }
+  
+  /* Mobile table fixes */
   .staff-table {
     display: block;
     overflow-x: auto;
@@ -784,7 +858,122 @@ body {
   }
   
   .staff-table table {
-    min-width: 600px; /* Ensure table has minimum width for scrolling */
+    min-width: 600px;
+  }
+  
+  /* Mobile cards */
+  .staff-cards {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin: 16px 0;
+  }
+  
+  .staff-card {
+    padding: 16px;
+    border-radius: 12px;
+  }
+  
+  .staff-card .card-left h2 {
+    font-size: 1.8rem;
+  }
+  
+  .staff-card .card-left span {
+    font-size: 0.8rem;
+  }
+  
+  .staff-card .card-right .growth {
+    font-size: 1rem;
+  }
+}
+
+/* Mobile Small */
+@media (max-width: 480px) {
+  .staff-main {
+    padding: 8px;
+  }
+  
+  .staff-header {
+    flex-wrap: wrap;
+  }
+  
+  .staff-header h1 {
+    font-size: 1.1rem;
+    order: 2;
+    flex: 100%;
+    text-align: right;
+    margin-top: 8px;
+  }
+  
+  .menu-icon {
+    order: 1;
+    font-size: 1.1rem;
+    padding: 6px;
+  }
+
+  .staff-info {
+    order: 3;
+    margin-left: 0;
+    width: 100%;
+    justify-content: center;
+    margin-top: 8px;
+  }
+  
+  .staff-content {
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+  
+  .dashboard-welcome {
+    padding: 30px 12px;
+  }
+  
+  .dashboard-welcome h2 {
+    font-size: 1.3rem;
+  }
+  
+  .dashboard-welcome p {
+    font-size: 0.9rem;
+  }
+  
+  .staff-table th,
+  .staff-table td {
+    padding: 8px 10px;
+  }
+}
+
+/* Mobile Extra Small */
+@media (max-width: 360px) {
+  .staff-main {
+    padding: 6px;
+  }
+  
+  .staff-header {
+    padding: 10px;
+  }
+  
+  .staff-header h1 {
+    font-size: 1rem;
+  }
+  
+  .staff-content {
+    padding: 10px;
+  }
+  
+  .staff-table {
+    font-size: 10px;
+  }
+  
+  .staff-table th,
+  .staff-table td {
+    padding: 6px 8px;
+  }
+  
+  .btn-primary,
+  .btn-secondary,
+  .btn-success,
+  .btn-danger {
+    padding: 8px 12px;
+    font-size: 12px;
   }
 }
 
@@ -794,7 +983,7 @@ body {
   .btn-secondary,
   .btn-success,
   .btn-danger {
-    min-height: 44px; /* Minimum touch target size */
+    min-height: 44px;
     min-width: 44px;
     padding: 12px 16px;
   }
@@ -808,11 +997,11 @@ body {
 /* Prevent zoom on input focus for mobile */
 @media (max-width: 768px) {
   .staff-search {
-    font-size: 16px; /* Prevents zoom on iOS */
+    font-size: 16px;
   }
 }
 
-/* InboxTab.css */
+/* InboxTab Specific Styles */
 .search-bar {
   margin-bottom: 24px;
 }
@@ -1115,7 +1304,7 @@ body {
   font-style: italic;
 }
 
-/* Responsive */
+/* Responsive for InboxTab */
 @media (max-width: 768px) {
   .request-header {
     flex-direction: column;

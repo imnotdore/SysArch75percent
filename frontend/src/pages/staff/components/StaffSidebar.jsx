@@ -1,11 +1,11 @@
-// components/StaffSidebar.jsx
 import { FaInbox, FaCheckCircle, FaCalendarAlt, FaPrint, FaBoxOpen, FaUndo, FaUsers, FaSignOutAlt, FaTimes } from "react-icons/fa";
 
 export default function StaffSidebar({ 
   sidebarRef, 
   sidebarOpen, 
+  sidebarCollapsed,
   activeTab, 
-  setActiveTab, // This now receives our custom function
+  setActiveTab,
   setSidebarOpen,
   handleLogout,
   username,
@@ -58,7 +58,10 @@ export default function StaffSidebar({
 
   return (
     <>
-      <aside ref={sidebarRef} className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+      <aside 
+        ref={sidebarRef} 
+        className={`sidebar ${sidebarOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}
+      >
         <div className="sidebar-header">
           <h2>Staff Panel</h2>
           <FaTimes className="close-icon" onClick={() => setSidebarOpen(false)} />
@@ -69,7 +72,8 @@ export default function StaffSidebar({
             <button
               key={item.id}
               className={activeTab === item.id ? 'active' : ''}
-              onClick={() => setActiveTab(item.id)} // Just call the function directly
+              onClick={() => setActiveTab(item.id)}
+              title={item.label} // Add tooltip for collapsed state
             >
               {item.icon}
               <span>{item.label}</span>
@@ -79,7 +83,7 @@ export default function StaffSidebar({
         </nav>
 
         <div className="sidebar-footer">
-          <button className="log-btn" onClick={handleLogout}>
+          <button className="log-btn" onClick={handleLogout} title="Logout">
             <FaSignOutAlt />
             <span>Logout</span>
           </button>
