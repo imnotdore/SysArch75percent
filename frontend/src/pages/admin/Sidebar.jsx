@@ -1,3 +1,7 @@
+import React from "react";
+import { FaTachometerAlt, FaUserClock, FaUserCheck, FaUsers, FaBox, FaSignOutAlt } from "react-icons/fa";
+
+export      
 const Sidebar = ({ sidebarRef, sidebarOpen, activeTab, setActiveTab, setSidebarOpen, handleLogout }) => (
   <div ref={sidebarRef} className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
     <div className="sidebar-header">
@@ -72,3 +76,5 @@ const Sidebar = ({ sidebarRef, sidebarOpen, activeTab, setActiveTab, setSidebarO
     </button>
   </div>
 );
+
+export default Sidebar;
