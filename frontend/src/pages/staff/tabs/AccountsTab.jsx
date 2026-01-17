@@ -1,3 +1,4 @@
+// AccountsTab.js
 export default function AccountsTab({
   pendingAccounts,
   setSelectedPendingAccount,
@@ -10,7 +11,9 @@ export default function AccountsTab({
       <h2>Pending Resident Accounts</h2>
       
       {pendingAccounts.length === 0 ? (
-        <p>No pending accounts waiting for approval.</p>
+        <div className="no-data-message">
+          <p>No pending resident accounts waiting for approval.</p>
+        </div>
       ) : (
         <div className="table-container">
           <table>
@@ -21,6 +24,7 @@ export default function AccountsTab({
                 <th>Address</th>
                 <th>Age</th>
                 <th>Gender</th>
+                <th>ID Type</th>
                 <th>ID Preview</th>
                 <th>Actions</th>
               </tr>
@@ -32,7 +36,15 @@ export default function AccountsTab({
                   <td>{resident.username}</td>
                   <td>{resident.address}</td>
                   <td>{resident.age}</td>
-                  <td>{resident.gender}</td>
+                  <td>{resident.sex || resident.gender}</td>
+                  <td>
+                    {resident.valid_id_type || "Not specified"}
+                    {resident.valid_id_type === "Others" && resident.other_id_type && (
+                      <div style={{ fontSize: "11px", color: "#666", marginTop: "3px" }}>
+                        ({resident.other_id_type})
+                      </div>
+                    )}
+                  </td>
                   <td>
                     {resident.id_picture ? (
                       <img

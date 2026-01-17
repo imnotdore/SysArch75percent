@@ -9,23 +9,17 @@ exports.cancelFileRequest = async (req, res) => {
     const fileId = req.params.id;
     const residentId = req.user.id;
 
-    // Check if file exists and belongs to the resident
+    // Check if file exists and belongs to resident
     const [fileRows] = await db.query(
       `SELECT * FROM resident_requests 
-       WHERE id = ? AND resident_id = ?`,
+       WHERE id = ? AND resident_id = ? AND status = 'pending'`,
       [fileId, residentId]
     );
 
     if (fileRows.length === 0) {
-      return res.status(404).json({ error: "File request not found" });
-    }
-
-    const file = fileRows[0];
-
-    // Check if file is already approved (can't cancel approved requests)
-    if (file.status === 'approved') {
-      return res.status(400).json({ 
-        error: "Cannot cancel approved request. Please contact staff." 
+      return res.status(404).json({ 
+        success: false,
+        error: "File not found or cannot be cancelled" 
       });
     }
 
@@ -36,13 +30,23 @@ exports.cancelFileRequest = async (req, res) => {
       [fileId, residentId]
     );
 
-    res.json({ 
-      message: "Request cancelled successfully",
-      cancelledRequest: file
+    // Also delete the actual file from uploads folder
+    const file = fileRows[0];
+    const filePath = path.join(__dirname, "../uploads", file.filename);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+
+    res.json({
+      success: true,
+      message: "Request cancelled successfully"
     });
   } catch (err) {
     console.error("Cancel error:", err);
-    res.status(500).json({ error: "Failed to cancel request" });
+    res.status(500).json({ 
+      success: false,
+      error: "Failed to cancel request" 
+    });
   }
 };
 
@@ -67,21 +71,49 @@ exports.getDailyTotal = async (req, res) => {
 
 // Get files uploaded by the logged-in resident
 exports.getResidentFiles = async (req, res) => {
-  const residentId = req.user.id;
   try {
+    const residentId = req.user.id;
+    
     const [rows] = await db.query(
-      `SELECT id, filename, status, created_at, date_needed, page_count
-       FROM resident_requests
+      `SELECT 
+        id,
+        filename,
+        original_name,
+        status,
+        DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as created_at,
+        date_needed,
+        page_count,
+        purpose,
+        special_instructions,
+        approved_by,
+        DATE_FORMAT(approved_at, '%Y-%m-%d %H:%i:%s') as approved_at,
+        released_by,
+        DATE_FORMAT(released_at, '%Y-%m-%d %H:%i:%s') as released_at,
+        claimed_by,
+        DATE_FORMAT(claimed_at, '%Y-%m-%d %H:%i:%s') as claimed_at,
+        printed_by,
+        DATE_FORMAT(printed_at, '%Y-%m-%d %H:%i:%s') as printed_at,
+        notified_by,
+        DATE_FORMAT(notified_at, '%Y-%m-%d %H:%i:%s') as notified_at
+       FROM resident_requests 
        WHERE resident_id = ?
        ORDER BY created_at DESC`,
       [residentId]
     );
-    res.json(rows);
+
+    res.json({
+      success: true,
+      data: rows
+    });
   } catch (err) {
-    console.error("Error fetching files:", err);
-    res.status(500).json({ error: "Failed to fetch files" });
+    console.error("Error fetching resident files:", err);
+    res.status(500).json({ 
+      success: false,
+      error: "Failed to fetch files" 
+    });
   }
 };
+
 
 // Upload a new file
 exports.uploadFile = async (req, res) => {
@@ -89,110 +121,213 @@ exports.uploadFile = async (req, res) => {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
     const residentId = req.user.id;
-    const { dateNeeded, pageCount } = req.body;
-    const pages = Number(pageCount);
+    const { purpose, dateNeeded, pageCount, specialInstructions } = req.body;
 
-    if (!dateNeeded || !pages || pages <= 0) {
-      return res.status(400).json({ error: "Invalid page count or date" });
-    }
-
-    // Fetch dynamic limits
-    const [limitRows] = await db.query("SELECT type, value FROM upload_limits");
-    const limits = Object.fromEntries(limitRows.map(r => [r.type, r.value]));
-
-    // Defaults updated to 30 per resident, 100 global
-    const MAX_RESIDENT_DAILY = limits.resident || 30;
-    const MAX_TOTAL_DAILY = limits.global || 100;
-
-    // Check resident daily total
-    const [residentRows] = await db.query(
-      `SELECT SUM(page_count) AS total FROM resident_requests
-       WHERE date_needed = ? AND resident_id = ? AND status IN ('pending','approved')`,
-      [dateNeeded, residentId]
-    );
-    const residentTotal = residentRows[0].total || 0;
-    const remainingResident = MAX_RESIDENT_DAILY - residentTotal;
-    if (pages > remainingResident) {
-      return res.status(400).json({
-        error: `❌ You can only upload ${remainingResident} more pages for ${dateNeeded}. Already uploaded: ${residentTotal}.`
+    // Validate required fields
+    if (!purpose || !dateNeeded || !pageCount) {
+      return res.status(400).json({ 
+        error: "Purpose, date needed, and page count are required" 
       });
     }
 
-    // Check global daily total
+    const pages = parseInt(pageCount);
+    if (isNaN(pages) || pages <= 0) {
+      return res.status(400).json({ error: "Invalid page count" });
+    }
+
+    // Check resident daily limit (30 pages)
+    const [residentRows] = await db.query(
+      `SELECT COALESCE(SUM(page_count), 0) AS total 
+       FROM resident_requests 
+       WHERE resident_id = ? 
+         AND date_needed = ? 
+         AND status IN ('pending', 'approved')`,
+      [residentId, dateNeeded]
+    );
+
+    const residentUsed = residentRows[0].total || 0;
+    const residentLimit = 30; // Daily limit per resident
+    const residentRemaining = residentLimit - residentUsed;
+
+    if (pages > residentRemaining) {
+      return res.status(400).json({
+        error: `You can only upload ${residentRemaining} more pages for ${dateNeeded}`,
+        limit: residentLimit,
+        used: residentUsed,
+        remaining: residentRemaining,
+        requested: pages
+      });
+    }
+
+    // Check system daily limit (100 pages total)
     const [globalRows] = await db.query(
-      `SELECT SUM(page_count) AS total FROM resident_requests
-       WHERE date_needed = ? AND status IN ('pending','approved')`,
+      `SELECT COALESCE(SUM(page_count), 0) AS total 
+       FROM resident_requests 
+       WHERE date_needed = ? 
+         AND status IN ('pending', 'approved')`,
       [dateNeeded]
     );
-    const globalTotal = globalRows[0].total || 0;
-    const remainingGlobal = MAX_TOTAL_DAILY - globalTotal;
-    if (pages > remainingGlobal) {
+
+    const globalUsed = globalRows[0].total || 0;
+    const systemLimit = 100; // System-wide daily limit
+    const systemRemaining = systemLimit - globalUsed;
+
+    if (pages > systemRemaining) {
       return res.status(400).json({
-        error: `❌ Only ${remainingGlobal} pages left for ${dateNeeded}. Total limit: ${MAX_TOTAL_DAILY}.`
+        error: `Only ${systemRemaining} pages left in system for ${dateNeeded}`,
+        limit: systemLimit,
+        used: globalUsed,
+        remaining: systemRemaining,
+        requested: pages
       });
     }
 
-    // Insert record
-    await db.query(
-      `INSERT INTO resident_requests
-       (resident_id, filename, status, created_at, date_needed, page_count)
-       VALUES (?, ?, 'pending', NOW(), ?, ?)`,
-      [residentId, req.file.filename, dateNeeded, pages]
+    // Insert the file request
+    const [result] = await db.query(
+      `INSERT INTO resident_requests 
+       (resident_id, filename, original_name, status, created_at, 
+        date_needed, page_count, purpose, special_instructions)
+       VALUES (?, ?, ?, 'pending', NOW(), ?, ?, ?, ?)`,
+      [
+        residentId,
+        req.file.filename,
+        req.file.originalname,
+        dateNeeded,
+        pages,
+        purpose,
+        specialInstructions || null
+      ]
+    );
+
+    // Get the inserted record
+    const [newRecord] = await db.query(
+      `SELECT * FROM resident_requests WHERE id = ?`,
+      [result.insertId]
     );
 
     res.json({
-      message: "✅ File uploaded",
-      filename: req.file.filename,
-      status: "pending",
-      date_needed: dateNeeded,
-      page_count: pages,
-      remainingResident,
-      remainingGlobal,
+      success: true,
+      message: "✅ File uploaded successfully!",
+      data: newRecord[0],
+      limits: {
+        resident: {
+          limit: residentLimit,
+          used: residentUsed + pages,
+          remaining: residentRemaining - pages
+        },
+        system: {
+          limit: systemLimit,
+          used: globalUsed + pages,
+          remaining: systemRemaining - pages
+        }
+      }
     });
   } catch (err) {
     console.error("Upload error:", err);
-    res.status(500).json({ error: "Upload failed" });
+    res.status(500).json({ 
+      success: false,
+      error: "Upload failed. Please try again." 
+    });
   }
 };
 
 // Check availability for a single date
+// Sa checkAvailability function
 exports.checkAvailability = async (req, res) => {
-  const { date } = req.params;
-  const residentId = req.user.id;
-  if (!date) return res.status(400).json({ error: "date is required" });
-
   try {
-    const [limitRows] = await db.query("SELECT type, value FROM upload_limits");
-    const limits = Object.fromEntries(limitRows.map(r => [r.type, r.value]));
+    const { date } = req.params;
+    const residentId = req.user.id;
 
-    const MAX_TOTAL_DAILY = limits.global || 100;
-    const MAX_RESIDENT_DAILY = limits.resident || 30;
+    if (!date) {
+      return res.status(400).json({ error: "Date is required" });
+    }
 
+    const residentLimit = 30;
+    const systemLimit = 100;
+
+    // Get resident's usage for the date
+    const [residentRows] = await db.query(
+      `SELECT COALESCE(SUM(page_count), 0) AS total 
+       FROM resident_requests 
+       WHERE resident_id = ? 
+         AND date_needed = ? 
+         AND status IN ('pending', 'approved')`,
+      [residentId, date]
+    );
+
+    // Get system-wide usage for the date
     const [globalRows] = await db.query(
-      `SELECT SUM(page_count) AS total FROM resident_requests
-       WHERE date_needed = ? AND status IN ('pending','approved')`,
+      `SELECT COALESCE(SUM(page_count), 0) AS total 
+       FROM resident_requests 
+       WHERE date_needed = ? 
+         AND status IN ('pending', 'approved')`,
       [date]
     );
-    const [residentRows] = await db.query(
-      `SELECT SUM(page_count) AS total FROM resident_requests
-       WHERE date_needed = ? AND resident_id = ? AND status IN ('pending','approved')`,
-      [date, residentId]
-    );
+
+    const residentUsed = residentRows[0].total || 0;
+    const systemUsed = globalRows[0].total || 0;
 
     res.json({
       date,
-      totalPages: globalRows[0].total || 0,
-      residentPages: residentRows[0].total || 0,
-      slotsLeft: Math.max(0, MAX_TOTAL_DAILY - (globalRows[0].total || 0)),
-      residentSlotsLeft: Math.max(0, MAX_RESIDENT_DAILY - (residentRows[0].total || 0)),
-      isFull: (globalRows[0].total || 0) >= MAX_TOTAL_DAILY,
-      residentFull: (residentRows[0].total || 0) >= MAX_RESIDENT_DAILY,
+      residentLimit,
+      systemLimit,
+      residentUsed,
+      systemUsed,
+      residentRemaining: Math.max(0, residentLimit - residentUsed),
+      systemRemaining: Math.max(0, systemLimit - systemUsed),
+      residentFull: residentUsed >= residentLimit,
+      systemFull: systemUsed >= systemLimit
     });
   } catch (err) {
-    console.error("Error checking availability:", err);
+    console.error("Availability check error:", err);
     res.status(500).json({ error: "Failed to check availability" });
   }
 };
+
+
+// Get all dates availability (for calendar)
+exports.getAllAvailability = async (req, res) => {
+  try {
+    const residentId = req.user.id;
+    const residentLimit = 30;
+    const systemLimit = 100;
+
+    const [rows] = await db.query(
+      `SELECT 
+        date_needed,
+        COALESCE(SUM(page_count), 0) as total_pages,
+        COALESCE(SUM(CASE WHEN resident_id = ? THEN page_count ELSE 0 END), 0) as resident_pages
+       FROM resident_requests
+       WHERE status IN ('pending', 'approved')
+       GROUP BY date_needed
+       ORDER BY date_needed`,
+      [residentId]
+    );
+
+    const availability = rows.map(row => ({
+      date_needed: row.date_needed,
+      total_pages: row.total_pages,
+      resident_pages: row.resident_pages,
+      system_remaining: Math.max(0, systemLimit - row.total_pages),
+      resident_remaining: Math.max(0, residentLimit - row.resident_pages),
+      system_full: row.total_pages >= systemLimit,
+      resident_full: row.resident_pages >= residentLimit
+    }));
+
+    res.json({
+      success: true,
+      data: availability,
+      limits: {
+        resident: residentLimit,
+        system: systemLimit
+      }
+    });
+  } catch (err) {
+    console.error("Error fetching all availability:", err);
+    res.status(500).json({ error: "Failed to fetch availability" });
+  }
+};
+
 
 // Get availability for all dates
 exports.getAvailability = async (req, res) => {
@@ -208,11 +343,16 @@ exports.getAvailability = async (req, res) => {
       [residentId]
     );
 
-    const [limitRows] = await db.query("SELECT type, value FROM upload_limits");
-    const limits = Object.fromEntries(limitRows.map(r => [r.type, r.value]));
+    // Get limits from database
+    const [limitRows] = await db.query(`
+      SELECT 
+        MAX(CASE WHEN type = 'global' AND staff_id IS NULL THEN value END) as system_limit,
+        MAX(CASE WHEN type = 'resident' AND staff_id IS NULL THEN value END) as resident_limit
+      FROM upload_limits
+    `);
 
-    const MAX_TOTAL_DAILY = limits.global || 100;
-    const MAX_RESIDENT_DAILY = limits.resident || 30;
+    const MAX_TOTAL_DAILY = limitRows[0].system_limit || 100;
+    const MAX_RESIDENT_DAILY = limitRows[0].resident_limit || 30;
 
     const availability = rows.map(r => ({
       date_needed: r.date_needed,
@@ -220,11 +360,19 @@ exports.getAvailability = async (req, res) => {
       residentPages: r.residentPages,
       slotsLeft: Math.max(0, MAX_TOTAL_DAILY - r.totalPages),
       residentSlotsLeft: Math.max(0, MAX_RESIDENT_DAILY - r.residentPages),
+      systemLimit: MAX_TOTAL_DAILY,      // IMPORTANT: Include the limit
+      residentLimit: MAX_RESIDENT_DAILY, // IMPORTANT: Include the limit
       isFull: r.totalPages >= MAX_TOTAL_DAILY,
       residentFull: r.residentPages >= MAX_RESIDENT_DAILY,
     }));
 
-    res.json({ limits: { resident: MAX_RESIDENT_DAILY, global: MAX_TOTAL_DAILY }, dates: availability });
+    res.json({ 
+      limits: { 
+        system: MAX_TOTAL_DAILY, 
+        resident: MAX_RESIDENT_DAILY 
+      }, 
+      dates: availability 
+    });
   } catch (err) {
     console.error("Error fetching availability:", err);
     res.status(500).json({ error: "Failed to fetch availability" });
@@ -383,5 +531,46 @@ exports.getAcceptedSchedules = async (req, res) => {
   } catch (err) {
     console.error("Error fetching accepted schedules:", err);
     res.status(500).json({ error: "Failed to fetch accepted schedules" });
+  }
+};
+
+
+// Get upload limits
+exports.getLimits = async (req, res) => {
+  try {
+    // You can store limits in a database table or use hardcoded values
+    const [limitRows] = await db.query(
+      `SELECT type, value FROM upload_limits WHERE staff_id IS NULL`
+    );
+
+    // If no limits in database, use defaults
+    let limits = [];
+    if (limitRows.length > 0) {
+      limits = limitRows;
+    } else {
+      // Default limits
+      limits = [
+        { type: 'resident', value: 30, description: 'Daily page limit per resident' },
+        { type: 'global', value: 100, description: 'Daily system-wide page limit' }
+      ];
+    }
+
+    res.json({
+      success: true,
+      data: {
+        limits: limits
+      }
+    });
+  } catch (err) {
+    console.error("Error fetching limits:", err);
+    res.json({
+      success: true,
+      data: {
+        limits: [
+          { type: 'resident', value: 30 },
+          { type: 'global', value: 100 }
+        ]
+      }
+    });
   }
 };

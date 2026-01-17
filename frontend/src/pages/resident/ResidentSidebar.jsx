@@ -86,7 +86,7 @@ export default function ResidentSidebar({ sidebarRef, sidebarOpen, isMobile, onL
       style={{
         position: isMobile ? "fixed" : "relative",
         top: 0,
-        left: sidebarOpen || !isMobile ? 0 : "-240px",
+        left: sidebarOpen || !isMobile ? 0 : "-250px",
         height: isMobile ? "100vh" : "200vh",
         width: "250px",
         backgroundColor: "#A43259",

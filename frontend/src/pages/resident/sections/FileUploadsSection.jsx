@@ -1,16 +1,226 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import StatusBadge from "../common/StatusBadge";
 import DateFormatter from "../common/DateFormatter";
+import { 
+  FaInfoCircle, 
+  FaExclamationTriangle, 
+  FaFilePdf, 
+  FaFileWord, 
+  FaFileImage, 
+  FaFileAlt,
+  FaEye,
+  FaTrash
+} from "react-icons/fa";
+import "./FileUploadsSection.css";
 
-export default function FileUploadsSection({ uploadedFiles, loading, error, onCancelFile }) {
+export default function FileUploadsSection({ 
+  uploadedFiles, 
+  loading, 
+  error, 
+  onCancelFile,
+  getStatusDisplayName,
+  getStatusStyle
+}) {
   const [expandedFile, setExpandedFile] = useState(null);
   const [hoveredRow, setHoveredRow] = useState(null);
+  const [previewFile, setPreviewFile] = useState(null);
+  const [limits, setLimits] = useState({ resident: 30, system: 100 });
+  const [todayUsage, setTodayUsage] = useState({ resident: 0, system: 0 });
+
+  // Get file icon based on file type
+  const getFileIcon = (fileName) => {
+    if (!fileName) return <FaFileAlt className="file-type-icon" />;
+    
+    const ext = fileName.split('.').pop().toLowerCase();
+    
+    switch(ext) {
+      case 'pdf':
+        return <FaFilePdf className="file-type-icon pdf" />;
+      case 'doc':
+      case 'docx':
+        return <FaFileWord className="file-type-icon word" />;
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+        return <FaFileImage className="file-type-icon image" />;
+      default:
+        return <FaFileAlt className="file-type-icon" />;
+    }
+  };
+
+  // Truncate file name
+  const truncateFileName = (name, maxLength = 30) => {
+    if (!name) return "Unnamed File";
+    if (name.length <= maxLength) return name;
+    return name.substring(0, maxLength) + '...';
+  };
+
+  // Get file size in readable format
+  const getFileSize = (bytes) => {
+    if (!bytes) return "N/A";
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / 1048576).toFixed(1) + " MB";
+  };
+
+  // Handle file preview
+  const handlePreview = (file) => {
+    // If file has a URL (from backend), use it
+    if (file.file_url) {
+      window.open(file.file_url, '_blank');
+    } else {
+      // Otherwise show a modal with file details
+      setPreviewFile(file);
+    }
+  };
+
+  // Preview Modal Component
+  const PreviewModal = ({ file, onClose }) => {
+    if (!file) return null;
+
+    return (
+      <div className="preview-modal-overlay" onClick={onClose}>
+        <div className="preview-modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="preview-modal-header">
+            <div className="preview-file-icon">
+              {getFileIcon(file.original_name || file.filename)}
+            </div>
+            <div className="preview-file-info">
+              <h3>{truncateFileName(file.original_name || file.filename, 40)}</h3>
+              <div className="preview-file-meta">
+                <span>Size: {getFileSize(file.file_size)}</span>
+                <span>Pages: {file.page_count}</span>
+                <span>Type: {file.file_type || "Unknown"}</span>
+              </div>
+            </div>
+            <button className="preview-close-btn" onClick={onClose}>×</button>
+          </div>
+          
+          <div className="preview-modal-body">
+            <div className="preview-section">
+              <h4>📝 File Details</h4>
+              <div className="preview-details-grid">
+                <div className="preview-detail">
+                  <span className="detail-label">Purpose:</span>
+                  <span className="detail-value">{file.purpose || "Not specified"}</span>
+                </div>
+                <div className="preview-detail">
+                  <span className="detail-label">Date Needed:</span>
+                  <span className="detail-value">
+                    <DateFormatter date={file.date_needed} />
+                  </span>
+                </div>
+                <div className="preview-detail">
+                  <span className="detail-label">Uploaded:</span>
+                  <span className="detail-value">
+                    <DateFormatter date={file.created_at} />
+                  </span>
+                </div>
+                <div className="preview-detail">
+                  <span className="detail-label">Status:</span>
+                  <span 
+                    className="detail-value"
+                    style={getStatusStyle(file.status)}
+                  >
+                    {getStatusDisplayName(file.status)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {file.specialInstructions && (
+              <div className="preview-section">
+                <h4>📋 Special Instructions</h4>
+                <div className="preview-instructions">
+                  {file.specialInstructions}
+                </div>
+              </div>
+            )}
+
+            <div className="preview-actions">
+              {file.file_url ? (
+                <a 
+                  href={file.file_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="preview-action-btn primary"
+                >
+                  <FaEye /> Open Original File
+                </a>
+              ) : (
+                <button className="preview-action-btn disabled">
+                  ⚠️ File not available for preview
+                </button>
+              )}
+              
+              {file.status?.toLowerCase() === "pending" && (
+                <button 
+                  onClick={() => {
+                    onClose();
+                    onCancelFile(file);
+                  }}
+                  className="preview-action-btn danger"
+                >
+                  <FaTrash /> Cancel Request
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  useEffect(() => {
+    const fetchLimits = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const baseUrl = window.API_URL || "http://localhost:3000";
+        const today = new Date().toISOString().split('T')[0];
+
+        const limitsRes = await fetch(`${baseUrl}/api/files/limits`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (limitsRes.ok) {
+          const data = await limitsRes.json();
+          if (data.success) {
+            const residentLimit = data.data?.limits?.find(l => l.type === 'resident')?.value || 30;
+            const systemLimit = data.data?.limits?.find(l => l.type === 'global')?.value || 100;
+            setLimits({ resident: residentLimit, system: systemLimit });
+          }
+        }
+
+        const todayFiles = uploadedFiles.filter(file => {
+          const fileDate = new Date(file.date_needed).toISOString().split('T')[0];
+          return fileDate === today && file.status !== 'rejected';
+        });
+
+        const residentPages = todayFiles.reduce((sum, file) => sum + (file.page_count || 0), 0);
+        setTodayUsage({ 
+          resident: residentPages, 
+          system: residentPages
+        });
+
+      } catch (err) {
+        console.error("Error fetching limits:", err);
+      }
+    };
+
+    if (!loading && uploadedFiles.length > 0) {
+      fetchLimits();
+    }
+  }, [uploadedFiles, loading]);
+
+  const residentRemaining = limits.resident - todayUsage.resident;
+  const systemRemaining = limits.system - todayUsage.system;
 
   if (loading) {
     return (
-      <section style={styles.section}>
-        <div style={styles.loadingContainer}>
-          <div style={styles.spinner}></div>
+      <section className="file-uploads-section">
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
           <p>Loading your files...</p>
         </div>
       </section>
@@ -19,9 +229,9 @@ export default function FileUploadsSection({ uploadedFiles, loading, error, onCa
 
   if (error) {
     return (
-      <section style={styles.section}>
-        <div style={styles.errorContainer}>
-          <div style={styles.errorIcon}>⚠️</div>
+      <section className="file-uploads-section">
+        <div className="error-container">
+          <div className="error-icon">⚠️</div>
           <h3>Error Loading Files</h3>
           <p>{error}</p>
         </div>
@@ -30,307 +240,188 @@ export default function FileUploadsSection({ uploadedFiles, loading, error, onCa
   }
 
   return (
-    <section style={styles.section}>
-      <div style={styles.sectionHeader}>
-        <h2 style={styles.sectionTitle}>
-          📁 Your Uploaded Files
-          <span style={styles.countBadge}>{uploadedFiles.length}</span>
-        </h2>
-        <p style={styles.sectionSubtitle}>
-          Manage and track your file upload requests
-        </p>
-      </div>
-
-      {uploadedFiles.length === 0 ? (
-        <div style={styles.emptyState}>
-          <div style={styles.emptyIcon}>📄</div>
-          <h3>No Files Uploaded Yet</h3>
-          <p>You haven't uploaded any files. Start by submitting a print request.</p>
+    <>
+      <section className="file-uploads-section">
+       {/* ========== DAILY LIMITS ========== */}
+<div className="daily-limits-section">
+  <h3 className="limits-title">Daily Usage Limits</h3>
+  
+  <div className="limits-container">
+    {/* Personal Limit Card */}
+    <div className="limit-card">
+      <div className="limit-header">
+        <div className="limit-icon">👤</div>
+        <div>
+          <h4>Your Daily Limit</h4>
+          <p>Personal printing allowance</p>
         </div>
-      ) : (
-        <div style={styles.tableContainer}>
-          <table style={styles.table}>
-            <thead>
-              <tr style={styles.tableHeader}>
-                <th style={styles.th}>File Information</th>
-                <th style={styles.th}>Date Needed</th>
-                <th style={styles.th}>Pages</th>
-                <th style={styles.th}>Uploaded</th>
-                <th style={styles.th}>Status</th>
-                <th style={styles.th}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {uploadedFiles.map((file) => (
-                <tr 
-                  key={file.id} 
-                  style={{
-                    ...styles.tableRow,
-                    backgroundColor: hoveredRow === file.id ? '#F7FAFC' : 'transparent'
-                  }}
-                  onMouseEnter={() => setHoveredRow(file.id)}
-                  onMouseLeave={() => setHoveredRow(null)}
-                >
-                  <td style={styles.td}>
-                    <div style={styles.fileInfo}>
-                      <div style={styles.fileIcon}>📄</div>
-                      <div style={styles.fileDetails}>
-                        <strong style={styles.fileName}>
-                          {file.original_name || file.filename}
-                        </strong>
-                        <div style={styles.fileMeta}>
-                          Purpose: {file.purpose || "Not specified"}
-                        </div>
-                        {file.specialInstructions && (
+      </div>
+      
+      <div className="limit-progress">
+        <div className="progress-bar">
+          <div 
+            className="progress-fill" 
+            style={{ width: `${(1/30)*100}%` }}
+          ></div>
+        </div>
+        
+        <div className="progress-text">
+          <div className="current-count">
+            {1} <span>/ 30 pages</span>
+          </div>
+          
+          <div className="remaining-count">
+            <span className="remaining-icon">✅</span>
+            {29} pages remaining
+          </div>
+        </div>
+      </div>
+      
+    </div>
+    
+    {/* System Capacity Card */}
+    <div className="limit-card">
+      <div className="limit-header">
+        <div className="limit-icon">🌐</div>
+        <div>
+          <h4>System Capacity</h4>
+          <p>Shared printer availability</p>
+        </div>
+      </div>
+      
+      <div className="limit-progress">
+        <div className="progress-bar">
+          <div 
+            className="progress-fill" 
+            style={{ width: `${(1/100)*100}%` }}
+          ></div>
+        </div>
+        
+        <div className="progress-text">
+          <div className="current-count">
+            {1} <span>/ 100 pages</span>
+          </div>
+          
+          <div className="remaining-count">
+            <span className="remaining-icon">✅</span>
+            {99} pages available
+          </div>
+        </div>
+      </div>
+      
+      <div className="limit-footer">
+     
+        <div className="reset-info">
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+        {uploadedFiles.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-icon">📄</div>
+            <h3>No Files Uploaded</h3>
+            <p>You haven't uploaded any files yet.</p>
+          </div>
+        ) : (
+          <div className="table-container">
+            <table className="files-table">
+              <thead>
+                <tr className="table-header">
+                  <th className="table-th">File</th>
+                  <th className="table-th">Date Needed</th>
+                  <th className="table-th">Pages</th>
+                  <th className="table-th">Uploaded</th>
+                  <th className="table-th">Status</th>
+                  <th className="table-th">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {uploadedFiles.map((file) => (
+                  <tr 
+                    key={file.id} 
+                    className={`table-row ${hoveredRow === file.id ? 'hovered' : ''}`}
+                    onMouseEnter={() => setHoveredRow(file.id)}
+                    onMouseLeave={() => setHoveredRow(null)}
+                  >
+                    <td className="table-td">
+                      <div className="file-info-compact">
+                        <button 
+                          className="file-preview-btn"
+                          onClick={() => handlePreview(file)}
+                          title="Click to preview file details"
+                        >
+                          <div className="file-icon-wrapper">
+                            {getFileIcon(file.original_name || file.filename)}
+                          </div>
+                          <div className="file-info-mini">
+                            <div className="file-name-mini">
+                              {truncateFileName(file.original_name || file.filename, 25)}
+                            </div>
+                            <div className="file-size-mini">
+                              {getFileSize(file.file_size)}
+                            </div>
+                          </div>
+                        </button>
+                      </div>
+                    </td>
+                    <td className="table-td">
+                      <div className="date-cell">
+                        <DateFormatter date={file.date_needed} />
+                      </div>
+                    </td>
+                    <td className="table-td">
+                      <span className="page-count">{file.page_count}</span>
+                    </td>
+                    <td className="table-td">
+                      <div className="date-cell">
+                        <DateFormatter date={file.created_at} />
+                      </div>
+                    </td>
+                    <td className="table-td">
+                      <span 
+                        className="custom-status-badge"
+                        style={getStatusStyle(file.status)}
+                      >
+                        {getStatusDisplayName(file.status)}
+                      </span>
+                    </td>
+                    <td className="table-td">
+                      <div className="action-buttons">
+                        <button
+                          className="preview-btn"
+                          onClick={() => handlePreview(file)}
+                          title="Preview file details"
+                        >
+                          <FaEye />
+                        </button>
+                        
+                        {file.status?.toLowerCase() === "pending" && (
                           <button
-                            onClick={() => setExpandedFile(expandedFile === file.id ? null : file.id)}
-                            style={styles.toggleInstructions}
+                            onClick={() => onCancelFile(file)}
+                            className="cancel-btn"
+                            title="Cancel this request"
                           >
-                            {expandedFile === file.id ? "▲ Hide" : "▼ Show"} Instructions
+                            <FaTrash />
                           </button>
                         )}
                       </div>
-                    </div>
-                    {expandedFile === file.id && file.specialInstructions && (
-                      <div style={styles.instructionsBox}>
-                        <strong>Special Instructions:</strong>
-                        <p style={styles.instructionsText}>{file.specialInstructions}</p>
-                      </div>
-                    )}
-                  </td>
-                  <td style={styles.td}>
-                    <DateFormatter date={file.date_needed} />
-                  </td>
-                  <td style={styles.td}>
-                    <span style={styles.pageCount}>{file.page_count}</span>
-                  </td>
-                  <td style={styles.td}>
-                    <DateFormatter date={file.created_at} />
-                  </td>
-                  <td style={styles.td}>
-                    <StatusBadge status={file.status} />
-                  </td>
-                  <td style={styles.td}>
-                    {file.status?.toLowerCase() === "pending" && (
-                      <button
-                        onClick={() => onCancelFile(file)}
-                        style={{
-                          ...styles.cancelButton,
-                          backgroundColor: hoveredRow === file.id ? '#DC2626' : '#FEF2F2',
-                          color: hoveredRow === file.id ? 'white' : '#DC2626'
-                        }}
-                        title="Cancel this request"
-                      >
-                        🗑️ Cancel
-                      </button>
-                    )}
-                    {file.status?.toLowerCase() === "approved" && (
-                      <span style={styles.approvedText}>✅ Ready</span>
-                    )}
-                    {file.status?.toLowerCase() === "rejected" && (
-                      <span style={styles.rejectedText}>❌ Denied</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </section>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      {/* Preview Modal */}
+      <PreviewModal 
+        file={previewFile} 
+        onClose={() => setPreviewFile(null)} 
+      />
+    </>
   );
 }
-
-const styles = {
-  section: {
-    backgroundColor: "#fff",
-    borderRadius: "12px",
-    boxShadow: "0 4px 15px rgba(0,0,0,0.1)",
-    padding: "30px",
-    marginBottom: "30px",
-    border: "1px solid #f0f0f0",
-  },
-  sectionHeader: {
-    marginBottom: "25px",
-    borderBottom: "2px solid #f0f0f0",
-    paddingBottom: "15px",
-  },
-  sectionTitle: {
-    color: "#2D3748",
-    fontSize: "1.5rem",
-    fontWeight: "700",
-    margin: "0",
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-  },
-  countBadge: {
-    backgroundColor: "#1E90FF",
-    color: "white",
-    borderRadius: "20px",
-    padding: "2px 10px",
-    fontSize: "0.8rem",
-    fontWeight: "600",
-  },
-  sectionSubtitle: {
-    color: "#666",
-    margin: "5px 0 0 0",
-    fontSize: "0.95rem",
-  },
-  loadingContainer: {
-    textAlign: "center",
-    padding: "40px",
-    color: "#666",
-  },
-  spinner: {
-    border: "3px solid #f3f3f3",
-    borderTop: "3px solid #1E90FF",
-    borderRadius: "50%",
-    width: "40px",
-    height: "40px",
-    animation: "spin 1s linear infinite",
-    margin: "0 auto 15px",
-  },
-  errorContainer: {
-    textAlign: "center",
-    padding: "40px",
-    color: "#DC2626",
-  },
-  errorIcon: {
-    fontSize: "3rem",
-    marginBottom: "15px",
-  },
-  emptyState: {
-    textAlign: "center",
-    padding: "60px 40px",
-    color: "#666",
-  },
-  emptyIcon: {
-    fontSize: "4rem",
-    marginBottom: "20px",
-    opacity: 0.5,
-  },
-  tableContainer: {
-    overflowX: "auto",
-    borderRadius: "8px",
-    border: "1px solid #e0e0e0",
-  },
-  table: {
-    width: "100%",
-    borderCollapse: "collapse",
-    minWidth: "800px",
-  },
-  tableHeader: {
-    backgroundColor: "#F8FAFC",
-    borderBottom: "2px solid #E2E8F0",
-  },
-  th: {
-    padding: "15px 12px",
-    textAlign: "left",
-    fontWeight: "600",
-    color: "#2D3748",
-    fontSize: "0.9rem",
-    borderBottom: "1px solid #E2E8F0",
-  },
-  tableRow: {
-    borderBottom: "1px solid #f0f0f0",
-    transition: "background-color 0.2s ease",
-  },
-  td: {
-    padding: "15px 12px",
-    verticalAlign: "top",
-    borderBottom: "1px solid #f0f0f0",
-  },
-  fileInfo: {
-    display: "flex",
-    alignItems: "flex-start",
-    gap: "12px",
-  },
-  fileIcon: {
-    fontSize: "1.5rem",
-    marginTop: "2px",
-  },
-  fileDetails: {
-    flex: 1,
-  },
-  fileName: {
-    display: "block",
-    color: "#2D3748",
-    fontSize: "0.95rem",
-    marginBottom: "4px",
-    wordBreak: "break-word",
-  },
-  fileMeta: {
-    fontSize: "0.8rem",
-    color: "#666",
-  },
-  toggleInstructions: {
-    background: "none",
-    border: "none",
-    color: "#1E90FF",
-    fontSize: "0.75rem",
-    cursor: "pointer",
-    padding: "2px 0",
-    marginTop: "4px",
-    transition: "color 0.2s ease",
-  },
-  instructionsBox: {
-    marginTop: "10px",
-    padding: "10px",
-    backgroundColor: "#F0F9FF",
-    border: "1px solid #BAE6FD",
-    borderRadius: "6px",
-    fontSize: "0.8rem",
-  },
-  instructionsText: {
-    margin: "5px 0 0 0",
-    color: "#0369A1",
-    lineHeight: "1.4",
-  },
-  pageCount: {
-    backgroundColor: "#EFF6FF",
-    color: "#1E40AF",
-    padding: "4px 8px",
-    borderRadius: "12px",
-    fontSize: "0.8rem",
-    fontWeight: "600",
-  },
-  cancelButton: {
-    backgroundColor: "#FEF2F2",
-    color: "#DC2626",
-    border: "1px solid #FECACA",
-    padding: "6px 12px",
-    borderRadius: "6px",
-    cursor: "pointer",
-    fontSize: "0.8rem",
-    fontWeight: "500",
-    transition: "all 0.2s ease",
-  },
-  approvedText: {
-    color: "#059669",
-    fontWeight: "600",
-    fontSize: "0.8rem",
-  },
-  rejectedText: {
-    color: "#DC2626",
-    fontWeight: "600",
-    fontSize: "0.8rem",
-  },
-};
-
-// Add CSS animations
-const addGlobalStyles = () => {
-  if (typeof document !== 'undefined') {
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-    `;
-    document.head.appendChild(style);
-  }
-};
-
-// Add styles once
-addGlobalStyles();

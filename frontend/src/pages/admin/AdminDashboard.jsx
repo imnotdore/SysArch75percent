@@ -2,13 +2,14 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { FaBars } from "react-icons/fa";
-import Sidebar from "./Sidebar";
 import DashboardCards from "./DashboardCards";
 import UsersTable from "./UsersTable";
 import AddStaffModal from "./AddStaffModal";
 import ConfirmationModal from "./ConfirmationModal";
 import EditUserModal from "./EditUserModal";
 import "./admin.css";
+import ItemManager from "./ItemManager";
+import Sidebar from "./Sidebar";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -158,67 +159,83 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleSaveEdit = async (updatedUser) => {
-    if (!updatedUser?.id) return alert("Invalid user data");
-    try {
-      const type = editModal.type;
-      const endpointType = type === 'resident' ? 'residents' : 'staff';
+const handleSaveEdit = async (updatedUser) => {
+  if (!updatedUser?.id) return alert("Invalid user data");
+  try {
+    const type = editModal.type;
+    const endpointType = type === 'resident' ? 'residents' : 'staff';
 
-      const formData = new FormData();
+    const formData = new FormData();
+    
+    if (type === "staff") {
       formData.append("username", updatedUser.username || "");
+      formData.append("name", updatedUser.name || "");
       formData.append("contact", updatedUser.contact || "");
+      formData.append("staff_id", updatedUser.staff_id || "");
+    } else if (type === "resident") {
+      // Personal Information
+      formData.append("first_name", updatedUser.first_name || "");
+      formData.append("middle_name", updatedUser.middle_name || "");
+      formData.append("last_name", updatedUser.last_name || "");
+      formData.append("suffix", updatedUser.suffix || "");
+      formData.append("sex", updatedUser.sex || "");
+      formData.append("birthday", updatedUser.birthday || "");
+      formData.append("age", updatedUser.age || "");
+      formData.append("civil_status", updatedUser.civil_status || "");
+      formData.append("citizenship", updatedUser.citizenship || "");
       
-      const userFullName = updatedUser.name || updatedUser.full_name || "";
-
-      if (type === "staff") {
-        formData.append("name", userFullName);
-        formData.append("staff_id", updatedUser.staff_id || "");
-      } else if (type === "resident") {
-        formData.append("full_name", userFullName); 
-      }
+      // Address Information
+      formData.append("house_no_street", updatedUser.house_no_street || "");
+      formData.append("purok_sitio", updatedUser.purok_sitio || "");
+      formData.append("barangay", updatedUser.barangay || "");
+      formData.append("city_municipality", updatedUser.city_municipality || "");
+      formData.append("province", updatedUser.province || "");
       
-      if (type === "resident") {
-        formData.append("address", updatedUser.address || "");
-        formData.append("age", updatedUser.age || "");
-        formData.append("gender", updatedUser.gender || "");
-        formData.append("civil_status", updatedUser.civil_status || "");
-        formData.append("youth_classification", updatedUser.youth_classification || "");
-        formData.append("education", updatedUser.education || "");
-        formData.append("registered_sk", updatedUser.registered_sk || "");
-        formData.append("registered_national", updatedUser.registered_national || "");
-        formData.append("birthday", updatedUser.birthday || "");
-        
-        if (updatedUser.id_picture instanceof File) {
-          formData.append("id_picture", updatedUser.id_picture);
-        }
-      }
-
-      const res = await axios.put(
-        `${baseUrl}/api/auth/admin/${endpointType}/${updatedUser.id}`,
-        formData,
-        { headers: { "Content-Type": "multipart/form-data" } }
-      );
-
-      if (res.status === 200) {
-        const updatedData = res.data.data || updatedUser;
-        
-        if (type==="staff") {
-          setApprovedStaff(prev => prev.map(u => u.id===updatedUser.id ? {...u,...updatedData, name: userFullName}:u));
-        }
-        if (type==="resident") {
-          setApprovedResidents(prev => prev.map(u => u.id===updatedUser.id ? {...u,...updatedData, full_name: userFullName}:u));
-        }
-        
-        alert(res.data.message || "Updated successfully");
-        setEditModal({ show:false, user:null, viewOnly:false, type:"" });
-        fetchData();
-      }
-    } catch (err) {
-      console.error("Error saving:", err);
-      alert(`Error saving: ${err.message}. ${err.response?.data?.error || ""}`);
+      // Contact Information
+      formData.append("mobile_number", updatedUser.mobile_number || "");
+      formData.append("email_address", updatedUser.email_address || "");
+      formData.append("email", updatedUser.email_address || "");
+      
+      // Identity Verification
+      formData.append("valid_id_type", updatedUser.valid_id_type || "");
+      formData.append("valid_id_number", updatedUser.valid_id_number || "");
+      
+      // Household Information
+      formData.append("household_id", updatedUser.household_id || "");
+      formData.append("family_role", updatedUser.family_role || "");
+      formData.append("household_members", updatedUser.household_members || "");
+      formData.append("emergency_contact_name", updatedUser.emergency_contact_name || "");
+      formData.append("emergency_contact_number", updatedUser.emergency_contact_number || "");
+      
+      // Account
+      formData.append("username", updatedUser.username || "");
     }
-  };
 
+    const res = await axios.put(
+      `${baseUrl}/api/auth/admin/${endpointType}/${updatedUser.id}`,
+      formData,
+      { headers: { "Content-Type": "multipart/form-data" } }
+    );
+
+    if (res.status === 200) {
+      const updatedData = res.data.data || updatedUser;
+      
+      if (type === "staff") {
+        setApprovedStaff(prev => prev.map(u => u.id === updatedUser.id ? { ...u, ...updatedData } : u));
+      }
+      if (type === "resident") {
+        setApprovedResidents(prev => prev.map(u => u.id === updatedUser.id ? { ...u, ...updatedData } : u));
+      }
+      
+      alert(res.data.message || "Updated successfully");
+      setEditModal({ show: false, user: null, viewOnly: false, type: "" });
+      fetchData();
+    }
+  } catch (err) {
+    console.error("Error saving:", err);
+    alert(`Error saving: ${err.message}. ${err.response?.data?.error || ""}`);
+  }
+};
   // Handle creating staff account
   const handleAddStaff = async () => {
     try {
@@ -293,7 +310,9 @@ export default function AdminDashboard() {
               setShowAddStaffModal={setShowAddStaffModal}
             />
           )}
-
+ {activeTab === "items" && (
+    <ItemManager />
+  )}
           {/* Users Table */}
           {activeTab !== "dashboard" && (
             <UsersTable

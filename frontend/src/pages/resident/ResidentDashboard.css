@@ -1,0 +1,1104 @@
+/* ===== BARANGAY DASHBOARD STYLES ===== */
+
+/* CSS Variables with Filipino color palette */
+:root {
+  --primary-gold: #F4BE2A;          /* Filipino gold - main accent */
+  --secondary-gold: #FF9800;        /* Orange-gold */
+  --deep-gold: #D4A017;             /* Traditional gold */
+  --warm-gold: #FFB347;             /* Warm golden yellow */
+  --dark-bg: #1A472A;               /* Dark green reminiscent of Philippine forests */
+  --light-bg: #F8F6F0;              /* Light cream/beige */
+  --card-shadow: 0 8px 32px rgba(164, 50, 89, 0.1); /* Maroon tint shadow */
+  --card-shadow-hover: 0 16px 48px rgba(164, 50, 89, 0.15);
+  --border-radius: 16px;
+  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --philippine-blue: #0038A8;       /* Philippine flag blue */
+  --philippine-red: #CE1126;        /* Philippine flag red */
+  --sun-yellow: #FCD116;            /* Philippine sun yellow */
+  --barangay-green: #228B22;        /* Barangay green */
+  --accent-maroon: #A43259;         /* Your existing maroon */
+}
+
+/* Main Container with Pinoy touch */
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  padding: 2rem;
+  min-height: calc(100vh - 120px);
+  background: 
+    linear-gradient(135deg, rgba(248, 246, 240, 0.95) 0%, rgba(255, 253, 245, 0.98) 100%),
+    url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><path fill="%23F4BE2A" opacity="0.05" d="M50,5 L95,50 L50,95 L5,50 Z"/></svg>');
+  position: relative;
+  z-index: 1;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 20px;
+  box-shadow: inset 0 0 100px rgba(244, 190, 42, 0.05);
+  font-family: 'Lexend', 'Segoe UI', system-ui, sans-serif;
+}
+
+/* Add decorative corner elements */
+.dashboard-container::before,
+.dashboard-container::after {
+  content: '';
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%23F4BE2A" d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>');
+  background-size: 40px;
+  background-repeat: no-repeat;
+  background-position: center;
+  opacity: 0.1;
+  z-index: -1;
+}
+
+.dashboard-container::before {
+  top: 20px;
+  left: 20px;
+  transform: rotate(180deg);
+}
+
+.dashboard-container::after {
+  bottom: 20px;
+  right: 20px;
+}
+
+/* Media Section - Barangay style */
+.media-section {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 2rem;
+  margin-top: 1rem;
+  align-items: start;
+  transition: var(--transition-smooth);
+  animation: slideUp 0.6s ease-out;
+}
+
+.media-section.mobile {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Video Container - Enhanced with Filipino patterns */
+.video-container {
+  background: linear-gradient(145deg, #ffffff, #fef9f3);
+  border-radius: var(--border-radius);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+  transition: var(--transition-smooth);
+  border: 2px solid var(--primary-gold);
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(244, 190, 42, 0.05) 0%, transparent 20%),
+    radial-gradient(circle at 90% 80%, rgba(244, 190, 42, 0.05) 0%, transparent 20%);
+}
+
+.video-container:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--card-shadow-hover);
+  border-color: var(--secondary-gold);
+}
+
+.video-wrapper {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px 14px 0 0;
+  flex: 1;
+  min-height: 320px;
+  background: linear-gradient(45deg, #f8f4e5, #fff9eb);
+}
+
+/* Add traditional Filipino pattern overlay */
+.video-wrapper::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 60 60"><path fill="%23F4BE2A" opacity="0.03" d="M30,5 C40,5 45,15 45,30 C45,45 35,55 30,55 C25,55 15,45 15,30 C15,15 20,5 30,5 Z"/></svg>');
+  background-size: 40px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.project-video {
+  width: 100%;
+  height: 100%;
+  min-height: 320px;
+  object-fit: cover;
+  display: block;
+  border-radius: 14px 14px 0 0;
+  transition: transform 0.5s ease;
+  position: relative;
+  z-index: 2;
+}
+
+.video-wrapper:hover .project-video {
+  transform: scale(1.03);
+}
+
+.video-overlay {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  z-index: 3;
+}
+
+.video-badge {
+  background: linear-gradient(135deg, var(--primary-gold), var(--sun-yellow));
+  color: var(--dark-bg);
+  padding: 0.5rem 1.25rem;
+  border-radius: 25px;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  box-shadow: 
+    0 4px 15px rgba(244, 190, 42, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  animation: pulse 2.5s infinite;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  font-family: 'Lexend', sans-serif;
+  position: relative;
+  overflow: hidden;
+}
+
+.video-badge::before {
+  content: '★';
+  position: absolute;
+  left: 10px;
+  opacity: 0.5;
+}
+
+.video-badge::after {
+  content: '★';
+  position: absolute;
+  right: 10px;
+  opacity: 0.5;
+}
+
+.video-caption {
+  text-align: center;
+  margin: 1.5rem 0;
+  font-weight: 800;
+  font-size: 1.125rem;
+  color: var(--dark-bg);
+  padding: 0 1.5rem;
+  font-family: 'Lexend', sans-serif;
+  letter-spacing: 0.5px;
+  background: linear-gradient(90deg, var(--primary-gold), var(--sun-yellow));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-transform: uppercase;
+  position: relative;
+}
+
+.video-caption::before,
+.video-caption::after {
+  content: '✦';
+  color: var(--primary-gold);
+  opacity: 0.6;
+  margin: 0 0.5rem;
+}
+
+/* Pictures Container - Enhanced Barangay Style */
+.pictures-container {
+  background: linear-gradient(145deg, #ffffff, #fdfaf5);
+  border-radius: var(--border-radius);
+  box-shadow: var(--card-shadow);
+  border: 2px solid rgba(244, 190, 42, 0.2);
+  transition: var(--transition-smooth);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: fit-content;
+  max-height: 520px;
+  background-image: 
+    linear-gradient(45deg, transparent 90%, rgba(244, 190, 42, 0.03) 90%),
+    linear-gradient(-45deg, transparent 90%, rgba(244, 190, 42, 0.03) 90%);
+}
+
+.pictures-container:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--card-shadow-hover);
+  border-color: rgba(244, 190, 42, 0.4);
+}
+
+.pictures-container.mobile {
+  width: 100%;
+  max-height: 450px;
+}
+
+.pictures-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 1.75rem;
+  border-bottom: 2px solid rgba(244, 190, 42, 0.3);
+  background: linear-gradient(to right, #ffffff, #fffcf7);
+  flex-shrink: 0;
+  position: relative;
+}
+
+.pictures-header::before {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary-gold), var(--sun-yellow), var(--primary-gold));
+  opacity: 0.3;
+}
+
+.pictures-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--dark-bg);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-family: 'Lexend', sans-serif;
+  letter-spacing: 0.3px;
+}
+
+.gallery-icon {
+  width: 24px;
+  height: 24px;
+  color: var(--primary-gold);
+  filter: drop-shadow(0 2px 3px rgba(244, 190, 42, 0.3));
+}
+
+.pictures-count {
+  background: linear-gradient(135deg, var(--primary-gold), var(--sun-yellow));
+  color: var(--dark-bg);
+  padding: 0.375rem 1rem;
+  border-radius: 15px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  box-shadow: 0 3px 10px rgba(244, 190, 42, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  font-family: 'Lexend', sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.pictures-count::before {
+  content: '📸';
+  font-size: 0.75rem;
+}
+
+/* Pictures Scroll Container */
+.pictures-scroll-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.75rem;
+  max-height: 340px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary-gold) #f9f5ee;
+  background: linear-gradient(to bottom, #fdfaf5, #faf6f0);
+}
+
+.pictures-scroll-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.pictures-scroll-container::-webkit-scrollbar-track {
+  background: #f9f5ee;
+  border-radius: 10px;
+  margin: 10px 0;
+  border: 1px solid rgba(244, 190, 42, 0.1);
+}
+
+.pictures-scroll-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, var(--primary-gold), var(--sun-yellow));
+  border-radius: 10px;
+  border: 2px solid #f9f5ee;
+  box-shadow: inset 0 0 3px rgba(0, 0, 0, 0.1);
+}
+
+.pictures-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, var(--sun-yellow), var(--primary-gold));
+}
+
+/* Pictures Grid */
+.pictures-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+  min-height: min-content;
+}
+
+.picture-card {
+  position: relative;
+  cursor: pointer;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: var(--transition-smooth);
+  aspect-ratio: 4/3;
+  border: 2px solid transparent;
+  background: linear-gradient(45deg, #f0e6d0, #f8f2e3);
+}
+
+.picture-card:hover {
+  transform: scale(1.08);
+  box-shadow: 
+    0 12px 30px rgba(0, 0, 0, 0.2),
+    0 4px 15px rgba(244, 190, 42, 0.3);
+  z-index: 2;
+  border-color: var(--primary-gold);
+}
+
+.picture-card.hovered {
+  transform: scale(1.08);
+}
+
+.picture-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.side-picture {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: all 0.5s ease;
+  background: linear-gradient(45deg, #e8dcc0, #f0e6d0);
+}
+
+.picture-card:hover .side-picture {
+  transform: scale(1.1);
+}
+
+.picture-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(244, 190, 42, 0.1),
+    rgba(244, 190, 42, 0.85)
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  border-radius: 10px;
+  backdrop-filter: blur(2px);
+}
+
+.picture-card:hover .picture-overlay {
+  opacity: 1;
+}
+
+.overlay-text {
+  color: var(--dark-bg);
+  font-weight: 700;
+  font-size: 0.8125rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transform: translateY(10px);
+  transition: transform 0.3s ease;
+}
+
+.picture-card:hover .overlay-text {
+  transform: translateY(0);
+}
+
+.zoom-icon {
+  width: 28px;
+  height: 28px;
+  color: var(--primary-gold);
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.2));
+}
+
+.picture-number {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  background: linear-gradient(135deg, var(--primary-gold), var(--sun-yellow));
+  color: var(--dark-bg);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+  font-family: 'Lexend', sans-serif;
+  z-index: 2;
+}
+
+/* View More Button - Enhanced Filipino Style */
+.view-more-container {
+  padding: 1.5rem 1.75rem;
+  border-top: 2px solid rgba(244, 190, 42, 0.3);
+  background: linear-gradient(to right, #ffffff, #fffcf7);
+  flex-shrink: 0;
+  position: relative;
+}
+
+.view-more-container::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary-gold), var(--sun-yellow), var(--primary-gold));
+  opacity: 0.3;
+}
+
+.view-more-btn {
+  width: 100%;
+  padding: 1rem;
+  background: linear-gradient(135deg, var(--primary-gold), var(--sun-yellow));
+  color: var(--dark-bg);
+  border: none;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  font-family: 'Lexend', sans-serif;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  box-shadow: 
+    0 4px 15px rgba(244, 190, 42, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.view-more-btn:hover {
+  transform: translateY(-4px);
+  box-shadow: 
+    0 8px 25px rgba(244, 190, 42, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  background: linear-gradient(135deg, var(--sun-yellow), var(--primary-gold));
+  gap: 1rem;
+}
+
+.view-more-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left 0.6s;
+}
+
+.view-more-btn:hover::before {
+  left: 100%;
+}
+
+.arrow-icon {
+  width: 20px;
+  height: 20px;
+  transition: transform 0.3s ease;
+  color: var(--dark-bg);
+}
+
+.view-more-btn:hover .arrow-icon {
+  transform: translateX(5px) scale(1.1);
+}
+
+/* ===== MODAL STYLES - Enhanced ===== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.95), rgba(26, 71, 42, 0.95));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.25s ease-out;
+  backdrop-filter: blur(12px);
+  padding: 2rem;
+}
+
+.modal-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close {
+  position: absolute;
+  top: -50px;
+  right: 0;
+  background: linear-gradient(135deg, var(--primary-gold), var(--sun-yellow));
+  border: none;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 1001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-smooth);
+  box-shadow: 
+    0 8px 25px rgba(0, 0, 0, 0.3),
+    0 4px 12px rgba(244, 190, 42, 0.4);
+  border: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+.modal-close:hover {
+  background: linear-gradient(135deg, var(--sun-yellow), var(--primary-gold));
+  transform: scale(1.1) rotate(90deg);
+  box-shadow: 
+    0 12px 35px rgba(0, 0, 0, 0.4),
+    0 6px 20px rgba(244, 190, 42, 0.6);
+}
+
+.close-icon {
+  width: 28px;
+  height: 28px;
+  color: var(--dark-bg);
+  font-weight: bold;
+}
+
+.modal-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 12px;
+  background: rgba(20, 20, 20, 0.3);
+  padding: 1.5rem;
+  border: 1px solid rgba(244, 190, 42, 0.2);
+  backdrop-filter: blur(5px);
+}
+
+.enlarged-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+  margin: auto;
+  border-radius: 8px;
+  box-shadow: 
+    0 25px 80px rgba(0, 0, 0, 0.6),
+    0 10px 40px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(244, 190, 42, 0.1);
+  animation: zoomIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(45deg, #111, #222);
+}
+
+.image-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  color: white;
+  font-size: 1.125rem;
+  font-family: 'Lexend', sans-serif;
+  font-weight: 500;
+}
+
+.loading-spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid rgba(244, 190, 42, 0.1);
+  border-radius: 50%;
+  border-top-color: var(--primary-gold);
+  animation: spin 1.2s linear infinite;
+}
+
+.modal-navigation {
+  position: absolute;
+  bottom: -45px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.9375rem;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, rgba(244, 190, 42, 0.3), rgba(255, 209, 22, 0.2));
+  border-radius: 25px;
+  margin: 0 auto;
+  width: fit-content;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-family: 'Lexend', sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+.image-instruction {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.image-instruction::before {
+  content: '💡';
+  font-size: 0.875rem;
+}
+
+/* ===== ANIMATIONS - Enhanced ===== */
+@keyframes fadeIn {
+  from { 
+    opacity: 0; 
+    backdrop-filter: blur(0);
+  }
+  to { 
+    opacity: 1; 
+    backdrop-filter: blur(12px);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes zoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) rotate(-2deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
+
+@keyframes spin {
+  to { 
+    transform: rotate(360deg); 
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { 
+    transform: scale(1);
+    box-shadow: 
+      0 4px 15px rgba(244, 190, 42, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  }
+  50% { 
+    transform: scale(1.05);
+    box-shadow: 
+      0 6px 20px rgba(244, 190, 42, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  }
+}
+
+@keyframes float {
+  0%, 100% { 
+    transform: translateY(0px); 
+  }
+  50% { 
+    transform: translateY(-10px); 
+  }
+}
+
+/* Add decorative Filipino pattern animations */
+@keyframes patternMove {
+  0% { background-position: 0 0; }
+  100% { background-position: 40px 40px; }
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .dashboard-container {
+    padding: 1.75rem;
+    gap: 2rem;
+  }
+  
+  .media-section {
+    gap: 1.75rem;
+    grid-template-columns: 1fr 350px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .dashboard-container {
+    padding: 1.5rem;
+    border-radius: 16px;
+  }
+  
+  .media-section {
+    gap: 1.5rem;
+    grid-template-columns: 1fr 320px;
+  }
+  
+  .video-wrapper {
+    min-height: 280px;
+  }
+  
+  .pictures-container {
+    max-height: 480px;
+  }
+  
+  .pictures-scroll-container {
+    max-height: 320px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 1rem;
+    gap: 1.5rem;
+    border-radius: 12px;
+  }
+  
+  .dashboard-container::before,
+  .dashboard-container::after {
+    width: 50px;
+    height: 50px;
+    background-size: 25px;
+  }
+  
+  .media-section.mobile {
+    gap: 1.5rem;
+  }
+  
+  .video-container {
+    min-height: auto;
+  }
+  
+  .video-wrapper {
+    min-height: 220px;
+  }
+  
+  .project-video {
+    min-height: 220px;
+  }
+  
+  .pictures-container.mobile {
+    max-height: 400px;
+  }
+  
+  .pictures-scroll-container {
+    max-height: 280px;
+    padding: 1.25rem;
+  }
+  
+  .pictures-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  
+  .video-caption {
+    font-size: 1rem;
+    margin: 1rem 0;
+  }
+  
+  .pictures-title {
+    font-size: 1.125rem;
+  }
+  
+  .modal-overlay {
+    padding: 1rem;
+  }
+  
+  .modal-close {
+    top: -40px;
+    width: 50px;
+    height: 50px;
+  }
+  
+  .modal-navigation {
+    bottom: -35px;
+    font-size: 0.875rem;
+    padding: 0.75rem 1.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-container {
+    padding: 0.75rem;
+    gap: 1rem;
+  }
+  
+  .media-section.mobile {
+    gap: 1rem;
+  }
+  
+  .pictures-title {
+    font-size: 1rem;
+    gap: 0.5rem;
+  }
+  
+  .gallery-icon {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .pictures-count {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.75rem;
+  }
+  
+  .overlay-text {
+    font-size: 0.75rem;
+    padding: 0.5rem;
+  }
+  
+  .zoom-icon {
+    width: 22px;
+    height: 22px;
+  }
+  
+  .picture-number {
+    width: 24px;
+    height: 24px;
+    font-size: 0.75rem;
+    top: 0.5rem;
+    left: 0.5rem;
+  }
+  
+  .view-more-btn {
+    padding: 0.75rem;
+    font-size: 0.875rem;
+  }
+  
+  .pictures-scroll-container {
+    padding: 1rem;
+    max-height: 250px;
+  }
+  
+  .modal-navigation {
+    bottom: -30px;
+    font-size: 0.75rem;
+    padding: 0.5rem 1rem;
+  }
+}
+
+/* Desktop Optimization */
+@media (min-width: 1025px) {
+  .pictures-grid {
+    gap: 1.5rem;
+  }
+  
+  .picture-card {
+    aspect-ratio: 1;
+  }
+  
+  .pictures-scroll-container {
+    max-height: 360px;
+  }
+  
+  /* Add hover effects for desktop */
+  .picture-card:hover {
+    animation: float 0.6s ease-in-out;
+  }
+}
+
+/* Accessibility Improvements */
+.picture-card:focus-visible {
+  outline: 3px solid var(--primary-gold);
+  outline-offset: 3px;
+  border-radius: 12px;
+}
+
+.modal-close:focus-visible {
+  outline: 3px solid white;
+  outline-offset: 3px;
+}
+
+/* Loading States with Filipino pattern */
+.project-video {
+  background: linear-gradient(
+    45deg,
+    #f0e6d0 25%,
+    #f8f2e3 50%,
+    #f0e6d0 75%
+  );
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  position: relative;
+}
+
+.project-video::before {
+  content: '🇵🇭';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2rem;
+  opacity: 0.1;
+  animation: pulse 2s infinite;
+}
+
+.side-picture {
+  background: linear-gradient(
+    90deg,
+    #f0e6d0 25%,
+    #f8f2e3 50%,
+    #f0e6d0 75%
+  );
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% { 
+    background-position: 200% 0; 
+  }
+  100% { 
+    background-position: -200% 0; 
+  }
+}
+
+/* Print Styles */
+@media print {
+  .modal-overlay,
+  .modal-content,
+  .video-badge,
+  .picture-overlay,
+  .view-more-btn,
+  .dashboard-container::before,
+  .dashboard-container::after {
+    display: none !important;
+  }
+  
+  .dashboard-container {
+    gap: 1rem;
+    background: white !important;
+    box-shadow: none !important;
+  }
+  
+  .media-section {
+    display: block;
+  }
+  
+  .pictures-container {
+    break-inside: avoid;
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+  }
+}
+
+/* Custom Scrollbar for Modern Browsers */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f5f0e4;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, var(--primary-gold), var(--sun-yellow));
+  border-radius: 5px;
+  border: 2px solid #f5f0e4;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, var(--sun-yellow), var(--primary-gold));
+}
+
+/* Add subtle pattern to the entire dashboard */
+.dashboard-container {
+  background-image: 
+    radial-gradient(circle at 20% 30%, rgba(244, 190, 42, 0.03) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(164, 50, 89, 0.03) 0%, transparent 40%),
+    url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><path fill="%23F4BE2A" opacity="0.02" d="M20,20 L80,20 L80,80 L20,80 Z M30,30 L70,30 L70,70 L30,70 Z"/></svg>');
+}
+
+/* Add decorative corners to cards */
+.video-container::before,
+.pictures-container::before {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: var(--primary-gold);
+  opacity: 0.1;
+  z-index: 1;
+}
+
+.video-container::before {
+  top: 10px;
+  left: 10px;
+  border-radius: 50% 0 0 0;
+}
+
+.pictures-container::before {
+  bottom: 10px;
+  right: 10px;
+  border-radius: 0 0 50% 0;
+}
+
+/* Add Filipino-inspired decorative elements */
+.video-container::after {
+  content: '✦';
+  position: absolute;
+  bottom: 15px;
+  left: 15px;
+  color: var(--primary-gold);
+  opacity: 0.2;
+  font-size: 1.5rem;
+  z-index: 1;
+}
+
+.pictures-container::after {
+  content: '❖';
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  color: var(--primary-gold);
+  opacity: 0.2;
+  font-size: 1.5rem;
+  z-index: 1;
+}

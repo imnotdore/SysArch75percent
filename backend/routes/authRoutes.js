@@ -22,6 +22,7 @@ router.post(
 );
 router.post("/resident/login", authController.loginResident);
 router.put("/resident/approve/:id", authController.approveResident);
+router.delete("/resident/reject/:id", authController.rejectResident);
 
 // ================= STAFF ROUTES =================
 router.post("/staff/register", authController.registerStaff);
@@ -31,7 +32,7 @@ router.get("/staff/residents/accounts", authController.getPendingResidents);
 // ================= ADMIN ROUTES =================
 router.post("/admin/register", authController.registerAdmin);
 router.post("/admin/login", authController.loginAdmin);
-router.get("/admin/check-exists", checkAdminExists);
+router.get("/admin/check-exists", authController.checkAdminExists);
 
 // --- Staff management for Admin ---
 router.get("/admin/staff/pending", authController.getPendingStaff);
@@ -49,5 +50,7 @@ router.get("/admin/residents/approved", authController.getApprovedResidents);
 router.put("/admin/residents/:id", upload.single("id_picture"), authController.updateResident); 
 router.delete("/admin/residents/:id", authController.deleteResident);
 router.delete("/admin/residents/:id/reject", authController.rejectResident);
+// Add this route
+router.post('/check-duplicate', authController.checkDuplicate);
 
 module.exports = router;

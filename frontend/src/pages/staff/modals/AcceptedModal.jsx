@@ -38,7 +38,7 @@ export default function AcceptedModal({
 
         {selectedAccepted.type === "File" ? (
           <iframe
-            src={`${baseUrl}/uploads/${selectedAccepted.filename}`}
+            src={`${baseUrl}/uploads/files/${selectedAccepted.filename}`}
             width="100%"
             height="400px"
             title={selectedAccepted.filename}

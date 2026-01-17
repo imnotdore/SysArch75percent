@@ -1,3 +1,4 @@
+// StaffDashboard.js
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -101,7 +102,7 @@ export default function StaffDashboard() {
     printed: printedFiles?.length || 0,
     released: releasedSchedules?.length || 0,
     returned: returnedSchedules?.length || 0,
-    accounts: pendingAccounts?.length || 0
+    accounts: pendingAccounts?.length || 0 // ✅ RESIDENT LANG ANG COUNT
   };
 
   // Sidebar click outside - only close on mobile

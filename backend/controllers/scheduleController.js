@@ -3,6 +3,7 @@ const db = require("../config/db");
 // ------------------- Resident -------------------
 
 // Create a schedule (resident)
+// In createSchedule function, AFTER successful schedule creation:
 const createSchedule = async (req, res) => {
   try {
     console.log("=== SCHEDULE CREATION DEBUG ===");
@@ -39,7 +40,7 @@ const createSchedule = async (req, res) => {
 
     // Get the max available quantity of the item
     const [itemData] = await db.query(
-      `SELECT max_quantity FROM items WHERE item_name = ?`,
+      `SELECT id, max_quantity, available FROM items WHERE item_name = ?`,
       [item]
     );
 
@@ -51,9 +52,11 @@ const createSchedule = async (req, res) => {
     }
 
     const maxQuantity = itemData[0].max_quantity;
+    const currentAvailable = itemData[0].available || maxQuantity;
     const requestedQuantity = quantity || 1;
     
     console.log("Max quantity:", maxQuantity);
+    console.log("Current available:", currentAvailable);
     console.log("Requested quantity:", requestedQuantity);
     console.log("Total after booking:", bookedQty + requestedQuantity);
 
@@ -84,6 +87,20 @@ const createSchedule = async (req, res) => {
 
     console.log("✅ Schedule created successfully, ID:", result.insertId);
 
+    // ✅ ✅ ✅ IMPORTANT: UPDATE ITEM AVAILABILITY ✅ ✅ ✅
+    // Calculate new available quantity
+    const newAvailable = currentAvailable - requestedQuantity;
+    if (newAvailable < 0) {
+      console.log("❌ Warning: Available quantity would be negative, setting to 0");
+    }
+    
+    await db.query(
+      `UPDATE items SET available = ? WHERE item_name = ?`,
+      [Math.max(0, newAvailable), item]
+    );
+    
+    console.log(`✅ Updated item availability: ${item} from ${currentAvailable} to ${Math.max(0, newAvailable)}`);
+
     res.json({
       id: result.insertId,
       user_id: userId,
@@ -95,6 +112,7 @@ const createSchedule = async (req, res) => {
       time_to,
       status: "Pending",
       reason: reason || null,
+      item_available: Math.max(0, newAvailable) // Send back updated availability
     });
   } catch (err) {
     console.error("Error creating schedule:", err);
@@ -162,6 +180,7 @@ const getAllSchedules = async (req, res) => {
 };
 
 // Update schedule status (approve/reject/cancel) (admin)
+// In updateScheduleStatus function, add item availability updates:
 const updateScheduleStatus = async (req, res) => {
   try {
     const { id } = req.params;
@@ -172,6 +191,17 @@ const updateScheduleStatus = async (req, res) => {
       return res.status(400).json({ error: "Invalid status" });
     }
 
+    // First get the schedule details
+    const [schedule] = await db.query(
+      "SELECT item, quantity FROM schedules WHERE id = ?",
+      [id]
+    );
+
+    if (schedule.length === 0) {
+      return res.status(404).json({ error: "Schedule not found" });
+    }
+
+    const { item, quantity } = schedule[0];
     let query = "";
     let params = [];
 
@@ -187,6 +217,20 @@ const updateScheduleStatus = async (req, res) => {
         SET status = ?, cancel_reason = ?, approved_by = ?, approved_at = NOW(), updated_at = NOW()
         WHERE id = ?`;
       params = [status, reason || null, adminId, id];
+      
+      // If cancelling a Pending request, return the quantity to available
+      const [currentStatus] = await db.query(
+        "SELECT status FROM schedules WHERE id = ?",
+        [id]
+      );
+      
+      if (currentStatus[0]?.status === 'Pending') {
+        await db.query(
+          `UPDATE items SET available = available + ? WHERE item_name = ?`,
+          [quantity, item]
+        );
+        console.log(`✅ Returned ${quantity} ${item} to available stock`);
+      }
     } else {
       // Rejected or Pending reset
       query = `
@@ -194,6 +238,15 @@ const updateScheduleStatus = async (req, res) => {
         SET status = ?, approved_by = NULL, approved_at = NULL, cancel_reason = ?, updated_at = NOW()
         WHERE id = ?`;
       params = [status, reason || null, id];
+      
+      // If rejecting a Pending request, return the quantity to available
+      if (status === "Rejected") {
+        await db.query(
+          `UPDATE items SET available = available + ? WHERE item_name = ?`,
+          [quantity, item]
+        );
+        console.log(`✅ Returned ${quantity} ${item} to available stock after rejection`);
+      }
     }
 
     const [result] = await db.query(query, params);
@@ -208,7 +261,6 @@ const updateScheduleStatus = async (req, res) => {
     res.status(500).json({ error: "Failed to update schedule status" });
   }
 };
-
 // ------------------- Staff -------------------
 
 // Get pending schedules (staff inbox)

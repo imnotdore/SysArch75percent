@@ -1,41 +1,984 @@
-/* Login.css */
-.login-container {
-  max-width: 400px;
-  margin: 2rem auto;
-  padding: 2rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
+/* ILAGAY ITO SA PINAKATAAS BAGO ANG ANUMANG CSS */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&family=Montserrat:wght@400;500;600;700&display=swap');
+
+/* Reset and Base Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
+/* Login.css - Compact Design with Better Typography */
+:root {
+  --primary-color: #A43259;
+  --secondary-color: #F4BE2A;
+  --accent-color: #d4af37;
+  --danger-color: #cc0000;
+  --light-color: #f8f9fa;
+  --dark-color: #002244;
+  --white-color: #ffffff;
+  --gray-color: #6c757d;
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --shadow-heavy: 0 4px 12px rgba(0, 0, 0, 0.15);
+  
+  /* Font variables */
+  --font-heading: 'Poppins', 'Segoe UI', 'Helvetica Neue', sans-serif;
+  --font-body: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --font-accent: 'Montserrat', 'Segoe UI', sans-serif;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  background-color: var(--light-color);
+  color: var(--dark-color);
+}
+
+.barangay-login-page {
+  min-height: 100vh;
+  background: 
+    linear-gradient(to bottom, 
+      rgba(255, 255, 255, 0) 0%, 
+      rgba(255, 255, 255, 0) 15%, 
+      rgba(255, 255, 255, 0) 100%,
+      rgb(255, 255, 255) 100%,
+      transparent 100%),
+    url('./pic1.jpg') center/cover fixed;
+  background-attachment: fixed;
+  position: relative;
+}
+
+/* Compact Top Bar - PANATILIHIN ANG ORIGINAL */
+.barangay-top-bar {
+  background: var(--dark-color);
+  color: var(--white-color);
+  padding: 3px 0;
+  font-size: 11px;
+  font-family: var(--font-body);
+  font-weight: 400;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.top-bar-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.time-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-weight: 500;
+  font-family: var(--font-accent);
+  letter-spacing: 0.5px;
+}
+
+.time-display svg {
+  font-size: 10px;
+  color: var(--white-color);
+}
+
+.top-bar-links {
+  display: flex;
+  gap: 20px;
+  font-family: var(--font-body);
+}
+
+.top-bar-links span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--white-color);
+  font-weight: 400;
+}
+
+.top-bar-links svg {
+  font-size: 10px;
+  color: var(--secondary-color);
+}
+
+.top-bar-links span:hover {
+  color: var(--white-color);
+}
+
+/* Compact Header - PANATILIHIN ANG ORIGINAL STRUCTURE PERO AYUSIN NAV */
+.barangay-header {
+  background: var(--primary-color);
+  padding: 1px 0;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: var(--shadow);
+  border-bottom: 3px solid var(--secondary-color);
+}
+
+/* DESKTOP VIEW - AYUSIN LANG ANG NAVIGATION */
+.barangay-header-main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 80px;
+}
+
+.barangay-logo-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.barangay-logo {
+  width: 70px;
+  height: 70px;
+  background: var(--white-color);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  flex-shrink: 0;
+}
+
+.barangay-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.barangay-title h1 {
+  font-size: 16px;
+  font-weight: 700;
+  font-family: var(--font-heading);
+  color: var(--white-color);
+  margin: 0;
+  line-height: 1.2;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+  letter-spacing: 0.5px;
+}
+
+.barangay-title p {
+  font-size: 11px;
+  font-family: var(--font-accent);
+  color: var(--white-color);
+  margin: 0;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+/* NAVIGATION - MALAKING AYOS DITO! */
+.barangay-nav {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin: 0 30px;
+  flex: 1;
+}
+
+.barangay-nav-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--white-color);
+  padding: 12px 25px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  min-width: 110px;
+  justify-content: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.barangay-nav-btn:hover {
+  background: #F4BE2A;
+  color: var(--white-color);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border-color: #00000042;
+}
+
+.barangay-nav-btn svg {
+  font-size: 14px;
+}
+
+/* SK Logo sa Header */
+.sk-header-logo {
+  width: 70px;
+  height: 70px;
+  background: var(--white-color);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  border: 2px solid var(--secondary-color);
+  flex-shrink: 0;
+}
+
+.sk-header-logo img {
+  width: 85%;
+  height: 85%;
+  object-fit: contain;
+  padding: 2px;
+}
+
+/* MOBILE VIEW - Tablet (768px pababa) */
+@media (max-width: 768px) {
+  .barangay-header-main {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 10px;
+    gap: 15px;
+    justify-content: space-between;
+    align-items: center;
+    min-height: auto;
+  }
+  
+  .barangay-logo-container {
+    order: 1;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .barangay-logo {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .barangay-title h1 {
+    font-size: 14px;
+  }
+  
+  .barangay-title p {
+    font-size: 10px;
+  }
+  
+  .sk-header-logo {
+    order: 2;
+    width: 60px;
+    height: 60px;
+  }
+  
+  .barangay-nav {
+    order: 3;
+    width: 100%;
+    margin: 15px 0 0 0;
+    justify-content: center;
+    gap: 10px;
+    display: flex;
+    flex-wrap: wrap;
+  }
+  
+  .barangay-nav-btn {
+    padding: 10px 20px;
+    font-size: 13px;
+    min-width: 100px;
+  }
+}
+
+/* MOBILE VIEW - Small phones (576px pababa) */
+@media (max-width: 576px) {
+  .barangay-header-main {
+    gap: 10px;
+    padding: 8px;
+  }
+  
+  .barangay-logo-container {
+    flex-direction: row;
+    text-align: left;
+  }
+  
+  .barangay-logo {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .barangay-title h1 {
+    font-size: 13px;
+    line-height: 1.1;
+  }
+  
+  .barangay-title p {
+    font-size: 9px;
+  }
+  
+  .sk-header-logo {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .barangay-nav {
+    gap: 8px;
+    margin-top: 12px;
+  }
+  
+  .barangay-nav-btn {
+    padding: 8px 15px;
+    font-size: 12px;
+    min-width: 90px;
+  }
+  
+  .barangay-nav-btn svg {
+    font-size: 12px;
+  }
+}
+
+/* MOBILE VIEW - Extra small phones (480px pababa) */
+@media (max-width: 480px) {
+  .barangay-header-main {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: space-between;
+    padding: 5px;
+  }
+  
+  .barangay-logo-container {
+    order: 1;
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .barangay-logo {
+    width: 45px;
+    height: 45px;
+  }
+  
+  .sk-header-logo {
+    order: 2;
+    width: 45px;
+    height: 45px;
+    margin: 0;
+  }
+  
+  .barangay-nav {
+    order: 3;
+    width: 100%;
+    margin-top: 10px;
+    gap: 5px;
+    justify-content: space-between;
+  }
+  
+  .barangay-nav-btn {
+    padding: 8px 10px;
+    font-size: 11px;
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+    min-width: 80px;
+  }
+  
+  .barangay-nav-btn svg {
+    margin: 0 2px;
+    font-size: 11px;
+  }
+  
+  .barangay-title h1 {
+    font-size: 12px;
+  }
+  
+  .barangay-title p {
+    font-size: 8px;
+  }
+}
+
+/* For very small screens - hide text, show only icons */
+@media (max-width: 360px) {
+  .barangay-nav-btn span {
+    display: none;
+  }
+  
+  .barangay-nav-btn {
+    padding: 8px;
+    justify-content: center;
+    min-width: 60px;
+  }
+  
+  .barangay-nav-btn svg {
+    font-size: 14px;
+    margin: 0;
+  }
+}
+
+/* Top Bar Mobile Responsive */
+@media (max-width: 768px) {
+  .top-bar-content {
+    flex-direction: column;
+    gap: 5px;
+    text-align: center;
+    padding: 8px;
+  }
+  
+  .time-display {
+    justify-content: center;
+    width: 100%;
+    font-size: 10px;
+  }
+  
+  .top-bar-links {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    font-size: 10px;
+  }
+}
+
+/* Main Content - BINAGO: Nabawasan ang padding at min-height */
+.barangay-main {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px 15px; /* Binawasan mula 30px */
+  min-height: calc(100vh - 140px); /* Binawasan ang height */
+}
+
+/* Login Container - BINAGO: Liitan ng husto */
+.barangay-login-container {
+  width: 90%;
+  max-width: 450px; /* Binawasan mula 400px */
+  background: var(--white-color);
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12); /* Mas liit na shadow */
+  overflow: hidden;
+  height: 50%;
+  min-height: 620px; /* Binawasan mula 680px */
+  margin: 10px auto;
+}
+
+/* Login Header - BINAGO: Nabawasan ang padding at laki ng logo */
+.login-header {
+  background: linear-gradient(
+    155deg,
+    var(--primary-color) 0%,
+    var(--secondary-color) 25%,
+    var(--primary-color) 50%,
+    var(--secondary-color) 75%,
+    var(--primary-color) 100%
+  );
+  padding: 18px 20px; /* Binawasan mula 20px */
+  text-align: center;
+  border-bottom: 3px solid var(--secondary-color);
+  background-size: 400% 100%;
+  animation: gradientMove 40s ease-in-out infinite;
+}
+
+@keyframes gradientMove {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.login-logo {
+  width: 85px; /* Binawasan mula 100px */
+  height: 85px; /* Binawasan mula 100px */
+  margin: 0 auto 12px; /* Binawasan spacing */
+  background: var(--white-color);
+  border-radius: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 3px solid var(--secondary-color);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.15); /* Mas liit na shadow */
+}
+
+.login-logo img {
+  width: 90%;
+  height: 90%;
+  object-fit: contain;
+  padding: 4px; /* Binawasan mula 5px */
+}
+
+.login-title h2 {
+  color: var(--white-color);
+  font-size: 18px; /* Binawasan mula 20px */
+  font-weight: 700;
+  font-family: var(--font-heading);
+  margin: 0 0 6px; /* Binawasan mula 8px */
+  letter-spacing: 0.5px;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+.login-title p {
+  color: var(--white-color);
+  font-size: 13px; /* Binawasan mula 14px */
+  margin: 0;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+/* Beneficiary Note - BINAGO */
+.beneficiary-note {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  padding: 8px 12px; /* Binawasan mula 10px 15px */
+  margin-top: 12px; /* Binawasan mula 15px */
+  font-size: 12px; /* Binawasan mula 13px */
+  font-family: var(--font-body);
+  color: var(--white-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px; /* Binawasan mula 8px */
+  backdrop-filter: blur(5px);
+}
+
+.beneficiary-note svg {
+  color: var(--secondary-color);
+  font-size: 12px; /* Binawasan mula 14px */
+}
+
+/* Login Body - BINAGO: Nabawasan ang padding */
+.login-body {
+  padding: 25px; /* Binawasan mula 30px */
+}
+
+/* Form Styles - BINAGO: Nabawasan spacing */
 .form-group {
-  margin-bottom: 1rem;
+  margin-bottom: 16px; /* Binawasan mula 18px */
+}
+
+.form-label {
+  display: flex;
+  align-items: center;
+  gap: 8px; /* Binawasan mula 10px */
+  font-size: 14px; /* Binawasan mula 15px */
+  font-weight: 600;
+  font-family: var(--font-accent);
+  color: var(--dark-color);
+  margin-bottom: 5px; /* Binawasan mula 6px */
+  text-transform: uppercase;
+  letter-spacing: 0.8px; /* Binawasan mula 1px */
+}
+
+.form-label svg {
+  color: var(--primary-color);
+  font-size: 14px; /* Binawasan mula 16px */
+  height: 10px;
+  width: 20px;
+}
+
+.input-group {
+  position: relative;
+}
+
+.form-input {
+  width: 100%;
+  padding: 13px 14px; /* Binawasan mula 14px 15px */
+  border: 2px solid #e1e5e9;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: var(--font-body);
+  background: var(--white-color);
+  transition: all 0.3s ease;
+  color: var(--dark-color);
+}
+
+.form-input::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(164, 50, 89, 0.1);
+  background: var(--white-color);
+}
+
+.form-input.error {
+  border-color: var(--danger-color);
+  background: #fff5f5;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--gray-color);
+  cursor: pointer;
+  font-size: 15px; /* Binawasan mula 16px */
+  padding: 4px; /* Binawasan mula 5px */
+  transition: color 0.2s ease;
+}
+
+.password-toggle:hover {
+  color: var(--primary-color);
 }
 
 .error-message {
-  color: red;
-  margin-bottom: 1rem;
+  color: var(--danger-color);
+  font-size: 12px;
+  font-family: var(--font-body);
+  margin-top: 4px; /* Binawasan mula 5px */
+  display: flex;
+  align-items: center;
+  gap: 5px; /* Binawasan mula 6px */
+  font-weight: 500;
 }
 
-.login-btn {
-  background: #0066cc;
-  color: white;
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 4px;
+.error-message svg {
+  font-size: 11px;
+}
+
+.submit-error {
+  background: #fff5f5;
+  border: 1px solid #ffcccc;
+  border-left: 3px solid var(--danger-color);
+  padding: 10px; /* Binawasan mula 12px */
+  margin: 12px 0; /* Binawasan mula 15px 0 */
+  border-radius: 6px;
+  font-size: 12px; /* Binawasan mula 13px */
+  font-family: var(--font-body);
+  color: var(--danger-color);
+  display: flex;
+  align-items: center;
+  gap: 6px; /* Binawasan mula 8px */
+  font-weight: 500;
+}
+
+.submit-error svg {
+  font-size: 12px; /* Binawasan mula 13px */
+}
+
+/* Login Options - BINAGO: Nabawasan spacing */
+.login-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 12px 0; /* Binawasan mula 15px 0 */
+  font-size: 13px;
+  font-family: var(--font-body);
+}
+
+.remember-me {
+  display: flex;
+  align-items: center;
+  gap: 6px; /* Binawasan mula 8px */
+  color: var(--dark-color);
   cursor: pointer;
 }
 
-/* Dashboard.css */
-.dashboard {
-  padding: 2rem;
+.remember-me input[type="checkbox"] {
+  width: 15px; /* Binawasan mula 16px */
+  height: 15px; /* Binawasan mula 16px */
+  accent-color: var(--primary-color);
+  cursor: pointer;
 }
 
-.logout-btn {
-  background: #cc0000;
-  color: white;
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 4px;
+.remember-me label {
   cursor: pointer;
-  margin-top: 2rem;
+  font-weight: 500;
+  user-select: none;
+  font-size: 13px;
+}
+
+.forgot-password {
+  color: var(--primary-color);
+  cursor: pointer;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  padding: 2px 0; /* Binawasan mula 3px 0 */
+  border-bottom: 1px dashed transparent;
+  font-size: 13px;
+}
+
+.forgot-password:hover {
+  color: var(--secondary-color);
+  border-bottom: 1px dashed var(--secondary-color);
+}
+
+/* Submit Button - BINAGO */
+.submit-btn {
+  width: 100%;
+  padding: 14px; /* Binawasan mula 16px */
+  background: linear-gradient(135deg, var(--primary-color) 0%, #8a2a49 100%);
+  border: none;
+  border-radius: 8px;
+  color: var(--white-color);
+  font-size: 15px; /* Binawasan mula 16px */
+  font-weight: 700;
+  font-family: var(--font-heading);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px; /* Binawasan mula 10px */
+  margin-top: 8px; /* Binawasan mula 10px */
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #8a2a49 0%, var(--primary-color) 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(164, 50, 89, 0.25); /* Mas liit na shadow */
+}
+
+.submit-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(164, 50, 89, 0.2);
+}
+
+.submit-btn:disabled {
+  background: var(--gray-color);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.submit-btn svg {
+  font-size: 14px; /* Binawasan mula 15px */
+}
+
+/* Notice Box - BINAGO */
+.notice-box {
+  background: rgba(244, 190, 42, 0.08);
+  border: 1px solid rgba(244, 190, 42, 0.2);
+  border-radius: 6px;
+  padding: 16px; /* Binawasan mula 20px */
+  margin-bottom: 16px; /* Binawasan mula 20px */
+  transition: all 0.3s ease;
+}
+
+.notice-box:hover {
+  background: rgba(244, 190, 42, 0.12);
+  border-color: rgba(244, 190, 42, 0.3);
+}
+
+.notice-header {
+  display: flex;
+  align-items: center;
+  gap: 6px; /* Binawasan mula 8px */
+  margin-bottom: 6px; /* Binawasan mula 8px */
+}
+
+.notice-header svg {
+  color: var(--primary-color);
+  font-size: 15px; /* Binawasan mula 16px */
+}
+
+.notice-header h4 {
+  color: var(--primary-color);
+  font-size: 14px; /* Binawasan mula 15px */
+  font-family: var(--font-accent);
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.notice-box p {
+  font-size: 13px; /* Binawasan mula 14px */
+  font-family: var(--font-body);
+  color: var(--dark-color);
+  line-height: 1.5; /* Binawasan mula 1.6 */
+  margin: 0;
+  font-weight: 400;
+}
+
+.register-link {
+  color: var(--primary-color);
+  font-weight: 700;
+  font-family: var(--font-body);
+  cursor: pointer;
+  margin-left: 4px; /* Binawasan mula 6px */
+  text-decoration: none;
+  transition: all 0.3s;
+  border-bottom: 2px solid transparent;
+  padding-bottom: 1px;
+  font-size: 13px;
+}
+
+.register-link:hover {
+  color: var(--secondary-color);
+  border-bottom: 2px solid var(--secondary-color);
+}
+
+/* Login Footer - BINAGO */
+.login-footer {
+  text-align: center;
+  margin-top: 20px; /* Binawasan mula 25px */
+  padding-top: 16px; /* Binawasan mula 20px */
+  border-top: 1px solid rgba(164, 50, 89, 0.1);
+}
+
+.footer-line {
+  height: 2px; /* Binawasan mula 3px */
+  border-radius: 1px;
+  background: var(--primary-color);
+  margin: 16px 0; /* Binawasan mula 20px 0 */
+  width: 100%;
+}
+
+.login-footer p {
+  font-size: 12px;
+  font-family: var(--font-body);
+  color: var(--gray-color);
+  margin: 6px 0; /* Binawasan mula 8px 0 */
+  font-weight: 400;
+}
+
+.footer-subtext {
+  font-size: 13px;
+  font-family: var(--font-accent);
+  color: var(--primary-color);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  margin-top: 8px; /* Binawasan mula 10px */
+}
+
+/* Simple Footer - BINAGO */
+.simple-footer {
+  margin-top: 12px; /* Binawasan mula 15px */
+  padding-top: 12px; /* Binawasan mula 15px */
+  border-top: 1px solid rgba(164, 50, 89, 0.1);
+  font-size: 12px;
+  color: var(--gray-color);
+  text-align: center;
+}
+
+.simple-footer p {
+  margin: 6px 0; /* Binawasan mula 8px 0 */
+  font-size: 11px;
+  font-family: var(--font-body);
+  color: var(--gray-color);
+}
+
+.footer-link {
+  color: var(--primary-color);
+  cursor: pointer;
+  margin: 0 4px; /* Binawasan mula 6px */
+  font-weight: 600;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  font-size: 11px;
+}
+
+.footer-link:hover {
+  color: var(--secondary-color);
+  text-decoration: underline;
+}
+
+/* Responsive adjustments for login container */
+@media (max-width: 480px) {
+  .barangay-login-container {
+    height: auto;
+    max-height: 85vh; /* Binawasan mula 90vh */
+    overflow-y: auto;
+    margin: 8px; /* Binawasan mula 10px */
+  }
+  
+  .login-logo {
+    width: 70px; /* Binawasan mula 80px */
+    height: 70px; /* Binawasan mula 80px */
+  }
+  
+  .login-title h2 {
+    font-size: 16px; /* Binawasan mula 18px */
+  }
+  
+  .login-title p {
+    font-size: 12px; /* Binawasan mula 13px */
+  }
+  
+  .login-body {
+    padding: 18px; /* Binawasan mula 20px */
+  }
+  
+  .form-input {
+    padding: 11px; /* Binawasan mula 12px */
+    font-size: 14px;
+  }
+  
+  .submit-btn {
+    padding: 13px; /* Binawasan mula 14px */
+    font-size: 14px; /* Binawasan mula 15px */
+  }
+  
+  .notice-box {
+    padding: 14px; /* Binawasan mula 15px */
+  }
+  
+  .notice-header h4 {
+    font-size: 13px; /* Binawasan mula 14px */
+  }
+  
+  .notice-box p {
+    font-size: 12px; /* Binawasan mula 13px */
+  }
+  
+  .beneficiary-note {
+    font-size: 11px; /* Binawasan mula 11px (pareho lang) */
+    padding: 6px 8px; /* Binawasan mula 8px 10px */
+  }
+}
+
+/* Additional mobile optimizations */
+@media (max-width: 768px) {
+  .barangay-main {
+    padding: 15px 10px; /* Mas compact sa mobile */
+    min-height: calc(100vh - 130px);
+  }
+  
+  .barangay-login-container {
+    max-width: 350px; /* Mas maliit sa tablet */
+  }
+}
+
+@media (max-width: 360px) {
+  .barangay-login-container {
+    max-width: 320px;
+    min-height: 580px; /* Mas maikli pa */
+  }
+  
+  .login-header {
+    padding: 15px 18px;
+  }
+  
+  .login-logo {
+    width: 65px;
+    height: 65px;
+  }
+  
+  .login-title h2 {
+    font-size: 15px;
+  }
+  
+  .login-title p {
+    font-size: 11px;
+  }
 }

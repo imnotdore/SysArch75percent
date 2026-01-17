@@ -9,23 +9,24 @@ import { ScheduleProvider } from "./context/ScheduleContext";
 import { ComputerBorrowingProvider } from "./context/ComputerBorrowingContext"; 
 
 // Main Pages
-import RoleSelection from "./pages/RoleSelection";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import TermsOfService from "./pages/TermsofService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import PrivateRoute from "./components/PrivateRoute";
+import LandingPage from "./pages/LandingPage";
+import AboutUs from "./pages/AboutUs"; // ✅ IMPORTIN MO ITO
 
 // Resident Pages
-import ResidentDashboard from "./pages//resident/ResidentDashboard";
-import DisclosureBoard from "./pages//resident/DisclosureBoard";
-import Request from "./pages//resident/Request";
+import ResidentDashboard from "./pages/resident/ResidentDashboard";
+import DisclosureBoard from "./pages/resident/DisclosureBoard";
+import Request from "./pages/resident/Request";
 import Schedule from "./pages/resident/Schedule";
 import YourAccount from "./pages/resident/YourAccount";
 import ComputerBorrowing from "./pages/resident/ComputerBorrowing";
 
-// Staff Pages - CORRECTED IMPORT PATHS
-import StaffDashboard from "./pages/staff/tabs/StaffDashboard"; // ✅ TAMA NA ITO
+// Staff Pages
+import StaffDashboard from "./pages/staff/tabs/StaffDashboard";
 import InboxTab from "./pages/staff/tabs/InboxTab";
 import AcceptedTab from "./pages/staff/tabs/AcceptedTab";
 import AccountsTab from "./pages/staff/tabs/AccountsTab";
@@ -83,13 +84,16 @@ function App() {
           <ScheduleProvider>
             <ComputerBorrowingProvider>
               <Routes>
-                {/* Landing / Role Selection */}
-                <Route path="/" element={<RoleSelection />} />
+                {/* Landing / Login Page */}
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/login" element={<Login />} />
+                
+                {/* About Us Page - ADD THIS ROUTE */}
+                <Route path="/about-us" element={<AboutUs />} />
 
-                {/* Login & Register */}
-                <Route path="/:role/login" element={<Login />} />
-                <Route path="/:role/register" element={<Register />} />
-
+                {/* Register Pages */}
+                <Route path="/resident/register" element={<Register />} />
+                
                 {/* Admin Registration (hidden route - only accessible when no admin exists) */}
                 {!adminExists && (
                   <Route path="/admin/register" element={<AdminRegister />} />

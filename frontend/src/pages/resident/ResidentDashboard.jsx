@@ -2,11 +2,13 @@ import { useState, useEffect } from "react";
 import ResidentLayout from "./ResidentLayout";
 import AnnouncementsSection from "./sections/AnnouncementsSection";
 import ProjectsGallery from "./sections/ProjectsGallery";
+import "./ResidentDashboard.css";
 
 export default function ResidentDashboard() {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [hoveredImage, setHoveredImage] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [modalLoading, setModalLoading] = useState(false);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -21,255 +23,162 @@ export default function ResidentDashboard() {
     '/1.jpg',
     '/3.jpg',
     '/4.jpg',
+    '/2.jpg',
+    '/5.jpg',
   ]; 
 
   const handleImageClick = (src) => {
     setSelectedImage(src);
+    setModalLoading(true);
+    
+    const img = new Image();
+    img.src = src;
+    img.onload = () => setModalLoading(false);
+    img.onerror = () => setModalLoading(false);
   };
 
   const handleCloseModal = () => {
     setSelectedImage(null);
+    setModalLoading(false);
   };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Escape') handleCloseModal();
+  };
+
+  useEffect(() => {
+    if (selectedImage) {
+      document.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'hidden';
+    }
+    
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'unset';
+    };
+  }, [selectedImage]);
 
   return (
     <ResidentLayout title="Mabuhay Katipunan ng Kabataan!">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div className="dashboard-container">
         <AnnouncementsSection />
 
-        {/* Video + Pictures */}
-        <section style={isMobile ? {...styles.mediaSection, flexDirection: 'column', gap: '20px'} : styles.mediaSection}>
-          {/* Video */}
-          <div style={isMobile ? {...styles.videoContainer, width: '100%'} : styles.videoContainer}>
-            <video 
-              controls 
-              style={styles.video}
-            >
-              <source src={projectVideoUrl} type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
-            <p style={styles.videoCaption}>Current Projects Video</p>
+        <section className={`media-section ${isMobile ? 'mobile' : ''}`}>
+          <div className="video-container">
+            <div className="video-wrapper">
+              <video 
+                controls 
+                className="project-video"
+                preload="metadata"
+              >
+                <source src={projectVideoUrl} type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+              <div className="video-overlay">
+                <span className="video-badge">LATEST</span>
+              </div>
+            </div>
+            <p className="video-caption">Current Projects Video</p>
           </div>
 
-          {/* Pictures */}
-          <div style={isMobile ? {...styles.picturesContainer, flexDirection: 'row', flexWrap: 'wrap', width: '100%', justifyContent: 'center'} : styles.picturesContainer}>
-            {sidePictures.map((src, idx) => (
-              <div
-                key={idx}
-                style={{
-                  ...styles.sidePictureWrapper,
-                  transform: hoveredImage === idx ? 'scale(1.05)' : 'scale(1)',
-                }}
-                onMouseEnter={() => setHoveredImage(idx)}
-                onMouseLeave={() => setHoveredImage(null)}
-                onClick={() => handleImageClick(src)}
-              >
-                <img
-                  src={src}
-                  alt={`Side Picture ${idx + 1}`}
-                  style={{
-                    ...styles.sidePicture,
-                    filter: hoveredImage === idx ? 'brightness(1.1)' : 'brightness(1)',
-                  }}
-                />
-                {hoveredImage === idx && (
-                  <div style={styles.hoverOverlay}>
-                    <span style={styles.hoverText}>Click to View</span>
+          <div className={`pictures-container ${isMobile ? 'mobile' : ''}`}>
+            <div className="pictures-header">
+              <h3 className="pictures-title">
+                <svg className="gallery-icon" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+                </svg>
+                Gallery Preview
+              </h3>
+              <span className="pictures-count">{sidePictures.length} images</span>
+            </div>
+            
+            <div className="pictures-scroll-container">
+              <div className="pictures-grid">
+                {sidePictures.map((src, idx) => (
+                  <div
+                    key={idx}
+                    className={`picture-card ${hoveredImage === idx ? 'hovered' : ''}`}
+                    onMouseEnter={() => setHoveredImage(idx)}
+                    onMouseLeave={() => setHoveredImage(null)}
+                    onClick={() => handleImageClick(src)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => e.key === 'Enter' && handleImageClick(src)}
+                  >
+                    <div className="picture-wrapper">
+                      <img
+                        src={src}
+                        alt={`Gallery Image ${idx + 1}`}
+                        className="side-picture"
+                        loading="lazy"
+                      />
+                      <div className="picture-overlay">
+                        <span className="overlay-text">
+                          <svg className="zoom-icon" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                            <path d="M12 10h-2v2H9v-2H7V9h2V7h1v2h2v1z"/>
+                          </svg>
+                          View Full Size
+                        </span>
+                      </div>
+                      <div className="picture-number">{idx + 1}</div>
+                    </div>
                   </div>
-                )}
+                ))}
               </div>
-            ))}
+            </div>
+            
+            <div className="view-more-container">
+              <button className="view-more-btn">
+                <span>View Full Gallery</span>
+                <svg className="arrow-icon" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
+                </svg>
+              </button>
+            </div>
           </div>
         </section>
 
         <ProjectsGallery isMobile={isMobile} />
 
-        {/* Image Modal */}
         {selectedImage && (
-          <div style={styles.modalOverlay} onClick={handleCloseModal}>
-            <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-              <button style={styles.closeButton} onClick={handleCloseModal}>×</button>
-              <img 
-                src={selectedImage} 
-                alt="Enlarged view" 
-                style={styles.enlargedImage} 
-              />
+          <div className="modal-overlay" onClick={handleCloseModal}>
+            <div className="modal-wrapper" onClick={(e) => e.stopPropagation()}>
+              <button 
+                className="modal-close" 
+                onClick={handleCloseModal}
+                aria-label="Close image viewer"
+              >
+                <svg className="close-icon" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                </svg>
+              </button>
               
+              <div className="modal-content">
+                {modalLoading ? (
+                  <div className="image-loading">
+                    <div className="loading-spinner"></div>
+                    <p>Loading image...</p>
+                  </div>
+                ) : (
+                  <img 
+                    src={selectedImage} 
+                    alt="Enlarged view" 
+                    className="enlarged-image"
+                    onLoad={() => setModalLoading(false)}
+                  />
+                )}
+              </div>
+              
+              <div className="modal-navigation">
+                <p className="image-instruction">
+                  Press ESC or click outside to close
+                </p>
+              </div>
             </div>
           </div>
         )}
       </div>
-
-      {/* Add CSS styles */}
-      <style jsx>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes slideUp {
-          from { 
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to { 
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </ResidentLayout>
   );
-}
-
-const styles = {
-  mediaSection: {
-    display: 'flex',
-    flexDirection: 'row',
-    gap: '50px',
-    marginTop: '20px',
-    alignItems: 'flex-start',
-    transition: 'all 0.3s ease',
-  },
-  videoContainer: {
-    flex: 1,
-    border: '3px solid black',
-    borderRadius: '12px',
-    boxShadow: '0 8px 20px rgba(0,0,0,0.4)',
-    overflow: 'hidden',
-    backgroundColor: '#F4BE2A',
-    minHeight: '300px',
-    transition: 'all 0.3s ease',
-  },
-  video: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-    transition: 'all 0.3s ease',
-  },
-  videoCaption: {
-    textAlign: 'center',
-    marginTop: '10px',
-    fontWeight: '1000',
-    fontSize: '14px',
-  },
-  picturesContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '15px',
-    width: '200px',
-    alignItems: 'center',
-    transition: 'all 0.3s ease',
-  },
-  sidePictureWrapper: {
-    position: 'relative',
-    transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-    cursor: 'pointer',
-    borderRadius: '12px',
-    overflow: 'hidden',
-  },
-  sidePicture: {
-    width: '150px',
-    height: '120px',
-    borderRadius: '12px',
-    border: '3px solid black',
-    boxShadow: '0 8px 20px rgba(0,0,0,0.4)',
-    objectFit: 'cover',
-    transition: 'all 0.3s ease',
-  },
-  hoverOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(8, 8, 8, 0.41)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: '12px',
-    animation: 'fadeIn 0.3s ease',
-  },
-  hoverText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: '14px',
-    textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
-  },
-  // Modal Styles
-  modalOverlay: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1000,
-    animation: 'fadeIn 0.3s ease',
-  },
-  modalContent: {
-    position: 'relative',
-    backgroundColor: 'white',
-    borderRadius: '12px',
-    padding: '20px',
-    maxWidth: '90%',
-    maxHeight: '90%',
-    animation: 'slideUp 0.3s ease',
-  },
-  closeButton: {
-    position: 'absolute',
-    top: '10px',
-    right: '15px',
-    background: 'none',
-    border: 'none',
-    fontSize: '30px',
-    cursor: 'pointer',
-    color: '#333',
-    zIndex: 1001,
-  },
-  enlargedImage: {
-    maxWidth: '100%',
-    maxHeight: '70vh',
-    borderRadius: '8px',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-  },
-  modalControls: {
-    marginTop: '15px',
-    textAlign: 'center',
-  },
-  
-};
-
-// Alternative: Kung ayaw gumana yung style jsx, ilagay mo ito sa main CSS file mo
-const addGlobalStyles = () => {
-  const styleElement = document.createElement('style');
-  styleElement.textContent = `
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-    @keyframes slideUp {
-      from { 
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to { 
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-    @media (max-width: 768px) {
-      .side-picture-mobile {
-        width: 120px !important;
-        height: 100px !important;
-      }
-    }
-  `;
-  document.head.appendChild(styleElement);
-};
-
-// Call this function once
-if (typeof document !== 'undefined') {
-  addGlobalStyles();
 }

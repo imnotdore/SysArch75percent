@@ -812,3 +812,73 @@ body {
   flex-wrap: wrap;
   gap: 4px;
 }
+
+/* Add these styles to your existing admin.css */
+
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-badge.pending {
+  background-color: #ffc107;
+  color: #000;
+}
+
+.status-badge.approved {
+  background-color: #28a745;
+  color: #fff;
+}
+
+.form-select.readonly,
+.form-input.readonly {
+  background-color: #f8f9fa;
+  color: #6c757d;
+  cursor: not-allowed;
+}
+
+/* Modal scrollbar styling */
+.modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 3px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Action buttons spacing */
+.action-buttons {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+/* Table row hover effects */
+.admin-table tr:hover {
+  background-color: #f5f7fa !important;
+}
+
+/* ID picture in table */
+.admin-table td img {
+  transition: transform 0.2s;
+}
+
+.admin-table td img:hover {
+  transform: scale(1.5);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+  z-index: 10;
+  position: relative;
+}

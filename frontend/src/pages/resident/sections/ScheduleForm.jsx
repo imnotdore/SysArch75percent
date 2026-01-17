@@ -35,19 +35,22 @@ export default function ScheduleForm() {
 
   // ========== FUNCTIONS ==========
   
+  // NEW: Fetch user data on component mount
   useEffect(() => {
-    const fetchItems = async () => {
-      try {
-        const res = await axios.get(`${API_URL}/api/items`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        });
-        setItems(res.data.filter(item => item.available > 0));
-      } catch (err) {
-        console.error("Error fetching items:", err);
-      }
-    };
     fetchItems();
   }, [API_URL]);
+
+  const fetchItems = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/api/items`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      setItems(res.data.filter(item => item.available > 0));
+    } catch (err) {
+      console.error("Error fetching items:", err);
+    }
+  };
+
 
   useEffect(() => {
     if (!form.item) {
@@ -94,9 +97,14 @@ export default function ScheduleForm() {
   }, [form.item, API_URL]);
 
   const formatDate = (date) => {
-    const tzOffset = date.getTimezoneOffset() * 60000;
-    return new Date(date - tzOffset).toISOString().split("T")[0];
-  };
+  // Add null check
+  if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+    return ''; // Return empty string or handle appropriately
+  }
+  
+  const tzOffset = date.getTimezoneOffset() * 60000;
+  return new Date(date - tzOffset).toISOString().split("T")[0];
+};
 
   const formatDisplayDate = (date) => {
     return new Date(date).toLocaleDateString("en-PH", {
@@ -104,6 +112,16 @@ export default function ScheduleForm() {
       month: 'short',
       day: 'numeric',
       year: 'numeric'
+    });
+  };
+
+  const formatDateTime = (date, time) => {
+    return new Date(`${date}T${time}`).toLocaleString("en-PH", {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
     });
   };
 
@@ -222,6 +240,8 @@ export default function ScheduleForm() {
     });
   };
 
+
+
   const handleSubmit = async () => {
     const { borrowDate, returnDate, timeFrom, timeTo, item, quantity, reason, acceptPolicy } = form;
     
@@ -241,8 +261,11 @@ export default function ScheduleForm() {
       return alert("⚠️ Return date cannot be before borrow date!");
     }
 
+    // In handleSubmit function, line 191-192, it should just show alert:
     if (!checkAvailabilityForSelectedRange()) {
-      return alert("⚠️ Not enough items available for the selected dates!");
+    return alert("⚠️ Not enough items available for selected dates!");
+
+      
     }
 
     setLoading(true);
@@ -262,6 +285,9 @@ export default function ScheduleForm() {
       );
       
       setSubmitted(true);
+   
+      fetchItems();
+   
       
     } catch (err) {
       alert(err.response?.data?.error || "❌ Failed to submit borrowing request");
@@ -270,34 +296,49 @@ export default function ScheduleForm() {
     }
   };
 
-  const getTileClassName = ({ date, view }) => {
-    if (view !== 'month') return '';
-    
-    const iso = formatDate(date);
-    const today = formatDate(new Date());
-    const day = itemAvailability.find((a) => a.date === iso);
-    
-    if (iso < today) return 'past-date';
-    if (!day || day.available <= 0) return 'unavailable-date';
-    
-    if (formatDate(selectedBorrowDate) === iso) return 'borrow-date';
-    if (formatDate(selectedReturnDate) === iso) return 'return-date';
-    
-    if (selectedRange.length === 2) {
-      const start = formatDate(selectedRange[0]);
-      const end = formatDate(selectedRange[1]);
-      if (iso >= start && iso <= end) return 'selected-range';
-    }
-    
-    return 'available-date';
-  };
+const getTileClassName = ({ date, view }) => {
+  if (view !== 'month') return '';
+  
+  // Check if date is valid
+  if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+    return '';
+  }
+  
+  const iso = formatDate(date);
+  const today = formatDate(new Date());
+  
+  // Check if iso is valid
+  if (!iso) return '';
+  
+  const day = itemAvailability.find((a) => a.date === iso);
+  
+  if (iso < today) return 'past-date';
+  if (!day || day.available <= 0) return 'unavailable-date';
+  
+  if (selectedBorrowDate && formatDate(selectedBorrowDate) === iso) return 'borrow-date';
+  if (selectedReturnDate && formatDate(selectedReturnDate) === iso) return 'return-date';
+  
+  if (selectedRange.length === 2) {
+    const start = formatDate(selectedRange[0]);
+    const end = formatDate(selectedRange[1]);
+    if (start && end && iso >= start && iso <= end) return 'selected-range';
+  }
+  
+  return 'available-date';
+};
 
-  const isDateDisabled = (date) => {
-    const iso = formatDate(date);
-    const today = formatDate(new Date());
-    const day = itemAvailability.find((a) => a.date === iso);
-    return iso < today || !day || day.available <= 0;
-  };
+ const isDateDisabled = (date) => {
+  if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+    return true; // Disable invalid dates
+  }
+  
+  const iso = formatDate(date);
+  if (!iso) return true;
+  
+  const today = formatDate(new Date());
+  const day = itemAvailability.find((a) => a.date === iso);
+  return iso < today || !day || day.available <= 0;
+};
 
   const getDurationDays = () => {
     if (!selectedBorrowDate || !selectedReturnDate) return 0;
@@ -358,7 +399,13 @@ export default function ScheduleForm() {
     setSubmitted(false);
   };
 
-  // Step 1: Item and Date Selection
+ 
+
+  // ========== RENDER FUNCTIONS ==========
+
+  
+
+  // Step 1: Item and Date Selection (same as before but with waitlist option)
   const renderStep1 = () => (
     <div className="schedule-step-container">
       <div className="schedule-step-header">
@@ -373,7 +420,6 @@ export default function ScheduleForm() {
 
       <div className="schedule-form-columns">
         <div className="schedule-form-left">
-          {/* Item Selection */}
           <div className="schedule-form-group">
             <label className="schedule-label">Select Item to Borrow *</label>
             <select 
@@ -391,19 +437,26 @@ export default function ScheduleForm() {
               {items.map((item) => (
                 <option key={item.id} value={item.item_name}>
                   {item.item_name} ({item.available} available)
+                  
                 </option>
               ))}
             </select>
-            {items.length === 0 && (
+            
+            {items.length === 0 ? (
               <div className="schedule-warning-box">
                 <span className="schedule-warning-icon">⚠️</span>
                 No items available for borrowing at the moment.
               </div>
+            ) : form.item && maxAvailable === 0 && (
+              <div className="schedule-info-box">
+                <span className="schedule-info-icon">⏳</span>
+                This item is currently out of stock. 
+              
+              </div>
             )}
           </div>
 
-          {/* Date Selection */}
-          {form.item && (
+          {form.item && maxAvailable > 0 && (
             <div className="schedule-form-group">
               <label className="schedule-label">Select Borrowing Period *</label>
               
@@ -443,7 +496,6 @@ export default function ScheduleForm() {
         </div>
 
         <div className="schedule-form-right">
-          {/* Selected Dates Display */}
           {(selectedBorrowDate || selectedReturnDate) && (
             <div className="schedule-selection-info">
               <h4>Selected Dates</h4>
@@ -484,6 +536,7 @@ export default function ScheduleForm() {
                 <div className="schedule-warning-box">
                   <span className="schedule-warning-icon">⚠️</span>
                   Not enough items available for all selected dates
+                  
                 </div>
               )}
             </div>
@@ -510,7 +563,7 @@ export default function ScheduleForm() {
     </div>
   );
 
-  // Step 2: Time and Details
+  // Step 2: Time and Details (same as before)
   const renderStep2 = () => (
     <div className="schedule-step-container">
       <div className="schedule-step-header">
@@ -525,7 +578,6 @@ export default function ScheduleForm() {
 
       <div className="schedule-form-columns">
         <div className="schedule-form-left">
-          {/* Selected Item and Dates Summary */}
           <div className="schedule-summary-box">
             <h4>📋 Current Selection</h4>
             <div className="schedule-summary-content">
@@ -544,7 +596,6 @@ export default function ScheduleForm() {
             </div>
           </div>
 
-          {/* Time Selection */}
           <div className="schedule-form-group">
             <label className="schedule-label">
               ⏰ Borrowing Time on {formatDisplayDate(selectedBorrowDate)} *
@@ -595,7 +646,6 @@ export default function ScheduleForm() {
         </div>
 
         <div className="schedule-form-right">
-          {/* Quantity and Reason */}
           <div className="schedule-form-group">
             <label className="schedule-label">📦 Quantity *</label>
             <div className="schedule-quantity-container">
@@ -646,7 +696,7 @@ export default function ScheduleForm() {
     </div>
   );
 
-  // Step 3: Policy and Submission
+  // Step 3: Policy and Submission (same as before)
   const renderStep3 = () => (
     <div className="schedule-step-container">
       <div className="schedule-step-header">
@@ -661,7 +711,6 @@ export default function ScheduleForm() {
 
       <div className="schedule-form-columns">
         <div className="schedule-form-left">
-          {/* Final Summary */}
           <div className="schedule-final-summary">
             <h4>📋 Request Summary</h4>
             <div className="schedule-summary-grid">
@@ -694,7 +743,6 @@ export default function ScheduleForm() {
         </div>
 
         <div className="schedule-form-right">
-          {/* Policy Agreement */}
           <div className="schedule-policy-group">
             <div className="schedule-policy-header">
               <h4>📋 Borrowing Policy Agreement</h4>
@@ -841,15 +889,17 @@ export default function ScheduleForm() {
 
   return (
     <section className="schedule-form-container">
-      <h2 className="schedule-form-title">📅 Schedule Item Borrowing</h2>
+      <h2 className="schedule-form-title">📅 Borrowing System Dashboard</h2>
+      
+   
 
-      {submitted ? renderSuccess() : (
-        <>
-          {currentStep === 1 && renderStep1()}
-          {currentStep === 2 && renderStep2()}
-          {currentStep === 3 && renderStep3()}
-        </>
-      )}
+     {submitted ? renderSuccess() : (
+      <>
+        {currentStep === 1 && renderStep1()}
+        {currentStep === 2 && renderStep2()}
+        {currentStep === 3 && renderStep3()}
+      </>
+    )}
     </section>
   );
 }

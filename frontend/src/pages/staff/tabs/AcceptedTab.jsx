@@ -95,7 +95,7 @@ Equipment Management System`
                 <td>{f.resident_username || `Resident#${f.resident_id}`}</td>
                 <td>{f.filename}</td>
                 <td>{f.staff_username}</td>
-                <td>
+                <td> 
                   {f.approved_at
                     ? f.approved_at.toLocaleString("en-PH", {
                         dateStyle: "medium",

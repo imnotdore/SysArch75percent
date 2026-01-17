@@ -3,7 +3,16 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 
+
+const itemRoutes = require('./routes/itemRoutes');
+const borrowingRoutes = require('./routes/borrowingRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+const itemAdminRoutes = require("./routes/itemAdminRoutes");
+
 const app = express();
+
+const scheduleRoutes = require('./routes/scheduleRoutes'); // if you combined the new routes here
+// OR create a separate file for new features
 
 // ---------------- Middleware ---------------- //
 app.use(cors({ origin: "http://localhost:5173", credentials: true }));
@@ -32,7 +41,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true })); // <-- parses urlencoded form data
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-
+app.use("/api/items/admin", itemAdminRoutes);
 
 // ---------------- Routes ---------------- //
 app.use("/api/auth", require("./routes/authRoutes"));
@@ -43,6 +52,11 @@ app.use("/api/items", require("./routes/itemRoutes"));
 app.use("/api/announcements", require("./routes/announcementRoutes"));
 app.use("/api/disclosures", require("./routes/disclosureRoutes"));
 app.use("/api/computer-borrow", require("./routes/computerBorrowRoutes"));
+app.use('/api/items', itemRoutes);
+app.use('/api/borrowing', borrowingRoutes);
+app.use('/api/notifications', notificationRoutes);
+// If you put all new routes in scheduleRoutes:
+app.use('/api', scheduleRoutes); // This should include /api/user/borrowings, etc.
 
 // ---------------- Health Check ---------------- //
 app.get("/", (req, res) => res.send("Barangay Management System Backend is running"));

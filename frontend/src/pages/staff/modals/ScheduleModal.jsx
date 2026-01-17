@@ -38,6 +38,39 @@ export default function ScheduleModal({
                 {selectedSchedule.status}
               </span>
             </p>
+            
+            {/* DAGDAG: Sino ang nag-set ng schedule */}
+            <p>
+              <strong>Requested by:</strong>{" "}
+              {selectedSchedule.resident_username || 
+               selectedSchedule.username || 
+               selectedSchedule.resident_name || 
+               selectedSchedule.name || 
+               `Resident #${selectedSchedule.user_id}` || 
+               "N/A"}
+            </p>
+            
+            {/* DAGDAG: Sino ang nag-approve (kung approved na) */}
+            {selectedSchedule.status.toLowerCase() === "approved" && selectedSchedule.approved_by && (
+              <p>
+                <strong>Approved by:</strong>{" "}
+                {selectedSchedule.staff_username || `Staff #${selectedSchedule.approved_by}`}
+                {selectedSchedule.approved_at && (
+                  <span> on {new Date(selectedSchedule.approved_at).toLocaleDateString("en-PH")}</span>
+                )}
+              </p>
+            )}
+            
+            {/* DAGDAG: Sino ang nag-reject (kung rejected na) */}
+            {selectedSchedule.status.toLowerCase() === "rejected" && selectedSchedule.approved_by && (
+              <p>
+                <strong>Rejected by:</strong>{" "}
+                {selectedSchedule.staff_username || `Staff #${selectedSchedule.approved_by}`}
+                {selectedSchedule.approved_at && (
+                  <span> on {new Date(selectedSchedule.approved_at).toLocaleDateString("en-PH")}</span>
+                )}
+              </p>
+            )}
           </div>
         </div>
         <div className="modal-buttons">

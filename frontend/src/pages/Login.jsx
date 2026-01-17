@@ -1,35 +1,70 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { FaUserCircle, FaEye, FaEyeSlash } from "react-icons/fa";
+import { 
+  FaEye, 
+  FaEyeSlash, 
+  FaLock, 
+  FaIdCard, 
+  FaHome, 
+  FaInfoCircle, 
+  FaPhoneAlt, 
+  FaSignInAlt,
+  FaExclamationTriangle,
+  FaEnvelope,
+  FaPhone,
+  FaClock,
+  FaUserCheck,
+   FaHandsHelping 
+} from "react-icons/fa";
+import "./Login.css";
 
 function Login() {
   const navigate = useNavigate();
-  const [step, setStep] = useState(1); // Step 1: select role, Step 2: login form
-  const [role, setRole] = useState("");
   const [form, setForm] = useState({ username: "", password: "" });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [rememberMe, setRememberMe] = useState(false);
 
-  const inputStyle = (error) => ({
-    width: "100%",
-    padding: "12px",
-    borderRadius: "10px",
-    border: error ? "1px solid #e74c3c" : "1px solid #ccc",
-    fontSize: "15px",
-    boxSizing: "border-box",
-    marginBottom: "5px",
-  });
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
 
-  const handleRoleSelect = (e) => {
-    setRole(e.target.value);
-    if (errors.role) setErrors({ ...errors, role: "" });
+    // Check for saved credentials
+    const savedUsername = localStorage.getItem("rememberedUsername");
+    if (savedUsername) {
+      setForm(prev => ({ ...prev, username: savedUsername }));
+      setRememberMe(true);
+    }
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // Format ang oras at petsa
+  const formatTime = (date) => {
+    return date.toLocaleTimeString('en-PH', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false 
+    });
+  };
+
+  const formatDate = (date) => {
+    return date.toLocaleDateString('en-PH', {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   };
 
   const validateForm = () => {
     const newErrors = {};
-    if (!form.username.trim()) newErrors.username = "Username/Staff ID is required";
+    if (!form.username.trim()) newErrors.username = "Username is required";
     if (!form.password) newErrors.password = "Password is required";
     else if (form.password.length < 6) newErrors.password = "Password must be at least 6 characters";
     setErrors(newErrors);
@@ -40,34 +75,70 @@ function Login() {
     e.preventDefault();
     if (!validateForm()) return;
 
+    // Save username if remember me is checked
+    if (rememberMe) {
+      localStorage.setItem("rememberedUsername", form.username);
+    } else {
+      localStorage.removeItem("rememberedUsername");
+    }
+
     setIsLoading(true);
+    setErrors({});
+
     try {
       const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
-      const res = await axios.post(`${API_URL}/api/${role.toLowerCase()}/login`, form);
+      
+      const endpoints = [
+        `${API_URL}/api/auth/resident/login`,
+        `${API_URL}/api/auth/staff/login`,
+        `${API_URL}/api/auth/admin/login`
+      ];
+      
+      let res = null;
+      let role = "";
+      
+      for (const endpoint of endpoints) {
+        try {
+          const attempt = await axios.post(endpoint, form);
+          if (attempt.data.token) {
+            res = attempt;
+            
+            if (endpoint.includes("/resident/")) role = "resident";
+            else if (endpoint.includes("/staff/")) role = "staff";
+            else if (endpoint.includes("/admin/")) role = "admin";
+            
+            break;
+          }
+        } catch (err) {
+          continue;
+        }
+      }
+      
+      if (!res) {
+        throw new Error("Invalid credentials or user not found");
+      }
 
-      // Save token
       localStorage.setItem("token", res.data.token);
+      localStorage.setItem("role", role);
 
-      // Save user data
       const user = res.data.user;
       if (user) {
-        localStorage.setItem("username", user.username || "");
+        localStorage.setItem("username", user.username || form.username);
         localStorage.setItem("userId", user.id || "");
         
-        // Save staff-specific data
-        if (role.toLowerCase() === "staff") {
+        if (role === "staff") {
           localStorage.setItem("staffId", user.staff_id || "");
           localStorage.setItem("staffName", user.name || "");
-        }
-        
-        // Save resident-specific data  
-        if (role.toLowerCase() === "resident") {
+          localStorage.setItem("staffStaffId", user.staff_id || "");
+        } else if (role === "admin") {
+          localStorage.setItem("adminId", user.id);
+        } else if (role === "resident") {
+          localStorage.setItem("residentId", user.id);
           localStorage.setItem("residentName", user.full_name || "");
         }
       }
 
-      // Redirect based on role
-      switch (role.toLowerCase()) {
+      switch (role) {
         case "resident":
           navigate("/resident/dashboard");
           break;
@@ -81,127 +152,263 @@ function Login() {
           navigate("/");
       }
     } catch (err) {
-      setErrors({ submit: err.response?.data?.error || "Login failed" });
+      console.error("Login error:", err);
+      setErrors({ 
+        submit: err.response?.data?.error || "Invalid credentials. Please try again." 
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("username");
-    localStorage.removeItem("userId");
-    localStorage.removeItem("staffId");
-    localStorage.removeItem("staffName");
-    localStorage.removeItem("residentName");
+  const handleRegister = () => {
+    navigate("/resident/register");
+  };
+
+  const handleHome = () => {
     navigate("/");
   };
 
-  // Update placeholder based on role
-  const getUsernamePlaceholder = () => {
-    if (role === "Staff") return "Staff ID or Username";
-    return "Username";
+  const handleAbout = () => {
+    navigate("/about");
+  };
+
+  const handleContact = () => {
+    navigate("/contact");
+  };
+
+  const handleForgotPassword = () => {
+    // Placeholder for forgot password functionality
+    alert("Forgot password feature will be implemented soon.");
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+    if (errors[name]) setErrors({ ...errors, [name]: "" });
+    if (errors.submit) setErrors({ ...errors, submit: "" });
+  };
+
+  const handleRememberMeChange = (e) => {
+    setRememberMe(e.target.checked);
+    if (!e.target.checked) {
+      localStorage.removeItem("rememberedUsername");
+    }
+  };
+
+  const handlePrivacyClick = () => {
+    // You can navigate to a privacy page or show a modal
+    navigate("/privacy");
+    // Or: alert("Privacy Policy page will be implemented soon.");
+  };
+
+  const handleTermsClick = () => {
+    // You can navigate to a terms page or show a modal
+    navigate("/terms");
+    // Or: alert("Terms of Use page will be implemented soon.");
   };
 
   return (
-    <div style={{ display:"flex", justifyContent:"center", alignItems:"center", minHeight:"100vh", backgroundImage:'url("/pic1.jpg")', backgroundSize:"cover", backgroundPosition:"center", padding:"15px" }}>
-      <div style={{ width:"100%", maxWidth:"350px", padding:"30px", borderRadius:"20px", background:"rgba(255,255,255,0.95)", textAlign:"center", boxShadow:"0 15px 30px rgba(0,0,0,0.3)" }}>
-        <FaUserCircle style={{ fontSize:"60px", color:"#A43259", marginBottom:"15px" }} />
-        <h2 style={{ marginBottom:"20px", color:"#333" }}>{step === 1 ? "Select Your Role" : `Login as ${role}`}</h2>
+    <div className="barangay-login-page">
+      {/* Compact Top Bar */}
+      <div className="barangay-top-bar">
+        <div className="top-bar-content">
+          <div className="time-display">
+            <FaClock /> {formatTime(currentTime)} | {formatDate(currentTime)}
+          </div>
+          <div className="top-bar-links">
+            <span><FaPhone /> (049) 123-4567</span>
+            <span><FaEnvelope /> barangay@stodomingo.com</span>
+          </div>
+        </div>
+      </div>
 
-        {step === 1 && (
-          <>
-            <select value={role} onChange={handleRoleSelect} style={inputStyle(errors.role)}>
-              <option value="">-- Choose Role --</option>
-              <option value="Admin">Admin</option>
-              <option value="Staff">Staff</option>
-              <option value="Resident">Resident</option>
-            </select>
-            {errors.role && <p style={{ color:"#e74c3c", fontSize:"12px" }}>{errors.role}</p>}
-            <button onClick={() => role ? setStep(2) : setErrors({ role:"Please select a role" })} style={{ width:"100%", padding:"12px", borderRadius:"10px", border:"none", backgroundColor:"#A43259", color:"white", fontWeight:"bold", cursor:"pointer", marginTop:"10px" }}>
-              Next
-            </button>
-          </>
-        )}
+ {/* Header - Inayos */}
+<header className="barangay-header">
+  <div className="barangay-header-main">
+    {/* Left Side: Logo and Title */}
+    <div className="barangay-logo-container">
+      <div className="barangay-logo">
+        <img 
+          src="/brgylogo.jpg" 
+          alt="Barangay Sto. Domingo Seal" 
+        />
+      </div>
+      
+      <div className="barangay-title">
+        <h1>BARANGAY STO. DOMINGO</h1>
+        <p>with Sangguniang Kabataan Management System</p>
+      </div>
+    </div>
 
-        {step === 2 && (
-          <form onSubmit={handleSubmit}>
-            <input 
-              name="username" 
-              placeholder={getUsernamePlaceholder()} 
-              value={form.username} 
-              onChange={(e)=>setForm({...form, username:e.target.value})} 
-              style={inputStyle(errors.username)} 
-            />
-            {errors.username && <p style={{ color:"#e74c3c", fontSize:"12px" }}>{errors.username}</p>}
+    {/* Center: Navigation Buttons */}
+    <nav className="barangay-nav">
+      <button onClick={handleHome} className="barangay-nav-btn">
+        <FaHome /> Home
+      </button>
+      <button onClick={handleAbout} className="barangay-nav-btn">
+        <FaInfoCircle /> About
+      </button>
+      <button onClick={handleContact} className="barangay-nav-btn">
+        <FaPhoneAlt /> Contact
+      </button>
+    </nav>
 
-            <div style={{ position:"relative", marginBottom:"15px" }}>
-              <input 
-                type={showPassword ? "text" : "password"} 
-                name="password" 
-                placeholder="Password" 
-                value={form.password} 
-                onChange={(e)=>setForm({...form, password:e.target.value})} 
-                style={inputStyle(errors.password)} 
-              />
-              <span onClick={() => setShowPassword(!showPassword)} style={{ position:"absolute", right:"15px", top:"14px", cursor:"pointer", color:"#777" }}>
-                {showPassword ? <FaEyeSlash /> : <FaEye />}
-              </span>
-              {errors.password && <p style={{ color:"#e74c3c", fontSize:"12px" }}>{errors.password}</p>}
-            </div>
+    {/* Right Side: SK Logo */}
+    <div className="sk-header-logo">
+      <img 
+        src="/sk.jpg"
+        alt="SK Sto. Domingo Logo"
+        onError={(e) => {
+          e.target.onerror = null;
+          e.target.src = "/brgylogo.jpg";
+        }}
+      />
+    </div>
+  </div>
+</header>
 
-            {errors.submit && (
-              <div style={{ color:"#e74c3c", fontSize:"14px", margin:"10px 0", padding:"10px", backgroundColor:"#fadbd8", borderRadius:"5px" }}>
-                {errors.submit}
+      {/* Main Content */}
+      <main className="barangay-main">
+        {/* Compact Login Container */}
+        <div className="barangay-login-container">
+
+{/* Login Header */}
+<div className="login-header">
+  {/* Barangay Logo lang - walang SK logo */}
+  <div className="login-logo">
+    <img 
+      src="/brgylogo.jpg"
+      alt="Barangay Sto. Domingo Logo"
+    />
+  </div>
+  
+  <div className="login-title">
+    <h2>BARANGAY STO. DOMINGO PORTAL</h2>
+    
+    
+    {/* Beneficiary Note */}
+    <div className="beneficiary-note">
+      <FaInfoCircle />
+      This system is developed in partnership with SK Sto. Domingo
+    </div>
+  </div>
+</div>
+
+          {/* Login Form */}
+          <div className="login-body">
+            <form onSubmit={handleSubmit} className="login-form">
+              {/* Username Field */}
+              <div className="form-group">
+                <div className="input-group">
+                  <input 
+                    type="text"
+                    name="username" 
+                    placeholder="Username or Email" 
+                    value={form.username} 
+                    onChange={handleChange} 
+                    className={`form-input ${errors.username ? 'error' : ''}`}
+                  />
+                </div>
+                {errors.username && (
+                  <div className="error-message">
+                    <FaExclamationTriangle /> {errors.username}
+                  </div>
+                )}
               </div>
-            )}
 
-            <button 
-              type="submit" 
-              disabled={isLoading} 
-              style={{ 
-                width:"100%", 
-                padding:"12px", 
-                borderRadius:"10px", 
-                border:"none", 
-                backgroundColor:isLoading?"#ccc":"#A43259", 
-                color:"white", 
-                fontWeight:"bold", 
-                cursor:isLoading?"not-allowed":"pointer", 
-                marginTop:"10px" 
-              }}
-            >
-              {isLoading?"Signing In...":"Login"}
-            </button>
+              {/* Password Field */}
+              <div className="form-group">
+                <div className="input-group">
+                  <input 
+                    type={showPassword ? "text" : "password"} 
+                    name="password" 
+                    placeholder="Password" 
+                    value={form.password} 
+                    onChange={handleChange} 
+                    className={`form-input ${errors.password ? 'error' : ''}`}
+                  />
+                  <button 
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)} 
+                    className="password-toggle"
+                  >
+                    {showPassword ? <FaEyeSlash /> : <FaEye />}
+                  </button>
+                </div>
+                {errors.password && (
+                  <div className="error-message">
+                    <FaExclamationTriangle /> {errors.password}
+                  </div>
+                )}
+              </div>
 
-            {/* Show register link only for residents */}
-            {role === "Resident" && (
-              <p style={{ marginTop:"15px", fontSize:"14px", color:"#555" }}>
-                Don't have an account?{" "}
-                <span 
-                  onClick={()=>navigate("/resident/register")} 
-                  style={{ color:"#A43259", cursor:"pointer", fontWeight:"bold" }}
-                >
+              {/* Remember Me and Forgot Password */}
+              <div className="login-options">
+                <div className="remember-me">
+                  <input 
+                    type="checkbox" 
+                    id="rememberMe"
+                    checked={rememberMe}
+                    onChange={handleRememberMeChange}
+                  />
+                  <label htmlFor="rememberMe">Remember me</label>
+                </div>
+                <div className="forgot-password" onClick={handleForgotPassword}>
+                  Forgot password?
+                </div>
+              </div>
+
+              {/* Submit Error */}
+              {errors.submit && (
+                <div className="submit-error">
+                  <FaExclamationTriangle /> {errors.submit}
+                </div>
+              )}
+
+              {/* Submit Button */}
+              <button 
+                type="submit" 
+                disabled={isLoading} 
+                className="submit-btn"
+              >
+                <FaSignInAlt />
+                {isLoading ? "VERIFYING..." : "LOGIN"}
+              </button>
+            </form>
+
+            {/* Registration Notice */}
+            <div className="notice-box">
+              <div className="notice-header">
+                <FaUserCheck />
+                <h4>CREATE ACCOUNT</h4>
+              </div>
+              <p>
+                Don't have an account yet? 
+                <span onClick={handleRegister} className="register-link">
                   Register here
                 </span>
               </p>
-            )}
+            </div>
 
-            {/* Hide staff register link since admin creates staff accounts */}
-            {role === "Staff" && (
-              <p style={{ marginTop:"15px", fontSize:"14px", color:"#666", fontStyle:"italic" }}>
-                Staff accounts are created by administrators
-              </p>
-            )}
-
-            <p style={{ marginTop:"10px", fontSize:"14px", color:"#555" }}>
-              <span onClick={()=>setStep(1)} style={{ color:"#777", cursor:"pointer", textDecoration:"underline" }}>
-                Back to Role Selection
-              </span>
-            </p>
-          </form>
-        )}
-      </div>
+            {/* Footer Note */}
+            <div className="login-footer">
+              <div className="footer-line"></div>
+              <p></p>
+              <p className="footer-subtext">Transparent and Efficient Public Service</p>
+              
+              {/* Simple Footer with Privacy & Terms Links */}
+              <div className="simple-footer">
+                <p>
+                  © {new Date().getFullYear()} Barangay Sto. Domingo System · 
+                  <span onClick={handlePrivacyClick} className="footer-link"> Privacy</span> · 
+                  <span onClick={handleTermsClick} className="footer-link"> Terms</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

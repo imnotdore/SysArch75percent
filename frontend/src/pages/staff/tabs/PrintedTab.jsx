@@ -8,24 +8,25 @@ export default function PrintedTab({ printedFiles }) {
     headers: { Authorization: `Bearer ${token}` },
   });
 
-  const handleFileAction = async (fileId, currentStatus) => {
-    try {
-      if (currentStatus === "printed" || (!currentStatus.includes("ready") && currentStatus !== "claimed")) {
-        // Update status to "Ready to Pick Up"
-        await axiosAuth.put(`/api/staff/printed-files/${fileId}/notify`);
-        alert("Resident notified! Status updated to 'Ready to Pick Up'.");
-      } else if (currentStatus.includes("ready")) {
-        // Mark as claimed
-        await axiosAuth.put(`/api/staff/printed-files/${fileId}/claim`);
-        alert("File marked as claimed!");
-      }
-      // Refresh the data
-      window.location.reload(); // Or use a state update if you have one
-    } catch (err) {
-      console.error(err);
-      alert("Action failed. Please try again.");
+  // Sa handleFileAction function:
+const handleFileAction = async (fileId, currentStatus) => {
+  try {
+    if (currentStatus === "printed") {
+      // Notify resident (update to "go_to_pickup")
+      await axiosAuth.put(`/api/staff/printed-files/${fileId}/notify`);
+      alert("✅ Resident notified! Status updated to 'Ready to Pick Up'.");
+    } else if (currentStatus === "go_to_pickup") {
+      // Mark as claimed
+      await axiosAuth.put(`/api/staff/printed-files/${fileId}/claim`);
+      alert("✅ File marked as claimed!");
     }
-  };
+    // Refresh the data
+    window.location.reload();
+  } catch (err) {
+    console.error(err);
+    alert("❌ Action failed. Please try again.");
+  }
+};
 
   const getInitials = (name) => {
     if (!name) return "R";
@@ -44,14 +45,26 @@ export default function PrintedTab({ printedFiles }) {
     });
   };
 
-  const getStatusBadgeClass = (status) => {
-    const statusLower = status.toLowerCase();
-    if (statusLower === "claimed") return "claimed";
-    if (statusLower.includes("ready")) return "ready";
-    if (statusLower === "printed") return "printed";
-    return "pending";
-  };
-
+ const getStatusBadgeClass = (status) => {
+  const statusLower = status.toLowerCase();
+  if (statusLower === "claimed") return "claimed";
+  if (statusLower === "released") return "ready"; // "released" = "Go to Pick Up"
+  if (statusLower === "printed") return "printed";
+  return "pending";
+};
+const getStatusText = (status) => {
+  const statusLower = status.toLowerCase();
+  switch(statusLower) {
+    case 'go_to_pickup': return 'Ready to Pick Up';
+    case 'printed': return 'Printed';
+    case 'claimed': return 'Claimed';
+    case 'pending': return 'Pending';
+    case 'approved': return 'Approved';
+    case 'released': return 'Released'; // For schedules
+    case 'ready': return 'Ready'; // For schedules
+    default: return status;
+  }
+};
   return (
     <section className="printed-list">
       <h2>Printed Files</h2>
@@ -124,7 +137,8 @@ export default function PrintedTab({ printedFiles }) {
                       className={`status-badge ${getStatusBadgeClass(status)}`}
                       title={statusRaw}
                     >
-                      {status.replace(/\b\w/g, (c) => c.toUpperCase())}
+                      
+                      {getStatusText(status)}
                     </span>
                   </td>
                   <td>
