@@ -1,12 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Search,
   FileText,
   Calendar,
   Clock,
   User,
-  ChevronLeft,
-  AlertCircle
+  X,
+  Check,
+  XCircle
 } from "lucide-react";
 
 import "././tabs.css/InboxTab.css";
@@ -20,7 +21,9 @@ export default function InboxTab({
   setSelectedResident,
   fetchResidentRequests,
   setSelectedFile,
-  setSelectedSchedule
+  setSelectedSchedule,
+  handleFileStatusChange,
+  loading = false
 }) {
   // Format time like Gmail
   const formatTime = (dateString) => {
@@ -44,6 +47,30 @@ export default function InboxTab({
   const filteredResidents = residents.filter((r) =>
     (r.username || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Local state for modals
+  const [localSelectedFile, setLocalSelectedFile] = useState(null);
+  const [localSelectedSchedule, setLocalSelectedSchedule] = useState(null);
+
+  // Function to handle file click
+  const handleFileClick = (file) => {
+    if (file.status.toLowerCase() !== "claimed") {
+      setLocalSelectedFile(file);
+      if (setSelectedFile) {
+        setSelectedFile(file);
+      }
+    }
+  };
+
+  // Function to handle schedule click
+  const handleScheduleClick = (schedule) => {
+    if (schedule.status.toLowerCase() !== "claimed") {
+      setLocalSelectedSchedule(schedule);
+      if (setSelectedSchedule) {
+        setSelectedSchedule(schedule);
+      }
+    }
+  };
 
   return (
     <div className="inbox-container">
@@ -139,7 +166,7 @@ export default function InboxTab({
                     key={file.id}
                     className="request-card file-card"
                     data-status={file.status.toLowerCase()}
-                    onClick={() => file.status.toLowerCase() !== "claimed" && setSelectedFile(file)}
+                    onClick={() => handleFileClick(file)}
                   >
                     <div className="request-icon">
                       <FileText />
@@ -184,7 +211,7 @@ export default function InboxTab({
                     key={schedule.id}
                     className="request-card schedule-card"
                     data-status={schedule.status.toLowerCase()}
-                    onClick={() => schedule.status.toLowerCase() !== "claimed" && setSelectedSchedule(schedule)}
+                    onClick={() => handleScheduleClick(schedule)}
                   >
                     <div className="request-icon">
                       <Calendar />
@@ -220,6 +247,170 @@ export default function InboxTab({
             </div>
           )}
         </section>
+      )}
+
+      {/* FILE PREVIEW MODAL */}
+      {localSelectedFile && (
+        <div className="preview-modal-overlay" onClick={() => setLocalSelectedFile(null)}>
+          <div className="preview-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>📄 File Request Preview</h3>
+              <button 
+                className="modal-close-btn"
+                onClick={() => setLocalSelectedFile(null)}
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <div className="modal-content">
+              <div className="file-preview-info">
+                <div className="info-row">
+                  <strong>Filename:</strong>
+                  <span>{localSelectedFile.filename}</span>
+                </div>
+                <div className="info-row">
+                  <strong>Pages:</strong>
+                  <span>{localSelectedFile.page_count}</span>
+                </div>
+                <div className="info-row">
+                  <strong>Date Needed:</strong>
+                  <span>{new Date(localSelectedFile.date_needed).toLocaleDateString("en-PH")}</span>
+                </div>
+                <div className="info-row">
+                  <strong>Purpose:</strong>
+                  <span>{localSelectedFile.purpose}</span>
+                </div>
+                {localSelectedFile.special_instructions && (
+                  <div className="info-row">
+                    <strong>Special Instructions:</strong>
+                    <span>{localSelectedFile.special_instructions}</span>
+                  </div>
+                )}
+                <div className="info-row">
+                  <strong>Submitted:</strong>
+                  <span>{formatTime(localSelectedFile.created_at)}</span>
+                </div>
+                <div className="info-row">
+                  <strong>Status:</strong>
+                  <span className={`status-badge status-${localSelectedFile.status.toLowerCase()}`}>
+                    {localSelectedFile.status}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="modal-actions">
+                <button 
+                  className="btn-approve"
+                  onClick={() => {
+                    if (handleFileStatusChange) {
+                      handleFileStatusChange(localSelectedFile.id, 'approved');
+                    }
+                    setLocalSelectedFile(null);
+                  }}
+                >
+                  <Check size={18} />
+                  Approve
+                </button>
+                <button 
+                  className="btn-reject"
+                  onClick={() => {
+                    if (handleFileStatusChange) {
+                      handleFileStatusChange(localSelectedFile.id, 'rejected');
+                    }
+                    setLocalSelectedFile(null);
+                  }}
+                >
+                  <XCircle size={18} />
+                  Reject
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SCHEDULE PREVIEW MODAL */}
+      {localSelectedSchedule && (
+        <div className="preview-modal-overlay" onClick={() => setLocalSelectedSchedule(null)}>
+          <div className="preview-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>📅 Schedule Request Preview</h3>
+              <button 
+                className="modal-close-btn"
+                onClick={() => setLocalSelectedSchedule(null)}
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <div className="modal-content">
+              <div className="file-preview-info">
+                <div className="info-row">
+                  <strong>Item:</strong>
+                  <span>{localSelectedSchedule.item}</span>
+                </div>
+                <div className="info-row">
+                  <strong>Quantity:</strong>
+                  <span>{localSelectedSchedule.quantity}</span>
+                </div>
+                <div className="info-row">
+                  <strong>Borrow Date:</strong>
+                  <span>{new Date(localSelectedSchedule.date_from).toLocaleDateString("en-PH")}</span>
+                </div>
+                <div className="info-row">
+                  <strong>Return Date:</strong>
+                  <span>{new Date(localSelectedSchedule.date_to).toLocaleDateString("en-PH")}</span>
+                </div>
+                <div className="info-row">
+                  <strong>Time:</strong>
+                  <span>{localSelectedSchedule.time_from} - {localSelectedSchedule.time_to}</span>
+                </div>
+                {localSelectedSchedule.reason && (
+                  <div className="info-row">
+                    <strong>Reason:</strong>
+                    <span>{localSelectedSchedule.reason}</span>
+                  </div>
+                )}
+                <div className="info-row">
+                  <strong>Submitted:</strong>
+                  <span>{formatTime(localSelectedSchedule.created_at)}</span>
+                </div>
+                <div className="info-row">
+                  <strong>Status:</strong>
+                  <span className={`status-badge status-${localSelectedSchedule.status.toLowerCase()}`}>
+                    {localSelectedSchedule.status}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="modal-actions">
+                <button 
+                  className="btn-approve"
+                  onClick={() => {
+                    if (handleFileStatusChange) {
+                      handleFileStatusChange(localSelectedSchedule.id, 'approved');
+                    }
+                    setLocalSelectedSchedule(null);
+                  }}
+                >
+                  <Check size={18} />
+                  Approve
+                </button>
+                <button 
+                  className="btn-reject"
+                  onClick={() => {
+                    if (handleFileStatusChange) {
+                      handleFileStatusChange(localSelectedSchedule.id, 'rejected');
+                    }
+                    setLocalSelectedSchedule(null);
+                  }}
+                >
+                  <XCircle size={18} />
+                  Reject
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

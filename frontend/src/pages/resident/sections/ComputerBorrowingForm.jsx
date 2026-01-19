@@ -36,9 +36,7 @@ export default function ComputerBorrowingForm() {
   const pcs = [
     { id: "pc1", name: "PC 1", status: "Available" },
     { id: "pc2", name: "PC 2", status: "Available" },
-    { id: "pc3", name: "PC 3", status: "Available" },
-    { id: "pc4", name: "PC 4", status: "Available" },
-    { id: "pc5", name: "PC 5", status: "Available" }
+    { id: "pc3", name: "PC 3", status: "Available" }
   ];
 
   // Generate time options from 8:00 AM to 5:00 PM in 30-minute increments

@@ -34,7 +34,8 @@ import "./tabs.css/AcceptedTab.css";
 import "./tabs.css/PrintedTab.css";
 import "./tabs.css/ScheduledTab.css";
 import "./tabs.css/ComputerBorrowingTab.css"; // Add this import
-
+import "./tabs.css/ReturnedTab.css"; 
+import "./tabs.css/ReleasedTab.css"; 
 export default function StaffDashboard() {
   const navigate = useNavigate();
   const sidebarRef = useRef(null);

@@ -21,6 +21,8 @@ router.get("/inbox", getStaffInbox);
 // Get all residents
 router.get("/residents", fileController.getAllResidents);
 
+// SA staffRoutes.js - I-update ang residents/pending route
+// routes/staffRoutes.js - UPDATE ANG RESIDENTS/PENDING ROUTE
 router.get("/residents/pending", async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -36,13 +38,15 @@ router.get("/residents/pending", async (req, res) => {
         -- Schedule requests only  
         COALESCE(s.pending_schedules, 0) AS pending_schedules,
         
-        -- Computer requests (for reference, but not counted)
-        COALESCE(c.pending_computer_requests, 0) AS pending_computer_requests,
+        -- ========================================
+        -- IMPORTANT: TANGGALIN ANG COMPUTER REQUESTS
+        -- ========================================
+        -- COALESCE(c.pending_computer_requests, 0) AS pending_computer_requests,
         
-        -- Calculate only file + schedule for inbox
+        -- Calculate ONLY file + schedule for inbox
         (COALESCE(f.pending_files, 0) + COALESCE(s.pending_schedules, 0)) AS pending_count,
         
-        -- Get latest request time from files or schedules only
+        -- Get latest request time from files or schedules only (EXCLUDE computer)
         GREATEST(
           COALESCE(f.latest_file, '1970-01-01'),
           COALESCE(s.latest_schedule, '1970-01-01')
@@ -50,6 +54,7 @@ router.get("/residents/pending", async (req, res) => {
         
       FROM residents r
       
+      -- File requests
       LEFT JOIN (
         SELECT resident_id, 
                COUNT(*) AS pending_files,
@@ -59,6 +64,7 @@ router.get("/residents/pending", async (req, res) => {
         GROUP BY resident_id
       ) f ON r.id = f.resident_id
       
+      -- Schedule requests
       LEFT JOIN (
         SELECT user_id, 
                COUNT(*) AS pending_schedules,
@@ -68,17 +74,24 @@ router.get("/residents/pending", async (req, res) => {
         GROUP BY user_id
       ) s ON r.id = s.user_id
       
-      LEFT JOIN (
-        SELECT user_id, 
-               COUNT(*) AS pending_computer_requests
-        FROM computer_schedule
-        WHERE status = 'Pending'
-        GROUP BY user_id
-      ) c ON r.id = c.user_id
+      -- ========================================
+      -- IMPORTANT: TANGGALIN ANG COMPUTER JOIN
+      -- ========================================
+      -- LEFT JOIN (
+      --   SELECT user_id, 
+      --          COUNT(*) AS pending_computer_requests
+      --   FROM computer_schedule
+      --   WHERE status = 'Pending'
+      --   GROUP BY user_id
+      -- ) c ON r.id = c.user_id
       
-      -- Only include residents with pending files OR schedules (NOT computer)
-      WHERE COALESCE(f.pending_files, 0) > 0 
-         OR COALESCE(s.pending_schedules, 0) > 0
+      -- Only include residents with pending files OR schedules (EXCLUDE computer)
+      WHERE (COALESCE(f.pending_files, 0) > 0 
+         OR COALESCE(s.pending_schedules, 0) > 0)
+        -- ========================================
+        -- IMPORTANT: TANGGALIN ANG COMPUTER CONDITION
+        -- ========================================
+        -- OR COALESCE(c.pending_computer_requests, 0) > 0
       
       ORDER BY latest_request DESC
     `);

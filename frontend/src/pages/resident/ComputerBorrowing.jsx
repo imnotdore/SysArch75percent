@@ -1,10 +1,9 @@
-import ResidentLayout from "./ResidentLayout";
-import ComputerBorrowingForm from "./sections/ComputerBorrowingForm";
-
-export default function ComputerBorrowing() {
+// ComputerBorrowTab.js
+export default function ComputerBorrowTab({ computerRequests }) {
   return (
-    <ResidentLayout title="Computer Borrowing">
-      <ComputerBorrowingForm />
-    </ResidentLayout>
+    <div className="computer-borrow-container">
+      <h2>💻 PC Borrow Requests</h2>
+      {/* Display computer requests here */}
+    </div>
   );
 }

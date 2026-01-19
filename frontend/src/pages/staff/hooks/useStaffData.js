@@ -3,12 +3,13 @@ import axios from "axios";
 import { API_URL } from "../../../config";
 
 export default function useStaffData(staffId, activeTab) {
+  const [computerRequests, setComputerRequests] = useState([]);
   const [residents, setResidents] = useState([]);
   const [selectedResident, setSelectedResident] = useState(null);
   const [selectedResidentRequests, setSelectedResidentRequests] = useState({ 
     files: [], 
-    schedules: [], 
-    computerRequests: [] // Initialize with empty array
+    schedules: []
+    // Initialize with empty array
   });
   const [selectedFile, setSelectedFile] = useState(null);
   const [selectedSchedule, setSelectedSchedule] = useState(null);
@@ -32,16 +33,27 @@ export default function useStaffData(staffId, activeTab) {
   });
 
   // ==================== FETCH FUNCTIONS ====================
-  // Fetch residents with pending requests
-  const fetchResidents = async () => {
-    if (!token) return;
-    try {
-      const res = await axiosAuth.get("/api/staff/residents/pending");
-      setResidents(res.data);
-    } catch (err) {
-      console.error("Error fetching residents:", err.response?.data || err.message);
-    }
-  };
+ // useStaffData.jsx - Fix fetchResidents function
+const fetchResidents = async () => {
+  if (!token) return;
+  try {
+    // Fetch residents with their pending requests count
+    const res = await axiosAuth.get("/api/staff/residents/pending");
+    
+    // Transform data to include proper pending counts
+    const residentsWithCounts = res.data.map(resident => ({
+      ...resident,
+      pending_count: (resident.pending_files || 0) + (resident.pending_schedules || 0),
+      pending_files: resident.pending_files || 0,
+      pending_schedules: resident.pending_schedules || 0,
+      latest_request: resident.latest_request_date || resident.created_at
+    }));
+    
+    setResidents(residentsWithCounts);
+  } catch (err) {
+    console.error("Error fetching residents:", err);
+  }
+};
 
   // Fetch accepted requests
   const fetchAcceptedRequests = async () => {
@@ -120,57 +132,34 @@ export default function useStaffData(staffId, activeTab) {
   };
 
   // Fetch resident requests
-  const fetchResidentRequests = async (residentId) => {
-    try {
-      const token = localStorage.getItem("token");
-      
-      if (!API_URL) {
-        console.error("API_URL is not defined. Check your config file.");
-        return { files: [], schedules: [], computerRequests: [] };
-      }
-      
-      // Fetch files
-      const filesResponse = await axios.get(
-        `${API_URL}/api/staff/files/resident/${residentId}`,
-        { 
-          headers: { Authorization: `Bearer ${token}` },
-          timeout: 10000
-        }
-      ).catch(() => ({ data: [] }));
-      
-      // Fetch schedules
-      const schedulesResponse = await axios.get(
-        `${API_URL}/api/staff/schedules/resident/${residentId}`,
-        { 
-          headers: { Authorization: `Bearer ${token}` },
-          timeout: 10000
-        }
-      ).catch(() => ({ data: [] }));
-      
-      // Fetch computer requests
-      const computerResponse = await axios.get(
-        `${API_URL}/api/staff/computer-requests/resident/${residentId}`,
-        { 
-          headers: { Authorization: `Bearer ${token}` },
-          timeout: 10000
-        }
-      ).catch(() => ({ data: [] }));
-      
-      const result = {
-        files: (filesResponse.data || []).filter(file => file.status === 'Pending'),
-        schedules: (schedulesResponse.data || []).filter(schedule => schedule.status === 'Pending'),
-        computerRequests: (computerResponse.data || []).filter(computer => computer && computer.status === 'Pending')
-      };
-      
-      setSelectedResidentRequests(result);
-      return result;
-    } catch (error) {
-      console.error("Error fetching resident requests:", error);
-      const result = { files: [], schedules: [], computerRequests: [] };
-      setSelectedResidentRequests(result);
-      return result;
-    }
-  };
+const fetchResidentRequests = async (residentId) => {
+  try {
+    // Fetch BOTH pending files and schedules for this resident
+    const [filesResponse, schedulesResponse] = await Promise.all([
+      axios.get(`${API_URL}/api/staff/files/resident/${residentId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      }),
+      axios.get(`${API_URL}/api/staff/schedules/resident/${residentId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+    ]);
+    
+    const result = {
+      files: (filesResponse.data || []).filter(file => 
+        file.status === 'Pending' || file.status === 'pending'
+      ),
+      schedules: (schedulesResponse.data || []).filter(schedule => 
+        schedule.status === 'Pending' || schedule.status === 'pending'
+      )
+    };
+    
+    setSelectedResidentRequests(result);
+    return result;
+  } catch (error) {
+    console.error("Error fetching resident requests:", error);
+    return { files: [], schedules: [] };
+  }
+};
 
   // ==================== ACTION FUNCTIONS ====================
 
@@ -403,12 +392,12 @@ export default function useStaffData(staffId, activeTab) {
     if (!hasPending) {
       setResidents((prev) => prev.filter((r) => r.id !== residentId));
       setSelectedResident(null);
-      setSelectedResidentRequests({ files: [], schedules: [], computerRequests: [] });
+      setSelectedResidentRequests({ files: [], schedules: [] });
     } else {
       setSelectedResidentRequests({ 
         files: updatedFiles, 
-        schedules: updatedSchedules,
-        computerRequests: selectedResidentRequests.computerRequests || []
+        schedules: updatedSchedules
+     
       });
     }
   };

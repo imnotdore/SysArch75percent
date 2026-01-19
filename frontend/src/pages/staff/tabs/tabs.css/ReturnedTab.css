@@ -1,0 +1,113 @@
+/* Para sa global CSS file */
+.returned-list {
+  margin: 20px 0;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.returned-list h2 {
+  color: #2c3e50;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #e9ecef;
+  font-size: 1.5rem;
+}
+
+.returned-list p {
+  color: #6c757d;
+  font-style: italic;
+  text-align: center;
+  padding: 20px;
+}
+
+.returned-list table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.returned-list thead {
+  background-color: #3498db;
+  color: white;
+}
+
+.returned-list th {
+  padding: 15px 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.returned-list tbody tr {
+  border-bottom: 1px solid #e9ecef;
+  transition: background-color 0.2s ease;
+}
+
+.returned-list tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.returned-list tbody tr:last-child {
+  border-bottom: none;
+}
+
+.returned-list td {
+  padding: 15px 12px;
+  color: #495057;
+  font-size: 0.95rem;
+}
+
+.returned-list tbody tr:nth-child(even) {
+  background-color: #f8f9fa;
+}
+
+.returned-list tbody tr:nth-child(even):hover {
+  background-color: #e9ecef;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .returned-list {
+    padding: 15px;
+    margin: 10px 0;
+  }
+  
+  .returned-list table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  
+  .returned-list th,
+  .returned-list td {
+    padding: 12px 8px;
+    font-size: 0.9rem;
+  }
+  
+  .returned-list h2 {
+    font-size: 1.3rem;
+  }
+}
+
+/* Optional: Add subtle animation for table rows */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.returned-list tbody tr {
+  animation: fadeIn 0.3s ease-out;
+}

@@ -1206,28 +1206,7 @@ useEffect(() => {
             </div>
           </div>
           
-          <div className="printing-limits">
-            <h4><FaPrint /> Monthly Printing Quota (Per Resident)</h4>
-            <div className="limits-grid">
-              <div className="limit-item">
-                <div className="limit-type">Total Pages (Max)</div>
-                <div className="limit-pages">20 pages</div>
-              </div>
-              <div className="limit-item">
-                <div className="limit-type">Black & White</div>
-                <div className="limit-pages">Included</div>
-              </div>
-              <div className="limit-item">
-                <div className="limit-type">Color Printing</div>
-                <div className="limit-pages">5 pages max</div>
-              </div>
-              <div className="limit-item">
-                <div className="limit-type">Reset Date</div>
-                <div className="limit-pages">1st of Month</div>
-              </div>
-            </div>
-          </div>
-          
+         
           <div className="action-buttons">
             <button 
               className="btn-primary"

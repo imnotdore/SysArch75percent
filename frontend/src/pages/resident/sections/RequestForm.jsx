@@ -550,7 +550,7 @@ export default function RequestForm() {
             <div className="header-icon">
               <CalendarIcon size={32} />
             </div>
-            <h1>Choose Delivery Date</h1>
+            <h1>Choose date to claim</h1>
             <p className="subtitle">Select when you need your prints</p>
           </div>
 
