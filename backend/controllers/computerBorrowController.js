@@ -57,44 +57,112 @@ const createRequest = async (req, res) => {
 };
 
 // Get all requests of logged-in resident
+// Get all requests of logged-in resident
 const getUserRequests = async (req, res) => {
   try {
     const userId = req.user.id;
+    console.log("Fetching computer requests for user ID:", userId);
+    
     const [rows] = await db.query(
-      `SELECT id, pc_name AS pc, date, start_time AS startTime, end_time AS endTime, status
+      `SELECT 
+        id, 
+        user_id,
+        pc_name, 
+        date, 
+        start_time, 
+        end_time, 
+        status,
+        cancelled_reason,
+        approved_by,
+        approved_at,
+        created_at
        FROM computer_schedule
        WHERE user_id = ?
-       ORDER BY date DESC, start_time DESC`,
+       ORDER BY created_at DESC`,
       [userId]
     );
-    res.json(rows);
+    
+    console.log("Found", rows.length, "requests");
+    
+    // Format the response to match frontend expectations
+    const formattedRequests = rows.map(request => ({
+      id: request.id,
+      pc_name: request.pc_name,
+      pc: request.pc_name, // For compatibility
+      date: request.date,
+      start_time: request.start_time,
+      startTime: request.start_time, // For compatibility
+      end_time: request.end_time,
+      endTime: request.end_time, // For compatibility
+      status: request.status,
+      reason: request.cancelled_reason,
+      cancelled_reason: request.cancelled_reason,
+      approved_by: request.approved_by,
+      approved_at: request.approved_at,
+      created_at: request.created_at
+    }));
+    
+    res.json(formattedRequests);
   } catch (err) {
     console.error("Error fetching user requests:", err);
     res.status(500).json({ error: "Failed to fetch requests" });
   }
 };
 
+
+// Cancel pending request (resident)
 // Cancel pending request (resident)
 const cancelRequest = async (req, res) => {
   try {
     const userId = req.user.id;
     const { id } = req.params;
+    const { reason } = req.body;
 
-    const [result] = await db.query(
-      `DELETE FROM computer_schedule WHERE id = ? AND user_id = ? AND status = 'Pending'`,
+    console.log("Cancelling request:", { userId, id, reason });
+
+    if (!reason || reason.trim() === "") {
+      return res.status(400).json({ error: "Cancellation reason is required" });
+    }
+
+    // Check if request exists and belongs to user
+    const [check] = await db.query(
+      `SELECT status FROM computer_schedule WHERE id = ? AND user_id = ?`,
       [id, userId]
     );
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: "Request not found or cannot cancel" });
+    if (check.length === 0) {
+      return res.status(404).json({ error: "Request not found" });
     }
 
-    res.json({ message: "Request cancelled successfully", id });
+    if (check[0].status !== 'Pending') {
+      return res.status(400).json({ 
+        error: "Only pending requests can be cancelled. Current status: " + check[0].status 
+      });
+    }
+
+    // Update with cancellation reason
+    const [result] = await db.query(
+      `UPDATE computer_schedule 
+       SET status = 'Cancelled', 
+           cancelled_reason = ?,
+           updated_at = NOW()
+       WHERE id = ? AND user_id = ?`,
+      [reason.trim(), id, userId]
+    );
+
+    console.log("Update result:", result);
+
+    res.json({ 
+      success: true,
+      message: "Request cancelled successfully", 
+      id 
+    });
   } catch (err) {
     console.error("Error cancelling request:", err);
     res.status(500).json({ error: "Failed to cancel request" });
   }
 };
+
 
 // ------------------- Staff/Admin -------------------
 

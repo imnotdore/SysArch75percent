@@ -57,3 +57,9 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
+
+//FaTachometerAlt,FaUserClock,FaUserCheck,FaUsers,FaBox,FaSignOutAlt,
+// Dat naka fix nalang yung barangay, city, tsaka province
+//Since sa barangay lang naman
+//Para address nalang or street/house number ilalagay
+//https://comelec.gov.ph/?r=VoterRegistration/HowtoRegister

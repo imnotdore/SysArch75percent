@@ -21,27 +21,66 @@ router.get("/inbox", getStaffInbox);
 // Get all residents
 router.get("/residents", fileController.getAllResidents);
 
-// Residents with pending requests (files + schedules)
 router.get("/residents/pending", async (req, res) => {
   try {
     const [rows] = await db.query(`
-      SELECT r.id, r.username,
-             (COALESCE(f.pending_files, 0) + COALESCE(s.pending_schedules, 0)) AS pending_count
+      SELECT 
+        r.id, 
+        r.username,
+        r.created_at,
+        CONCAT(r.first_name, ' ', r.last_name) as full_name,
+        
+        -- File requests only
+        COALESCE(f.pending_files, 0) AS pending_files,
+        
+        -- Schedule requests only  
+        COALESCE(s.pending_schedules, 0) AS pending_schedules,
+        
+        -- Computer requests (for reference, but not counted)
+        COALESCE(c.pending_computer_requests, 0) AS pending_computer_requests,
+        
+        -- Calculate only file + schedule for inbox
+        (COALESCE(f.pending_files, 0) + COALESCE(s.pending_schedules, 0)) AS pending_count,
+        
+        -- Get latest request time from files or schedules only
+        GREATEST(
+          COALESCE(f.latest_file, '1970-01-01'),
+          COALESCE(s.latest_schedule, '1970-01-01')
+        ) AS latest_request
+        
       FROM residents r
+      
       LEFT JOIN (
-        SELECT resident_id, COUNT(*) AS pending_files
+        SELECT resident_id, 
+               COUNT(*) AS pending_files,
+               MAX(created_at) AS latest_file
         FROM resident_requests
         WHERE status = 'Pending'
         GROUP BY resident_id
       ) f ON r.id = f.resident_id
+      
       LEFT JOIN (
-        SELECT user_id, COUNT(*) AS pending_schedules
+        SELECT user_id, 
+               COUNT(*) AS pending_schedules,
+               MAX(created_at) AS latest_schedule
         FROM schedules
         WHERE status = 'Pending'
         GROUP BY user_id
       ) s ON r.id = s.user_id
-      HAVING pending_count > 0
-      ORDER BY r.username
+      
+      LEFT JOIN (
+        SELECT user_id, 
+               COUNT(*) AS pending_computer_requests
+        FROM computer_schedule
+        WHERE status = 'Pending'
+        GROUP BY user_id
+      ) c ON r.id = c.user_id
+      
+      -- Only include residents with pending files OR schedules (NOT computer)
+      WHERE COALESCE(f.pending_files, 0) > 0 
+         OR COALESCE(s.pending_schedules, 0) > 0
+      
+      ORDER BY latest_request DESC
     `);
     res.json(rows);
   } catch (err) {
@@ -49,6 +88,239 @@ router.get("/residents/pending", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch residents with pending requests" });
   }
 });
+// ---------------- Computer Borrowing ----------------
+// Get all computer borrowing requests
+router.get("/computer-requests", async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT cs.*, 
+             r.username AS resident_username,
+             CONCAT(r.first_name, ' ', r.last_name) AS resident_full_name,
+             r.email_address AS resident_email
+      FROM computer_schedule cs
+      LEFT JOIN residents r ON cs.user_id = r.id
+      ORDER BY cs.date DESC, cs.start_time DESC
+    `);
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching computer requests:", err);
+    res.status(500).json({ error: "Failed to fetch computer requests" });
+  }
+});
+
+// Get computer requests by resident
+router.get("/computer-requests/resident/:residentId", async (req, res) => {
+  try {
+    const { residentId } = req.params;
+    const [rows] = await db.query(`
+      SELECT cs.* 
+      FROM computer_schedule cs
+      WHERE cs.user_id = ?
+      ORDER BY cs.date DESC, cs.start_time DESC
+    `, [residentId]);
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching resident computer requests:", err);
+    res.status(500).json({ error: "Failed to fetch computer requests" });
+  }
+});
+
+router.put("/computer-requests/:id/status", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, reason } = req.body;
+    const staffId = req.user.id;
+
+    const validStatuses = ['Pending', 'Approved', 'Done', 'Cancelled'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: "Invalid status" });
+    }
+
+    // If cancelling, check for reason
+    if (status === 'Cancelled' && !reason) {
+      return res.status(400).json({ error: "Cancellation reason is required" });
+    }
+
+    // Check for conflicts if approving
+    if (status === 'Approved') {
+      const [request] = await db.query(
+        `SELECT pc_name, date, start_time, end_time 
+         FROM computer_schedule 
+         WHERE id = ?`,
+        [id]
+      );
+      
+      if (request.length > 0) {
+        const { pc_name, date, start_time, end_time } = request[0];
+        
+        const [conflicts] = await db.query(
+          `SELECT COUNT(*) as count
+           FROM computer_schedule
+           WHERE pc_name = ? AND date = ? AND id != ? AND status = 'Approved'
+           AND ((start_time <= ? AND end_time > ?) OR (start_time < ? AND end_time >= ?))`,
+          [pc_name, date, id, start_time, start_time, end_time, end_time]
+        );
+        
+        if (conflicts[0].count > 0) {
+          return res.status(400).json({ error: "PC is already booked at this time" });
+        }
+      }
+    }
+
+    // Build update query
+    let query = `UPDATE computer_schedule SET status = ?`;
+    let params = [status];
+    
+    // Add approved_by if approving
+    if (status === 'Approved') {
+      query += `, approved_by = ?`;
+      params.push(staffId);
+    }
+    
+    // Add updated_at if column exists
+    const [columns] = await db.query(`SHOW COLUMNS FROM computer_schedule LIKE 'updated_at'`);
+    if (columns.length > 0) {
+      query += `, updated_at = NOW()`;
+    }
+    
+    query += ` WHERE id = ?`;
+    params.push(id);
+
+    const [result] = await db.query(query, params);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Computer request not found" });
+    }
+
+    // Get updated request for response
+    const [updatedRequest] = await db.query(`
+      SELECT cs.*, 
+             r.email_address, 
+             CONCAT(r.first_name, ' ', r.last_name) as resident_name,
+             s.username as staff_username
+      FROM computer_schedule cs
+      LEFT JOIN residents r ON cs.user_id = r.id
+      LEFT JOIN staff s ON cs.approved_by = s.id
+      WHERE cs.id = ?
+    `, [id]);
+
+    // Send email notification
+    if ((status === 'Approved' || status === 'Cancelled') && updatedRequest.length > 0 && updatedRequest[0].email_address) {
+      try {
+        const emailService = require("../services/emailService");
+        await emailService.sendComputerBorrowingNotification(
+          updatedRequest[0].email_address,
+          updatedRequest[0].resident_name,
+          {
+            pc: updatedRequest[0].pc_name,
+            date: updatedRequest[0].date,
+            startTime: updatedRequest[0].start_time,
+            endTime: updatedRequest[0].end_time,
+            status: status,
+            ...(reason && { reason })
+          }
+        );
+      } catch (emailError) {
+        console.error("Email notification failed:", emailError);
+        // Continue even if email fails
+      }
+    }
+
+    res.json({ 
+      success: true, 
+      message: `Computer request ${status.toLowerCase()} successfully`,
+      data: updatedRequest[0] || null
+    });
+  } catch (err) {
+    console.error("Error updating computer request status:", err);
+    res.status(500).json({ error: "Failed to update computer request status" });
+  }
+});
+
+// Get computer availability
+router.get("/computer-availability", async (req, res) => {
+  try {
+    const { date, pc } = req.query;
+    
+    if (!date) {
+      return res.status(400).json({ error: "Date is required" });
+    }
+
+    const query = `
+      SELECT cs.pc_name, cs.start_time, cs.end_time, cs.status
+      FROM computer_schedule cs
+      WHERE cs.date = ? 
+        AND cs.status IN ('Approved', 'Pending')
+        ${pc ? 'AND cs.pc_name = ?' : ''}
+      ORDER BY cs.pc_name, cs.start_time
+    `;
+
+    const params = pc ? [date, pc] : [date];
+    const [bookings] = await db.query(query, params);
+
+    // Generate available time slots
+    const availableSlots = generateAvailableSlots(bookings, pc);
+    
+    res.json({
+      date,
+      bookings,
+      availableSlots
+    });
+  } catch (err) {
+    console.error("Error fetching computer availability:", err);
+    res.status(500).json({ error: "Failed to fetch computer availability" });
+  }
+});
+
+function generateAvailableSlots(bookings, specificPC = null) {
+  const pcs = ["PC 1", "PC 2", "PC 3", "PC 4", "PC 5"];
+  const slots = [];
+  
+  pcs.forEach(pc => {
+    if (specificPC && specificPC !== pc) return;
+    
+    // Filter bookings for this PC
+    const pcBookings = bookings.filter(b => b.pc_name === pc)
+      .sort((a, b) => a.start_time.localeCompare(b.start_time));
+    
+    // Start from 8:00 AM
+    let currentTime = "08:00";
+    const endTime = "22:00";
+    
+    pcBookings.forEach(booking => {
+      if (booking.start_time > currentTime) {
+        slots.push({
+          pc,
+          start_time: currentTime,
+          end_time: booking.start_time,
+          duration: calculateDuration(currentTime, booking.start_time),
+          status: 'available'
+        });
+      }
+      currentTime = booking.end_time;
+    });
+    
+    // Add remaining time until 22:00
+    if (currentTime < endTime) {
+      slots.push({
+        pc,
+        start_time: currentTime,
+        end_time: endTime,
+        duration: calculateDuration(currentTime, endTime),
+        status: 'available'
+      });
+    }
+  });
+  
+  return slots;
+}
+
+function calculateDuration(start, end) {
+  const [startHour, startMinute] = start.split(":").map(Number);
+  const [endHour, endMinute] = end.split(":").map(Number);
+  
+  return (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
+}
 
 // Email notification for schedules
 router.post("/schedules/:id/email", async (req, res) => {
@@ -150,6 +422,7 @@ router.post("/schedules/:id/email", async (req, res) => {
     });
   }
 });
+
 // Notify resident schedule is ready
 router.put("/schedules/:id/notify", async (req, res) => {
   try {
@@ -171,118 +444,6 @@ router.put("/schedules/:id/notify", async (req, res) => {
   } catch (err) {
     console.error("Notify error:", err);
     res.status(500).json({ error: "Failed to update schedule status" });
-  }
-});
-
-// ---------------- Page Limits Management ----------------
-// Get all page limits
-router.get("/page-limits", staffController.getLimits);
-
-// Update or create page limit
-router.post("/page-limits", staffController.updateLimit);
-
-// Delete staff-specific limit
-router.delete("/page-limits/staff/:id", staffController.deleteStaffLimit);
-
-// Get staff members for management
-router.get("/staff/manage", staffController.getStaffForManagement);
-
-// Assign resident to staff
-router.post("/assign-resident", async (req, res) => {
-  try {
-    const { resident_id, staff_id } = req.body;
-    
-    // Check if assignment exists
-    const [existing] = await db.query(
-      `SELECT * FROM resident_assignments WHERE resident_id = ?`,
-      [resident_id]
-    );
-    
-    if (existing.length > 0) {
-      // Update existing assignment
-      await db.query(
-        `UPDATE resident_assignments SET staff_id = ? WHERE resident_id = ?`,
-        [staff_id, resident_id]
-      );
-    } else {
-      // Create new assignment
-      await db.query(
-        `INSERT INTO resident_assignments (resident_id, staff_id) VALUES (?, ?)`,
-        [resident_id, staff_id]
-      );
-    }
-    
-    res.json({ success: true, message: "Resident assigned successfully" });
-  } catch (err) {
-    console.error("Error assigning resident:", err);
-    res.status(500).json({ error: "Failed to assign resident" });
-  }
-});
-
-// Get assigned residents for a staff
-router.get("/assigned-residents/:staff_id", async (req, res) => {
-  try {
-    const { staff_id } = req.params;
-    
-    const [residents] = await db.query(`
-      SELECT 
-        r.id,
-        r.username,
-        r.name,
-        r.email,
-        ra.assigned_at,
-        COALESCE(SUM(rr.page_count), 0) as total_pages,
-        COUNT(rr.id) as total_requests
-      FROM resident_assignments ra
-      JOIN residents r ON ra.resident_id = r.id
-      LEFT JOIN resident_requests rr ON r.id = rr.resident_id
-        AND rr.date_needed = CURDATE()
-        AND rr.status IN ('pending', 'approved')
-      WHERE ra.staff_id = ?
-      GROUP BY r.id
-      ORDER BY ra.assigned_at DESC
-    `, [staff_id]);
-    
-    res.json({ success: true, data: residents });
-  } catch (err) {
-    console.error("Error fetching assigned residents:", err);
-    res.status(500).json({ error: "Failed to fetch assigned residents" });
-  }
-});
-
-// Get today's page usage
-router.get("/usage/today", async (req, res) => {
-  try {
-    const today = new Date().toISOString().split('T')[0];
-    
-    const [usage] = await db.query(`
-      SELECT 
-        COALESCE(SUM(page_count), 0) as total_pages,
-        COUNT(DISTINCT resident_id) as total_residents,
-        COUNT(*) as total_requests
-      FROM resident_requests
-      WHERE date_needed = ? 
-        AND status IN ('pending', 'approved')
-    `, [today]);
-    
-    // Get limits
-    const [limits] = await db.query(`
-      SELECT 
-        MAX(CASE WHEN type = 'global' AND staff_id IS NULL THEN value END) as system_limit,
-        MAX(CASE WHEN type = 'resident' AND staff_id IS NULL THEN value END) as resident_limit
-      FROM upload_limits
-    `);
-    
-    res.json({
-      ...usage[0],
-      ...limits[0],
-      system_usage_percentage: limits[0].system_limit 
-        ? Math.round((usage[0].total_pages / limits[0].system_limit) * 100) 
-        : 0
-    });
-  } catch (err) {
-    console.error("Error fetching today's usage:", err);
-    res.status(500).json({ error: "Failed to fetch usage data" });
   }
 });
 

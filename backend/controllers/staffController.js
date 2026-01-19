@@ -84,19 +84,19 @@ const returnSchedule = async (req, res) => {
   try {
     const { id } = req.params;
     const { return_condition, damage_description } = req.body;
-    
+
     // Get schedule details first
     const [schedule] = await db.query(
       "SELECT item, quantity FROM schedules WHERE id = ?",
       [id]
     );
-    
+
     if (schedule.length === 0) {
       return res.status(404).json({ error: "Schedule not found" });
     }
-    
+
     const { item, quantity } = schedule[0];
-    
+
     // Update schedule as returned
     const [result] = await db.query(
       `UPDATE schedules 
@@ -108,21 +108,21 @@ const returnSchedule = async (req, res) => {
        WHERE id = ?`,
       [return_condition || 'Good', damage_description || null, id]
     );
-    
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: "Schedule not found" });
     }
-    
+
     // ✅ ✅ ✅ IMPORTANT: RETURN QUANTITY TO AVAILABLE STOCK ✅ ✅ ✅
     await db.query(
       `UPDATE items SET available = available + ? WHERE item_name = ?`,
       [quantity, item]
     );
-    
+
     console.log(`✅ Returned ${quantity} ${item} to available stock`);
-    
-    res.json({ 
-      success: true, 
+
+    res.json({
+      success: true,
       message: "Schedule returned successfully",
       item,
       quantity_returned: quantity
@@ -293,13 +293,13 @@ const notifyResident = async (req, res) => {
 
     const file = files[0];
     const residentEmail = file.email;
-    
+
     // Gamitin ang full_name, kung wala, gumamit ng CONCAT ng first at last name
-    const residentName = file.resident_name || 
-                        file.simple_name || 
-                        `${file.first_name} ${file.last_name}` || 
-                        file.username;
-    
+    const residentName = file.resident_name ||
+      file.simple_name ||
+      `${file.first_name} ${file.last_name}` ||
+      file.username;
+
     const fileName = file.filename || file.original_name;
 
     // Update file status
@@ -326,11 +326,11 @@ const notifyResident = async (req, res) => {
           pickupDeadline: null
         }
       );
-      
+
       console.log(`✅ Pickup email sent to ${residentEmail} for file ${fileName}`);
-      
-      res.json({ 
-        success: true, 
+
+      res.json({
+        success: true,
         message: "Resident notified successfully. Email sent!",
         data: {
           fileId: file.id,
@@ -342,13 +342,13 @@ const notifyResident = async (req, res) => {
           }
         }
       });
-      
+
     } catch (emailError) {
       console.error('⚠️ Email sending failed:', emailError);
-      
+
       // Still return success but with warning
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         message: "Resident notified but email failed to send.",
         warning: "Email notification failed",
         data: {
@@ -392,119 +392,146 @@ const cancelFileRequest = async (req, res) => {
 // ---------------- Page Limits Management ----------------
 
 // Get all page limits
+// Get all page limits
 const getLimits = async (req, res) => {
   try {
+    // Check table structure first
+    const [tableInfo] = await db.query(`DESCRIBE upload_limits`);
+    console.log("Upload limits table structure:", tableInfo);
+
     const [limits] = await db.query(`
       SELECT 
-        ul.id,
-        ul.type,
-        ul.value,
-        ul.staff_id,
-        ul.description,
-        ul.updated_at,
-        s.username as staff_username,
-        s.name as staff_name,
-        st.username as updated_by_username
-      FROM upload_limits ul
-      LEFT JOIN staff s ON ul.staff_id = s.id
-      LEFT JOIN staff st ON ul.updated_by = st.id
+        id,
+        type,
+        value,
+        updated_at,
+        updated_by
+      FROM upload_limits
       ORDER BY 
-        CASE 
-          WHEN ul.staff_id IS NULL THEN 0 
-          ELSE 1 
-        END,
-        ul.type
+        CASE type 
+          WHEN 'global' THEN 1
+          WHEN 'resident' THEN 2
+          ELSE 3
+        END
     `);
-    
-    res.json({ success: true, data: limits });
+
+    console.log("Fetched limits:", limits);
+
+    // Add staff_id null for global/resident limits for compatibility
+    const formattedLimits = limits.map(limit => ({
+      ...limit,
+      staff_id: null, // Your table doesn't have staff_id column
+      description: '',
+      staff_username: null,
+      staff_name: null,
+      updated_by_username: null
+    }));
+
+    res.json({ success: true, data: formattedLimits });
   } catch (err) {
-    console.error("Error fetching limits:", err);
-    res.status(500).json({ success: false, error: "Failed to fetch limits" });
+    console.error("Error fetching limits:", err.message);
+    console.error("Error details:", err);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch limits",
+      details: err.message
+    });
   }
 };
 
 // Update or create limit
+// Update or create limit
 const updateLimit = async (req, res) => {
   try {
-    const { type, value, staff_id, description } = req.body;
+    const { type, value } = req.body;
     const updated_by = req.user.id; // Current staff making the change
 
     if (!type || !value || value <= 0) {
-      return res.status(400).json({ 
-        success: false, 
+      return res.status(400).json({
+        success: false,
         error: "INVALID_PARAMETERS",
-        message: "Type and value are required" 
+        message: "Type and positive value are required"
       });
     }
 
-    // Check if limit exists
+    // Check if limit exists for this type
     const [existing] = await db.query(
-      `SELECT * FROM upload_limits 
-       WHERE type = ? AND (staff_id <=> ?)`,
-      [type, staff_id || null]
+      `SELECT * FROM upload_limits WHERE type = ?`,
+      [type]
     );
 
     if (existing.length > 0) {
       // Update existing
       await db.query(
         `UPDATE upload_limits 
-         SET value = ?, description = ?, updated_by = ?, updated_at = NOW()
-         WHERE type = ? AND (staff_id <=> ?)`,
-        [value, description, updated_by, type, staff_id || null]
+         SET value = ?, updated_by = ?, updated_at = NOW()
+         WHERE type = ?`,
+        [value, updated_by, type]
       );
+
+      console.log(`Updated limit for type: ${type} to value: ${value}`);
     } else {
-      // Insert new
+      // Insert new - only type, value, and updated_by since that's what your table has
       await db.query(
-        `INSERT INTO upload_limits (type, value, staff_id, description, updated_by)
-         VALUES (?, ?, ?, ?, ?)`,
-        [type, value, staff_id || null, description, updated_by]
+        `INSERT INTO upload_limits (type, value, updated_by)
+         VALUES (?, ?, ?)`,
+        [type, value, updated_by]
       );
+
+      console.log(`Created new limit for type: ${type} with value: ${value}`);
     }
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       message: "✅ Limit updated successfully",
-      data: { type, value, staff_id, description }
+      data: { type, value }
     });
   } catch (err) {
-    console.error("Error updating limit:", err);
-    res.status(500).json({ 
-      success: false, 
+    console.error("Error updating limit:", err.message);
+    console.error("Error details:", err);
+    res.status(500).json({
+      success: false,
       error: "UPDATE_FAILED",
-      message: "Failed to update limit" 
+      message: "Failed to update limit",
+      details: err.message
     });
   }
 };
-
 // Delete a staff limit
+// Delete a limit (only for staff-specific limits if table supports it)
 const deleteStaffLimit = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
+    // First check if this is a staff-specific limit (if table had staff_id column)
+    // Since your table doesn't have staff_id, this endpoint might not be applicable
+
+    // For now, just delete by ID if exists
     const [result] = await db.query(
-      `DELETE FROM upload_limits WHERE id = ? AND staff_id IS NOT NULL`,
+      `DELETE FROM upload_limits WHERE id = ?`,
       [id]
     );
-    
+
     if (result.affectedRows === 0) {
-      return res.status(404).json({ 
-        success: false, 
+      return res.status(404).json({
+        success: false,
         error: "NOT_FOUND",
-        message: "Staff limit not found or cannot delete global limits" 
+        message: "Limit not found"
       });
     }
-    
-    res.json({ success: true, message: "✅ Staff limit deleted successfully" });
+
+    res.json({ success: true, message: "✅ Limit deleted successfully" });
   } catch (err) {
-    console.error("Error deleting limit:", err);
-    res.status(500).json({ 
-      success: false, 
+    console.error("Error deleting limit:", err.message);
+    res.status(500).json({
+      success: false,
       error: "DELETE_FAILED",
-      message: "Failed to delete limit" 
+      message: "Failed to delete limit",
+      details: err.message
     });
   }
 };
-
+// Get staff members for management
 // Get staff members for management
 const getStaffForManagement = async (req, res) => {
   try {
@@ -515,25 +542,24 @@ const getStaffForManagement = async (req, res) => {
         s.name,
         s.email,
         s.role,
-        COALESCE(ul.value, 50) as page_limit,
-        ul.id as limit_id,
-        ul.description as limit_description,
+        -- No staff-specific limits in your current table structure
+        50 as page_limit, -- Default value
         COUNT(DISTINCT ra.resident_id) as assigned_residents
       FROM staff s
-      LEFT JOIN upload_limits ul ON s.id = ul.staff_id AND ul.type = 'staff_daily'
       LEFT JOIN resident_assignments ra ON s.id = ra.staff_id
       WHERE s.role = 'staff'
       GROUP BY s.id
       ORDER BY s.name
     `);
-    
+
     res.json({ success: true, data: staff });
   } catch (err) {
-    console.error("Error fetching staff:", err);
-    res.status(500).json({ 
-      success: false, 
+    console.error("Error fetching staff:", err.message);
+    res.status(500).json({
+      success: false,
       error: "FETCH_FAILED",
-      message: "Failed to fetch staff data" 
+      message: "Failed to fetch staff data",
+      details: err.message
     });
   }
 };
@@ -541,7 +567,7 @@ module.exports = {
   getStaffInbox,
   releaseSchedule,
   returnSchedule,
-  getAcceptedSchedules, 
+  getAcceptedSchedules,
   getReleasedSchedules,
   getReturnedSchedules,
   markFileAsPrinted,

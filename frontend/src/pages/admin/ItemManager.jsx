@@ -9,11 +9,15 @@ export default function ItemManager() {
   const [loading, setLoading] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showAdjustModal, setShowAdjustModal] = useState(false);
+  const [adjustingItem, setAdjustingItem] = useState(null);
+  const [adjustQuantity, setAdjustQuantity] = useState(0);
   const [editingItem, setEditingItem] = useState(null);
   const [newItem, setNewItem] = useState({
     item_name: "",
     description: "",
     max_quantity: 1,
+    available: 1,
     category: "",
     location: "",
     image_url: ""
@@ -40,8 +44,14 @@ export default function ItemManager() {
 
   const handleAddItem = async () => {
     try {
-      if (!newItem.item_name || !newItem.max_quantity) {
-        alert("Item name and quantity are required");
+      if (!newItem.item_name || !newItem.max_quantity || newItem.available === undefined) {
+        alert("Item name, max quantity, and available quantity are required");
+        return;
+      }
+
+      // Validate available doesn't exceed max
+      if (newItem.available > newItem.max_quantity) {
+        alert("Available quantity cannot exceed maximum quantity");
         return;
       }
 
@@ -60,6 +70,7 @@ export default function ItemManager() {
           item_name: "",
           description: "",
           max_quantity: 1,
+          available: 1,
           category: "",
           location: "",
           image_url: ""
@@ -74,8 +85,14 @@ export default function ItemManager() {
 
   const handleEditItem = async () => {
     try {
-      if (!editingItem.item_name || !editingItem.max_quantity) {
-        alert("Item name and quantity are required");
+      if (!editingItem.item_name || !editingItem.max_quantity || editingItem.available === undefined) {
+        alert("Item name, max quantity, and available quantity are required");
+        return;
+      }
+
+      // Validate available doesn't exceed max
+      if (editingItem.available > editingItem.max_quantity) {
+        alert("Available quantity cannot exceed maximum quantity");
         return;
       }
 
@@ -122,11 +139,25 @@ export default function ItemManager() {
     }
   };
 
+  // FIXED: Updated to use correct backend routes
   const handleUpdateAvailability = async (itemId, action) => {
     try {
+      let endpoint, data;
+      
+      if (action === 'restock') {
+        endpoint = 'restock';
+        data = {}; // No data needed for restock
+      } else if (action === 'adjust') {
+        endpoint = 'adjust';
+        data = { quantity: adjustQuantity };
+      } else {
+        alert("Invalid action");
+        return;
+      }
+
       const res = await axios.put(
-        `${API_URL}/api/items/admin/${itemId}/availability`,
-        { action }, // 'restock' or 'adjust'
+        `${API_URL}/api/items/admin/${itemId}/${endpoint}`,
+        data,
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         }
@@ -139,6 +170,46 @@ export default function ItemManager() {
     } catch (err) {
       console.error("Error updating availability:", err);
       alert(err.response?.data?.error || "Failed to update availability");
+    }
+  };
+
+  // New function to open adjust modal
+  const openAdjustModal = (item) => {
+    setAdjustingItem(item);
+    setAdjustQuantity(item.available);
+    setShowAdjustModal(true);
+  };
+
+  // FIXED: Updated to use correct backend route
+  const handleManualAdjust = async () => {
+    if (!adjustingItem) return;
+    
+    try {
+      // Validate quantity
+      if (isNaN(adjustQuantity) || adjustQuantity < 0 || adjustQuantity > adjustingItem.max_quantity) {
+        alert(`Please enter a valid quantity between 0 and ${adjustingItem.max_quantity}`);
+        return;
+      }
+
+      const res = await axios.put(
+        `${API_URL}/api/items/admin/${adjustingItem.id}/adjust`,
+        { 
+          quantity: parseInt(adjustQuantity) 
+        },
+        { 
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } 
+        }
+      );
+
+      if (res.status === 200) {
+        alert("Quantity adjusted successfully!");
+        setShowAdjustModal(false);
+        setAdjustingItem(null);
+        fetchItems();
+      }
+    } catch (err) {
+      console.error("Error adjusting quantity:", err);
+      alert(err.response?.data?.error || "Failed to adjust quantity");
     }
   };
 
@@ -213,19 +284,7 @@ export default function ItemManager() {
                 </button>
                 <button 
                   className="btn-adjust"
-                  onClick={() => {
-                    const newQty = prompt(`Enter new available quantity (Max: ${item.max_quantity}):`, item.available);
-                    if (newQty !== null && !isNaN(newQty)) {
-                      axios.put(
-                        `${API_URL}/api/items/admin/${item.id}/availability`,
-                        { 
-                          action: 'adjust',
-                          quantity: parseInt(newQty) 
-                        },
-                        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-                      ).then(() => fetchItems());
-                    }
-                  }}
+                  onClick={() => openAdjustModal(item)}
                 >
                   🔧 Adjust Manually
                 </button>
@@ -235,7 +294,7 @@ export default function ItemManager() {
         </div>
       )}
 
-      {/* Add Item Modal */}
+      {/* Add Item Modal - UPDATED WITH AVAILABLE FIELD */}
       {showAddModal && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -265,23 +324,47 @@ export default function ItemManager() {
                   type="number"
                   min="1"
                   value={newItem.max_quantity}
-                  onChange={(e) => setNewItem({...newItem, max_quantity: parseInt(e.target.value) || 1})}
+                  onChange={(e) => {
+                    const maxQty = parseInt(e.target.value) || 1;
+                    setNewItem({
+                      ...newItem, 
+                      max_quantity: maxQty,
+                      // Auto-adjust available if needed
+                      available: newItem.available > maxQty ? maxQty : newItem.available
+                    });
+                  }}
                 />
               </div>
               <div className="form-group">
-                <label>Category</label>
-                <select
-                  value={newItem.category}
-                  onChange={(e) => setNewItem({...newItem, category: e.target.value})}
-                >
-                  <option value="">Select Category</option>
-                  <option value="Electronics">Electronics</option>
-                  <option value="Tools">Tools</option>
-                  <option value="Sports">Sports</option>
-                  <option value="Furniture">Furniture</option>
-                  <option value="Other">Other</option>
-                </select>
+                <label>Initial Available *</label>
+                <input
+                  type="number"
+                  min="0"
+                  max={newItem.max_quantity}
+                  value={newItem.available}
+                  onChange={(e) => setNewItem({
+                    ...newItem, 
+                    available: parseInt(e.target.value) || 0
+                  })}
+                />
+                <small className="input-hint">
+                  Must be 0-{newItem.max_quantity}
+                </small>
               </div>
+            </div>
+            <div className="form-group">
+              <label>Category</label>
+              <select
+                value={newItem.category}
+                onChange={(e) => setNewItem({...newItem, category: e.target.value})}
+              >
+                <option value="">Select Category</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Tools">Tools</option>
+                <option value="Sports">Sports</option>
+                <option value="Furniture">Furniture</option>
+                <option value="Other">Other</option>
+              </select>
             </div>
             <div className="form-group">
               <label>Location</label>
@@ -313,7 +396,7 @@ export default function ItemManager() {
         </div>
       )}
 
-      {/* Edit Item Modal */}
+      {/* Edit Item Modal - UPDATED WITH AVAILABLE FIELD */}
       {showEditModal && editingItem && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -341,23 +424,47 @@ export default function ItemManager() {
                   type="number"
                   min="1"
                   value={editingItem.max_quantity}
-                  onChange={(e) => setEditingItem({...editingItem, max_quantity: parseInt(e.target.value) || 1})}
+                  onChange={(e) => {
+                    const maxQty = parseInt(e.target.value) || 1;
+                    setEditingItem({
+                      ...editingItem, 
+                      max_quantity: maxQty,
+                      // Auto-adjust available if needed
+                      available: editingItem.available > maxQty ? maxQty : editingItem.available
+                    });
+                  }}
                 />
               </div>
               <div className="form-group">
-                <label>Category</label>
-                <select
-                  value={editingItem.category}
-                  onChange={(e) => setEditingItem({...editingItem, category: e.target.value})}
-                >
-                  <option value="">Select Category</option>
-                  <option value="Electronics">Electronics</option>
-                  <option value="Tools">Tools</option>
-                  <option value="Sports">Sports</option>
-                  <option value="Furniture">Furniture</option>
-                  <option value="Other">Other</option>
-                </select>
+                <label>Available Quantity *</label>
+                <input
+                  type="number"
+                  min="0"
+                  max={editingItem.max_quantity}
+                  value={editingItem.available}
+                  onChange={(e) => setEditingItem({
+                    ...editingItem, 
+                    available: parseInt(e.target.value) || 0
+                  })}
+                />
+                <small className="input-hint">
+                  Must be 0-{editingItem.max_quantity}
+                </small>
               </div>
+            </div>
+            <div className="form-group">
+              <label>Category</label>
+              <select
+                value={editingItem.category}
+                onChange={(e) => setEditingItem({...editingItem, category: e.target.value})}
+              >
+                <option value="">Select Category</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Tools">Tools</option>
+                <option value="Sports">Sports</option>
+                <option value="Furniture">Furniture</option>
+                <option value="Other">Other</option>
+              </select>
             </div>
             <div className="form-group">
               <label>Location</label>
@@ -373,6 +480,90 @@ export default function ItemManager() {
               </button>
               <button className="btn-save" onClick={handleEditItem}>
                 Update Item
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Adjust Quantity Modal - KEEP AS IS */}
+      {showAdjustModal && adjustingItem && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>🔧 Adjust Available Quantity</h2>
+            
+            <div className="item-info-summary">
+              <h3>{adjustingItem.item_name}</h3>
+              <div className="item-stats-summary">
+                <p><strong>Max Quantity:</strong> {adjustingItem.max_quantity}</p>
+                <p><strong>Current Available:</strong> {adjustingItem.available}</p>
+                <p><strong>Currently Borrowed:</strong> {adjustingItem.currently_borrowed || 0}</p>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label>New Available Quantity *</label>
+              <div className="quantity-input-group">
+                <input
+                  type="number"
+                  min="0"
+                  max={adjustingItem.max_quantity}
+                  value={adjustQuantity}
+                  onChange={(e) => setAdjustQuantity(parseInt(e.target.value) || 0)}
+                  className="quantity-input"
+                />
+                <div className="quantity-range">
+                  <small>Range: 0 - {adjustingItem.max_quantity}</small>
+                </div>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label>Quick Actions</label>
+              <div className="quick-actions">
+                <button 
+                  className="btn-quick-set"
+                  onClick={() => setAdjustQuantity(0)}
+                >
+                  Set to 0 (Out of Stock)
+                </button>
+                <button 
+                  className="btn-quick-set"
+                  onClick={() => setAdjustQuantity(adjustingItem.max_quantity)}
+                >
+                  Set to Max ({adjustingItem.max_quantity})
+                </button>
+                <button 
+                  className="btn-quick-set"
+                  onClick={() => setAdjustQuantity(Math.max(0, adjustingItem.available - 1))}
+                >
+                  Decrease by 1
+                </button>
+                <button 
+                  className="btn-quick-set"
+                  onClick={() => setAdjustQuantity(Math.min(adjustingItem.max_quantity, adjustingItem.available + 1))}
+                >
+                  Increase by 1
+                </button>
+              </div>
+            </div>
+
+            <div className="modal-actions">
+              <button 
+                className="btn-cancel" 
+                onClick={() => {
+                  setShowAdjustModal(false);
+                  setAdjustingItem(null);
+                }}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn-save" 
+                onClick={handleManualAdjust}
+                disabled={isNaN(adjustQuantity) || adjustQuantity < 0 || adjustQuantity > adjustingItem.max_quantity}
+              >
+                Update Quantity
               </button>
             </div>
           </div>

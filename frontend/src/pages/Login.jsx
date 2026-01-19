@@ -17,7 +17,7 @@ import {
   FaUserCheck,
    FaHandsHelping 
 } from "react-icons/fa";
-import "./Login.css";
+import "../styles/Login.css";
 
 function Login() {
   const navigate = useNavigate();

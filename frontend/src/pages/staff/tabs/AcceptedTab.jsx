@@ -1,200 +1,145 @@
-import axios from "axios";
-import { useState } from "react";
-
+import { Package, FileText, Calendar, CheckCircle } from "lucide-react";
 
 export default function AcceptedTab({
   acceptedFiles,
   acceptedSchedules,
-  setSelectedAccepted,
-  fetchPrintedFiles
+  setSelectedAccepted
 }) {
-  const token = localStorage.getItem("token");
-  const [sendingEmail, setSendingEmail] = useState(null);
-  
-  const axiosAuth = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000",
-    headers: { Authorization: `Bearer ${token}` },
-  });
-
-  const handleNotifySchedule = async (scheduleId) => {
-    try {
-      await axiosAuth.put(`/api/staff/schedules/${scheduleId}/notify`);
-      alert("Resident notified! Status updated to 'Ready'.");
-    } catch (err) {
-      console.error(err);
-      alert("Failed to notify resident.");
-    }
+  const formatDateTime = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleString("en-PH", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
   };
 
-  const handleEmailResident = async (schedule) => {
-  setSendingEmail(schedule.id);
-  
-  try {
-    const response = await axiosAuth.post(`/api/staff/schedules/${schedule.id}/email`, {
-      subject: "Your Borrowed Item is Ready for Pickup",
-      message: `Dear ${schedule.resident_username || 'Resident'},
-
-Your requested item "${schedule.item}" (Quantity: ${schedule.quantity}) is now ready for pickup.
-
-Borrowing Details:
-- Item: ${schedule.item}
-- Quantity: ${schedule.quantity}
-- Borrow Date: ${new Date(schedule.date_from).toLocaleDateString('en-PH')}
-- Return Date: ${new Date(schedule.date_to).toLocaleDateString('en-PH')}
-- Time: ${schedule.time_from} - ${schedule.time_to}
-
-Please visit the office during office hours to pick up your item.
-
-Thank you,
-Equipment Management System`
-    });
-
-    if (response.data.success) {
-      alert("✅ Resident notified successfully! Status updated to 'Ready'.");
-      
-      // Refresh the data
-      if (fetchPrintedFiles) {
-        fetchPrintedFiles();
-      }
-    }
-  } catch (err) {
-    console.error("Email error:", err);
-    alert(`❌ Failed to notify resident: ${err.response?.data?.error || 'Please try again.'}`);
-  } finally {
-    setSendingEmail(null);
-  }
-};
-
-
-
   return (
-    <section className="accepted-list">
-      <h2>Accepted Requests</h2>
+    <section className="accepted-list preview-only">
+      <div className="accepted-header">
+        <h2>Accepted Requests</h2>
+        <p className="subtitle">Preview of approved requests</p>
+      </div>
 
-      {/* Files */}
-      <h3>Files</h3>
-      {acceptedFiles.length === 0 ? (
-        <p>No accepted files.</p>
-      ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>Resident</th>
-              <th>File Name</th>
-              <th>Approved By</th>
-              <th>Date Approved</th>
-            </tr>
-          </thead>
-          <tbody>
-            {acceptedFiles.map((f) => (
-              <tr
-                key={`accepted-file-${f.id}`}
-                onClick={() => setSelectedAccepted({ ...f, type: "File" })}
-                style={{ cursor: "pointer" }}
+      {/* Files Section - READ ONLY */}
+      <div className="files-section">
+        <div className="section-header">
+          <h3>
+            <FileText className="section-icon" />
+            Printed Files
+          </h3>
+          <span className="section-count">{acceptedFiles.length}</span>
+        </div>
+        
+        {acceptedFiles.length === 0 ? (
+          <div className="empty-state">
+            <p>No accepted files.</p>
+          </div>
+        ) : (
+          <div className="files-grid">
+            {acceptedFiles.map((file) => (
+              <div
+                key={`accepted-file-${file.id}`}
+                className="file-card preview-card"
+                onClick={() => setSelectedAccepted({ ...file, type: "File" })}
               >
-                <td>{f.resident_username || `Resident#${f.resident_id}`}</td>
-                <td>{f.filename}</td>
-                <td>{f.staff_username}</td>
-                <td> 
-                  {f.approved_at
-                    ? f.approved_at.toLocaleString("en-PH", {
-                        dateStyle: "medium",
-                        timeStyle: "short",
-                      })
-                    : "N/A"}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-
-      {/* Schedules */}
-      <h3>Schedules</h3>
-      {acceptedSchedules.length === 0 ? (
-        <p>No accepted schedules.</p>
-      ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>Resident</th>
-              <th>Item</th>
-              <th>Quantity</th>
-              <th>Approved By</th>
-              <th>Date Approved</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {acceptedSchedules.map((s) => {
-              const status = (s.status || "Approved").toLowerCase();
-              const isNotified = status === "ready" || status === "to pick up";
-              const isClaimed = status === "claimed";
-
-              return (
-                <tr
-                  key={`accepted-schedule-${s.id}`}
-                  style={{ cursor: "pointer", opacity: isClaimed ? 0.5 : 1 }}
-                >
-                  <td onClick={() => setSelectedAccepted({ ...s, type: "Schedule" })}>
-                    {s.resident_username || `Resident#${s.user_id}`}
-                  </td>
-                  <td onClick={() => setSelectedAccepted({ ...s, type: "Schedule" })}>
-                    {s.item}
-                  </td>
-                  <td onClick={() => setSelectedAccepted({ ...s, type: "Schedule" })}>
-                    {s.quantity}
-                  </td>
-                  <td onClick={() => setSelectedAccepted({ ...s, type: "Schedule" })}>
-                    {s.staff_username}
-                  </td>
-                  <td onClick={() => setSelectedAccepted({ ...s, type: "Schedule" })}>
-                    {s.approved_at
-                      ? s.approved_at.toLocaleString("en-PH", {
-                          month: "2-digit",
-                          day: "2-digit",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })
-                      : "N/A"}
-                  </td>
-                  <td onClick={() => setSelectedAccepted({ ...s, type: "Schedule" })}>
-                    <span className={`status-badge ${status.replace(' ', '-')}`}>
-                      {status}
+                <div className="file-icon">
+                  <FileText />
+                </div>
+                <div className="file-info">
+                  <h4 className="file-name" title={file.filename}>
+                    {file.filename}
+                  </h4>
+                  <div className="file-details">
+                    <span className="detail-item">
+                      <strong>Resident:</strong> {file.resident_username || `Resident#${file.resident_id}`}
                     </span>
-                  </td>
-                  <td>
-                    {!isClaimed && !isNotified && (
-                      <button
-                        className="email-button"
-                        onClick={() => handleEmailResident(s)}
-                        disabled={sendingEmail === s.id}
-                        title="Email resident that item is ready for pickup"
-                      >
-                        {sendingEmail === s.id ? (
-                          <>
-                            <span className="loading-spinner"></span>
-                            Sending...
-                          </>
-                        ) : (
-                          <>
-                            📧 Email Resident
-                          </>
-                        )}
-                      </button>
-                    )}
-                    {isNotified && (
-                      <span className="email-sent-badge">✅ Emailed</span>
-                    )}
-                  </td>
-                </tr>
+                    <span className="detail-item">
+                      <strong>Pages:</strong> {file.page_count}
+                    </span>
+                    <span className="detail-item">
+                      <strong>Approved By:</strong> {file.staff_username}
+                    </span>
+                  </div>
+                  <div className="file-meta">
+                    <span className="date-approved">
+                      {formatDateTime(file.approved_at)}
+                    </span>
+                  </div>
+                </div>
+                <div className="status-badge status-approved">
+                  <CheckCircle size={14} /> Approved
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Schedules Section - READ ONLY */}
+      <div className="schedules-section">
+        <div className="section-header">
+          <h3>
+            <Calendar className="section-icon" />
+            Borrowed Items
+          </h3>
+          <span className="section-count">{acceptedSchedules.length}</span>
+        </div>
+        
+        {acceptedSchedules.length === 0 ? (
+          <div className="empty-state">
+            <p>No accepted schedules.</p>
+          </div>
+        ) : (
+          <div className="schedules-grid">
+            {acceptedSchedules.map((schedule) => {
+              const status = (schedule.status || "Approved").toLowerCase();
+              
+              return (
+                <div
+                  key={`accepted-schedule-${schedule.id}`}
+                  className="schedule-card preview-card"
+                  onClick={() => setSelectedAccepted({ ...schedule, type: "Schedule" })}
+                >
+                  <div className="schedule-icon">
+                    <Package />
+                  </div>
+                  <div className="schedule-info">
+                    <h4 className="item-name" title={schedule.item}>
+                      {schedule.item}
+                    </h4>
+                    <div className="schedule-details">
+                      <span className="detail-item">
+                        <strong>Resident:</strong> {schedule.resident_username || `Resident#${schedule.user_id}`}
+                      </span>
+                      <span className="detail-item">
+                        <strong>Quantity:</strong> {schedule.quantity}
+                      </span>
+                      <span className="detail-item">
+                        <strong>Approved By:</strong> {schedule.staff_username}
+                      </span>
+                      <span className="detail-item">
+                        <strong>Period:</strong> {new Date(schedule.date_from).toLocaleDateString()} to {new Date(schedule.date_to).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="schedule-meta">
+                      <span className="date-approved">
+                        {formatDateTime(schedule.approved_at)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className={`status-badge status-${status.replace(' ', '-')}`}>
+                    {status}
+                  </div>
+                </div>
               );
             })}
-          </tbody>
-        </table>
-      )}
+          </div>
+        )}
+      </div>
     </section>
   );
 }

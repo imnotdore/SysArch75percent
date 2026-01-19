@@ -4,9 +4,9 @@ import axios from "axios";
 
 // Context Providers
 import { AuthProvider } from "./context/AuthContext";
-import { FileProvider } from "./context/Filecontext"; 
+import { FileProvider } from "./context/Filecontext";
 import { ScheduleProvider } from "./context/ScheduleContext";
-import { ComputerBorrowingProvider } from "./context/ComputerBorrowingContext"; 
+import { ComputerBorrowingProvider } from "./context/ComputerBorrowingContext";
 
 // Main Pages
 import Login from "./pages/Login";
@@ -87,174 +87,174 @@ function App() {
                 {/* Landing / Login Page */}
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<Login />} />
-                
+
                 {/* About Us Page - ADD THIS ROUTE */}
                 <Route path="/about-us" element={<AboutUs />} />
 
                 {/* Register Pages */}
                 <Route path="/resident/register" element={<Register />} />
-                
+
                 {/* Admin Registration (hidden route - only accessible when no admin exists) */}
                 {!adminExists && (
                   <Route path="/admin/register" element={<AdminRegister />} />
                 )}
 
                 {/* Admin Routes */}
-                <Route 
-                  path="/admin/dashboard" 
+                <Route
+                  path="/admin/dashboard"
                   element={
                     <PrivateRoute role="admin">
                       <AdminDashboard />
                     </PrivateRoute>
-                  } 
+                  }
                 />
-                <Route 
-                  path="/admin/add-staff" 
+                <Route
+                  path="/admin/add-staff"
                   element={
                     <PrivateRoute role="admin">
                       <AddStaffModal />
                     </PrivateRoute>
-                  } 
+                  }
                 />
-                <Route 
-                  path="/admin/db" 
+                <Route
+                  path="/admin/db"
                   element={
                     <PrivateRoute role="admin">
                       <DashboardCards />
                     </PrivateRoute>
-                  } 
+                  }
                 />
-                <Route 
-                  path="/admin/users" 
+                <Route
+                  path="/admin/users"
                   element={
                     <PrivateRoute role="admin">
                       <UsersTable />
                     </PrivateRoute>
-                  } 
+                  }
                 />
-                <Route 
-                  path="/admin/edit-user/:id" 
+                <Route
+                  path="/admin/edit-user/:id"
                   element={
                     <PrivateRoute role="admin">
                       <EditUserModal />
                     </PrivateRoute>
-                  } 
+                  }
                 />
 
                 {/* Staff Routes */}
-                <Route 
-                  path="/staff/dashboard" 
+                <Route
+                  path="/staff/dashboard"
                   element={
                     <PrivateRoute role="staff">
                       <StaffDashboard />
                     </PrivateRoute>
-                  } 
+                  }
                 />
-                <Route 
-                  path="/staff/inbox" 
+                <Route
+                  path="/staff/inbox"
                   element={
                     <PrivateRoute role="staff">
                       <InboxTab />
                     </PrivateRoute>
-                  } 
+                  }
                 />
-                <Route 
-                  path="/staff/accounts" 
+                <Route
+                  path="/staff/accounts"
                   element={
                     <PrivateRoute role="staff">
                       <AccountsTab />
                     </PrivateRoute>
-                  } 
+                  }
                 />
-                <Route 
-                  path="/staff/accepted" 
+                <Route
+                  path="/staff/accepted"
                   element={
                     <PrivateRoute role="staff">
                       <AcceptedTab />
                     </PrivateRoute>
-                  } 
+                  }
                 />
-                <Route 
-                  path="/staff/released" 
+                <Route
+                  path="/staff/released"
                   element={
                     <PrivateRoute role="staff">
                       <ReleasedTab />
                     </PrivateRoute>
-                  } 
+                  }
                 />
-                <Route 
-                  path="/staff/returned" 
+                <Route
+                  path="/staff/returned"
                   element={
                     <PrivateRoute role="staff">
                       <ReturnedTab />
                     </PrivateRoute>
-                  } 
+                  }
                 />
-                <Route 
-                  path="/staff/printed" 
+                <Route
+                  path="/staff/printed"
                   element={
                     <PrivateRoute role="staff">
                       <PrintedTab />
                     </PrivateRoute>
-                  } 
+                  }
                 />
-                <Route 
-                  path="/staff/schedule" 
+                <Route
+                  path="/staff/schedule"
                   element={
                     <PrivateRoute role="staff">
                       <ScheduledTab />
                     </PrivateRoute>
-                  } 
+                  }
                 />
 
                 {/* Resident Routes */}
-                <Route 
-                  path="/resident/dashboard" 
+                <Route
+                  path="/resident/dashboard"
                   element={
                     <PrivateRoute role="resident">
                       <ResidentDashboard />
                     </PrivateRoute>
-                  } 
+                  }
                 />
-                <Route 
-                  path="/resident/disclosure-board" 
+                <Route
+                  path="/resident/disclosure-board"
                   element={
                     <PrivateRoute role="resident">
                       <DisclosureBoard />
                     </PrivateRoute>
-                  } 
+                  }
                 />
-                <Route 
-                  path="/resident/request" 
+                <Route
+                  path="/resident/request"
                   element={
                     <PrivateRoute role="resident">
                       <Request />
                     </PrivateRoute>
-                  } 
+                  }
                 />
-                <Route 
-                  path="/resident/schedule" 
+                <Route
+                  path="/resident/schedule"
                   element={
                     <PrivateRoute role="resident">
                       <Schedule />
                     </PrivateRoute>
-                  } 
+                  }
                 />
-                <Route 
-                  path="/resident/youraccount" 
+                <Route
+                  path="/resident/youraccount"
                   element={
                     <PrivateRoute role="resident">
                       <YourAccount />
                     </PrivateRoute>
-                  } 
+                  }
                 />
-                <Route 
-                  path="/resident/computer-borrowing" 
+                <Route
+                  path="/resident/computer-borrowing"
                   element={
                     <PrivateRoute role="resident">
                       <ComputerBorrowing />
                     </PrivateRoute>
-                  } 
+                  }
                 />
 
                 {/* Legal Pages (Public) */}

@@ -11,8 +11,9 @@ const {
 
 // ---------------- Resident ----------------
 router.post("/", authMiddleware(["resident"]), createRequest);
-router.get("/", authMiddleware(["resident"]), getUserRequests);
-router.delete("/:id", authMiddleware(["resident"]), cancelRequest);
+router.get("/my-requests", authMiddleware(["resident"]), getUserRequests); // SPECIFIC route para sa my-requests
+router.get("/", authMiddleware(["resident"]), getUserRequests); // Keep for backward compatibility
+router.put("/:id/cancel", authMiddleware(["resident"]), cancelRequest); // Use PUT for cancellation with reason
 
 // ---------------- Staff/Admin ----------------
 router.get("/all", authMiddleware(["staff", "admin"]), getAllRequests);

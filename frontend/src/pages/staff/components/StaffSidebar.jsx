@@ -1,10 +1,21 @@
-import { FaInbox, FaCheckCircle, FaCalendarAlt, FaPrint, FaBoxOpen, FaUndo, FaUsers, FaSignOutAlt, FaTimes } from "react-icons/fa";
+import { 
+  FaInbox, 
+  FaDesktop, // ADD THIS IMPORT
+  FaCheckCircle, 
+  FaCalendarAlt, 
+  FaPrint, 
+  FaBoxOpen, 
+  FaUndo, 
+  FaUsers, 
+  FaSignOutAlt, 
+  FaTimes 
+} from "react-icons/fa";
 
-export default function StaffSidebar({ 
-  sidebarRef, 
-  sidebarOpen, 
+export default function StaffSidebar({
+  sidebarRef,
+  sidebarOpen,
   sidebarCollapsed,
-  activeTab, 
+  activeTab,
   setActiveTab,
   setSidebarOpen,
   handleLogout,
@@ -12,45 +23,51 @@ export default function StaffSidebar({
   badgeCounts = {}
 }) {
   const menuItems = [
-    { 
-      id: "inbox", 
-      label: "Inbox", 
-      icon: <FaInbox />, 
-      badge: badgeCounts.inbox || 0 
+    {
+      id: "inbox",
+      label: "Inbox",
+      icon: <FaInbox />,
+      badge: badgeCounts.inbox || 0
     },
-    { 
-      id: "accepted", 
-      label: "Accepted", 
+    {
+      id: "computer", // ADD THIS
+      label: "Computer",
+      icon: <FaDesktop />,
+      badge: badgeCounts.computer || 0
+    },
+    {
+      id: "accepted",
+      label: "Accepted",
       icon: <FaCheckCircle />,
       badge: badgeCounts.accepted || 0
     },
-    { 
-      id: "scheduled", 
-      label: "Scheduled", 
+    {
+      id: "scheduled",
+      label: "Scheduled",
       icon: <FaCalendarAlt />,
       badge: badgeCounts.scheduled || 0
     },
-    { 
-      id: "printed", 
-      label: "Printed", 
+    {
+      id: "printed",
+      label: "Printed",
       icon: <FaPrint />,
       badge: badgeCounts.printed || 0
     },
-    { 
-      id: "released", 
-      label: "Released", 
+    {
+      id: "released",
+      label: "Released",
       icon: <FaBoxOpen />,
       badge: badgeCounts.released || 0
     },
-    { 
-      id: "returned", 
-      label: "Returned", 
+    {
+      id: "returned",
+      label: "Returned",
       icon: <FaUndo />,
       badge: badgeCounts.returned || 0
     },
-    { 
-      id: "accounts", 
-      label: "Accounts", 
+    {
+      id: "accounts",
+      label: "Accounts",
       icon: <FaUsers />,
       badge: badgeCounts.accounts || 0
     },
@@ -58,8 +75,8 @@ export default function StaffSidebar({
 
   return (
     <>
-      <aside 
-        ref={sidebarRef} 
+      <aside
+        ref={sidebarRef}
         className={`sidebar ${sidebarOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}
       >
         <div className="sidebar-header">

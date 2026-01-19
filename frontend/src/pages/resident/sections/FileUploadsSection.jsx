@@ -1,9 +1,6 @@
 import { useState, useEffect } from "react";
-import StatusBadge from "../common/StatusBadge";
 import DateFormatter from "../common/DateFormatter";
 import { 
-  FaInfoCircle, 
-  FaExclamationTriangle, 
   FaFilePdf, 
   FaFileWord, 
   FaFileImage, 
@@ -11,7 +8,7 @@ import {
   FaEye,
   FaTrash
 } from "react-icons/fa";
-import "./FileUploadsSection.css";
+import "../styles/FileUploadsSection.css";
 
 export default function FileUploadsSection({ 
   uploadedFiles, 
@@ -21,11 +18,11 @@ export default function FileUploadsSection({
   getStatusDisplayName,
   getStatusStyle
 }) {
-  const [expandedFile, setExpandedFile] = useState(null);
   const [hoveredRow, setHoveredRow] = useState(null);
   const [previewFile, setPreviewFile] = useState(null);
   const [limits, setLimits] = useState({ resident: 30, system: 100 });
   const [todayUsage, setTodayUsage] = useState({ resident: 0, system: 0 });
+  const [limitsLoading, setLimitsLoading] = useState(true);
 
   // Get file icon based on file type
   const getFileIcon = (fileName) => {
@@ -66,14 +63,109 @@ export default function FileUploadsSection({
 
   // Handle file preview
   const handlePreview = (file) => {
-    // If file has a URL (from backend), use it
     if (file.file_url) {
       window.open(file.file_url, '_blank');
     } else {
-      // Otherwise show a modal with file details
       setPreviewFile(file);
     }
   };
+
+  useEffect(() => {
+    const fetchLimitsAndUsage = async () => {
+      try {
+        setLimitsLoading(true);
+        const token = localStorage.getItem("token");
+        const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+        const userId = localStorage.getItem("userId");
+        
+        if (!userId) {
+          console.error("No user ID found");
+          setLimitsLoading(false);
+          return;
+        }
+
+        const usageResponse = await fetch(`${API_URL}/api/auth/today-usage/${userId}`, {
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (usageResponse.ok) {
+          const usageData = await usageResponse.json();
+          if (usageData.success) {
+            setTodayUsage({ 
+              resident: usageData.data.userUsage || 0, 
+              system: usageData.data.systemUsage || 0 
+            });
+            
+            setLimits({ 
+              resident: usageData.data.limits?.resident || 30, 
+              system: usageData.data.limits?.global || 100 
+            });
+          }
+        } else {
+          setLimits({ resident: 30, system: 100 });
+        }
+      } catch (err) {
+        console.error("Error fetching usage:", err);
+        setLimits({ resident: 30, system: 100 });
+      } finally {
+        setLimitsLoading(false);
+      }
+    };
+
+    fetchLimitsAndUsage();
+    
+    const interval = setInterval(fetchLimitsAndUsage, 30000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  const refreshUsage = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+      const userId = localStorage.getItem("userId");
+      
+      if (!userId) return;
+
+      const usageResponse = await fetch(`${API_URL}/api/auth/today-usage/${userId}`, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (usageResponse.ok) {
+        const usageData = await usageResponse.json();
+        if (usageData.success) {
+          setTodayUsage({ 
+            resident: usageData.data.userUsage || 0, 
+            system: usageData.data.systemUsage || 0 
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Error refreshing usage:", err);
+    }
+  };
+
+  const handleCancelWithRefresh = async (file) => {
+    await onCancelFile(file);
+    setTimeout(refreshUsage, 1000);
+  };
+
+  const residentRemaining = Math.max(0, limits.resident - todayUsage.resident);
+  const systemRemaining = Math.max(0, limits.system - todayUsage.system);
+
+  const residentPercentage = limits.resident > 0 
+    ? Math.min(100, (todayUsage.resident / limits.resident) * 100) 
+    : 0;
+  
+  const systemPercentage = limits.system > 0 
+    ? Math.min(100, (todayUsage.system / limits.system) * 100) 
+    : 0;
 
   // Preview Modal Component
   const PreviewModal = ({ file, onClose }) => {
@@ -155,11 +247,8 @@ export default function FileUploadsSection({
               )}
               
               {file.status?.toLowerCase() === "pending" && (
-                <button 
-                  onClick={() => {
-                    onClose();
-                    onCancelFile(file);
-                  }}
+                <button
+                  onClick={() => handleCancelWithRefresh(file)}
                   className="preview-action-btn danger"
                 >
                   <FaTrash /> Cancel Request
@@ -172,51 +261,7 @@ export default function FileUploadsSection({
     );
   };
 
-  useEffect(() => {
-    const fetchLimits = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const baseUrl = window.API_URL || "http://localhost:3000";
-        const today = new Date().toISOString().split('T')[0];
-
-        const limitsRes = await fetch(`${baseUrl}/api/files/limits`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-
-        if (limitsRes.ok) {
-          const data = await limitsRes.json();
-          if (data.success) {
-            const residentLimit = data.data?.limits?.find(l => l.type === 'resident')?.value || 30;
-            const systemLimit = data.data?.limits?.find(l => l.type === 'global')?.value || 100;
-            setLimits({ resident: residentLimit, system: systemLimit });
-          }
-        }
-
-        const todayFiles = uploadedFiles.filter(file => {
-          const fileDate = new Date(file.date_needed).toISOString().split('T')[0];
-          return fileDate === today && file.status !== 'rejected';
-        });
-
-        const residentPages = todayFiles.reduce((sum, file) => sum + (file.page_count || 0), 0);
-        setTodayUsage({ 
-          resident: residentPages, 
-          system: residentPages
-        });
-
-      } catch (err) {
-        console.error("Error fetching limits:", err);
-      }
-    };
-
-    if (!loading && uploadedFiles.length > 0) {
-      fetchLimits();
-    }
-  }, [uploadedFiles, loading]);
-
-  const residentRemaining = limits.resident - todayUsage.resident;
-  const systemRemaining = limits.system - todayUsage.system;
-
-  if (loading) {
+  if (loading || limitsLoading) {
     return (
       <section className="file-uploads-section">
         <div className="loading-container">
@@ -242,82 +287,7 @@ export default function FileUploadsSection({
   return (
     <>
       <section className="file-uploads-section">
-       {/* ========== DAILY LIMITS ========== */}
-<div className="daily-limits-section">
-  <h3 className="limits-title">Daily Usage Limits</h3>
-  
-  <div className="limits-container">
-    {/* Personal Limit Card */}
-    <div className="limit-card">
-      <div className="limit-header">
-        <div className="limit-icon">👤</div>
-        <div>
-          <h4>Your Daily Limit</h4>
-          <p>Personal printing allowance</p>
-        </div>
-      </div>
-      
-      <div className="limit-progress">
-        <div className="progress-bar">
-          <div 
-            className="progress-fill" 
-            style={{ width: `${(1/30)*100}%` }}
-          ></div>
-        </div>
         
-        <div className="progress-text">
-          <div className="current-count">
-            {1} <span>/ 30 pages</span>
-          </div>
-          
-          <div className="remaining-count">
-            <span className="remaining-icon">✅</span>
-            {29} pages remaining
-          </div>
-        </div>
-      </div>
-      
-    </div>
-    
-    {/* System Capacity Card */}
-    <div className="limit-card">
-      <div className="limit-header">
-        <div className="limit-icon">🌐</div>
-        <div>
-          <h4>System Capacity</h4>
-          <p>Shared printer availability</p>
-        </div>
-      </div>
-      
-      <div className="limit-progress">
-        <div className="progress-bar">
-          <div 
-            className="progress-fill" 
-            style={{ width: `${(1/100)*100}%` }}
-          ></div>
-        </div>
-        
-        <div className="progress-text">
-          <div className="current-count">
-            {1} <span>/ 100 pages</span>
-          </div>
-          
-          <div className="remaining-count">
-            <span className="remaining-icon">✅</span>
-            {99} pages available
-          </div>
-        </div>
-      </div>
-      
-      <div className="limit-footer">
-     
-        <div className="reset-info">
-
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
 
         {uploadedFiles.length === 0 ? (
           <div className="empty-state">
@@ -400,7 +370,7 @@ export default function FileUploadsSection({
                         
                         {file.status?.toLowerCase() === "pending" && (
                           <button
-                            onClick={() => onCancelFile(file)}
+                            onClick={() => handleCancelWithRefresh(file)}
                             className="cancel-btn"
                             title="Cancel this request"
                           >
@@ -417,7 +387,6 @@ export default function FileUploadsSection({
         )}
       </section>
 
-      {/* Preview Modal */}
       <PreviewModal 
         file={previewFile} 
         onClose={() => setPreviewFile(null)} 

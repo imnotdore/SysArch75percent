@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import { API_URL } from "../../../config";
+import { useNavigate } from "react-router-dom"; // Add this
 import Calendar from "react-calendar";
-import "./RequestForm.css";
+import "../styles/RequestForm.css";
 import "react-calendar/dist/Calendar.css";
 import { 
   Upload, 
@@ -16,6 +17,7 @@ import {
 } from "lucide-react";
 
 export default function RequestForm() {
+  const navigate = useNavigate(); // Add this
   const [form, setForm] = useState({
     purpose: "",
     dateNeeded: "",
@@ -71,33 +73,44 @@ export default function RequestForm() {
     return formatDateToLocal(new Date());
   };
 
-  // Fetch limits from backend
   const fetchLimits = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.get(`${API_URL}/api/files/limits`, {
+      const response = await axios.get(`${API_URL}/api/files/limits/resident`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
       if (response.data.success && response.data.data) {
-        const limits = response.data.data.limits || response.data.data;
-        const residentLimit = limits.find(l => l.type === 'resident')?.value || 30;
-        const systemLimit = limits.find(l => l.type === 'global' || l.type === 'system')?.value || 100;
+        const limits = response.data.data;
         
         setCurrentLimits({
-          resident: residentLimit,
-          system: systemLimit
+          resident: limits.residentLimit || 30,
+          system: limits.systemLimit || 100
         });
+        
+        if (form.dateNeeded) {
+          const today = new Date().toISOString().split('T')[0];
+          if (form.dateNeeded === today) {
+            setAvailability(prev => ({
+              ...prev,
+              residentLimit: limits.residentLimit,
+              systemLimit: limits.systemLimit,
+              residentRemaining: limits.residentRemaining,
+              systemRemaining: limits.systemRemaining,
+              residentUsed: limits.residentUsed,
+              systemUsed: limits.systemUsed
+            }));
+          }
+        }
       }
     } catch (error) {
-      console.error("Error fetching limits:", error);
       setCurrentLimits({
         resident: 30,
         system: 100
       });
     }
   };
-
+  
   const fetchAllDatesAvailability = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -110,7 +123,6 @@ export default function RequestForm() {
         setAllDatesAvailability(dates);
       }
     } catch (error) {
-      console.error("Error fetching all dates availability:", error);
       setAllDatesAvailability([]);
     }
   };
@@ -135,7 +147,6 @@ export default function RequestForm() {
         });
       }
     } catch (error) {
-      console.error("Error checking availability:", error);
       setAvailability({
         residentLimit: currentLimits.resident,
         systemLimit: currentLimits.system,
@@ -214,7 +225,6 @@ export default function RequestForm() {
       
       setPageCount(pages);
     } catch (err) {
-      console.error("Error counting pages:", err);
       setPageCount(1);
     } finally {
       setCountingPages(false);
@@ -319,13 +329,16 @@ export default function RequestForm() {
         fetchAllDatesAvailability();
         checkAvailability(form.dateNeeded);
         
+        // Redirect to Your Account after 1 second
+        setTimeout(() => {
+          navigate("/resident/youraccount");
+        }, 1000);
+        
       } else {
         setError(response.data.error || "Upload failed");
       }
       
     } catch (error) {
-      console.error("Upload error:", error);
-      
       if (error.response) {
         const errorData = error.response.data;
         setError(errorData.error || errorData.message || `Upload failed: ${error.response.status}`);
@@ -396,10 +409,10 @@ export default function RequestForm() {
 
   return (
     <div className="request-form-container">
-       {/* Simple Title Only */}
       <div className="libreng-print-title-only">
         <h2>📅 FREE PRINTING </h2>
       </div>
+      
       {/* Step 1: Upload File */}
       {currentStep === 1 && (
         <div className="step-page">
@@ -409,35 +422,6 @@ export default function RequestForm() {
             </div>
             <h1>Upload Your File</h1>
             <p className="subtitle">Select the file you want to print</p>
-          </div>
-
-          <div className="progress-container">
-            <div className="progress-steps">
-              <div className="step active">
-                <div className="step-indicator">
-                  <span className="step-number">1</span>
-                </div>
-                <span className="step-label">Upload File</span>
-              </div>
-              <div className="step">
-                <div className="step-indicator">
-                  <span className="step-number">2</span>
-                </div>
-                <span className="step-label">Select Purpose</span>
-              </div>
-              <div className="step">
-                <div className="step-indicator">
-                  <span className="step-number">3</span>
-                </div>
-                <span className="step-label">Choose Date</span>
-              </div>
-            </div>
-            <div className="progress-bar">
-              <div 
-                className="progress-fill" 
-                style={{ width: '0%' }}
-              ></div>
-            </div>
           </div>
 
           {error && (
@@ -515,35 +499,6 @@ export default function RequestForm() {
             <p className="subtitle">Choose the purpose for your print request</p>
           </div>
 
-          <div className="progress-container">
-            <div className="progress-steps">
-              <div className="step completed">
-                <div className="step-indicator">
-                  <CheckCircle size={20} />
-                </div>
-                <span className="step-label">Upload File</span>
-              </div>
-              <div className="step active">
-                <div className="step-indicator">
-                  <span className="step-number">2</span>
-                </div>
-                <span className="step-label">Select Purpose</span>
-              </div>
-              <div className="step">
-                <div className="step-indicator">
-                  <span className="step-number">3</span>
-                </div>
-                <span className="step-label">Choose Date</span>
-              </div>
-            </div>
-            <div className="progress-bar">
-              <div 
-                className="progress-fill" 
-                style={{ width: '50%' }}
-              ></div>
-            </div>
-          </div>
-
           {error && (
             <div className="error-alert">
               <AlertTriangle size={20} />
@@ -597,35 +552,6 @@ export default function RequestForm() {
             </div>
             <h1>Choose Delivery Date</h1>
             <p className="subtitle">Select when you need your prints</p>
-          </div>
-
-          <div className="progress-container">
-            <div className="progress-steps">
-              <div className="step completed">
-                <div className="step-indicator">
-                  <CheckCircle size={20} />
-                </div>
-                <span className="step-label">Upload File</span>
-              </div>
-              <div className="step completed">
-                <div className="step-indicator">
-                  <CheckCircle size={20} />
-                </div>
-                <span className="step-label">Select Purpose</span>
-              </div>
-              <div className="step active">
-                <div className="step-indicator">
-                  <span className="step-number">3</span>
-                </div>
-                <span className="step-label">Choose Date</span>
-              </div>
-            </div>
-            <div className="progress-bar">
-              <div 
-                className="progress-fill" 
-                style={{ width: '100%' }}
-              ></div>
-            </div>
           </div>
 
           {error && (

@@ -72,7 +72,7 @@ import {
   FaCloud,
   FaClock   
 } from "react-icons/fa";
-import "./LandingPage.css";
+import "../styles/LandingPage.css";
 
 function LandingPage() {
   const navigate = useNavigate();
@@ -250,7 +250,7 @@ const navItems = [
       name: "National ID (PhilSys)",
       agency: "Philippine Statistics Authority",
       icon: <FaIdCard />,
-      link: "https://philsys.gov.ph/",
+      link: "https://national-id.gov.ph/",
       requirements: ["PSA Birth Certificate", "Any valid supporting document"],
       processingTime: "4-6 weeks"
     },
@@ -258,7 +258,7 @@ const navItems = [
       name: "Postal ID",
       agency: "Philippine Postal Corporation",
       icon: <FaIdCard />,
-      link: "https://www.phlpost.gov.ph/postal-id/",
+      link: "https://phlpost.gov.ph/cpt-press-releases/phlpost-simplifies-postal-id-application-for-all/",
       requirements: ["Birth Certificate", "Proof of Address", "Barangay Clearance"],
       processingTime: "10-15 working days"
     }

@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback, memo, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
-import './Register.css';
+import '../styles/Register.css';
 import ReCAPTCHA from "react-google-recaptcha";
 import { 
   FaUserCircle, 

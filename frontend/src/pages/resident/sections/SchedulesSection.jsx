@@ -12,7 +12,7 @@ import {
   FaCalendarCheck,
   FaCalendarTimes
 } from "react-icons/fa";
-import "./SchedulesSection.css";
+import "../styles/SchedulesSection.css";
 
 export default function SchedulesSection({ 
   schedules, 

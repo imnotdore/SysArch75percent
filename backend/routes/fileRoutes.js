@@ -5,7 +5,7 @@ const path = require("path");
 const fs = require("fs");
 const fileController = require("../controllers/fileController");
 const authMiddleware = require("../middlewares/authMiddleware");
-
+const authController = require("../controllers/authController");
 // Configure upload directory
 const uploadDir = path.join(__dirname, "../uploads/files");
 if (!fs.existsSync(uploadDir)) {
@@ -113,6 +113,9 @@ router.get("/limits",
     }
   }
 );
-
+router.get("/limits/resident",
+  authController.verifyToken,
+  fileController.getLimitsForResident
+)
 
 module.exports = router;

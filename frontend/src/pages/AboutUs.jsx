@@ -1,6 +1,6 @@
 // AboutUs.jsx
 import React, { useState, useEffect } from "react";
-import './AboutUs.css';
+import '../styles/AboutUs.css';
 import { useNavigate } from "react-router-dom";
 import { 
   FaInfoCircle,

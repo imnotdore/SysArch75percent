@@ -1,4 +1,3 @@
-// StaffDashboard.js
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -14,6 +13,7 @@ import PrintedTab from "./PrintedTab";
 import ReleasedTab from "./ReleasedTab";
 import ReturnedTab from "./ReturnedTab";
 import AccountsTab from "./AccountsTab";
+import ComputerBorrowingTab from "./ComputerBorrowingTab"; // Add this import
 
 // Import modals
 import FileModal from "../modals/FileModal";
@@ -27,12 +27,13 @@ import useStaffData from "../hooks/useStaffData";
 import useResponsive from "../hooks/useResponsive";
 
 // import ng css
-import "./StaffDashboard.css";
+import "./tabs.css/StaffDashboard.css";
 import "./tabs.css/AccountsTab.css";
 import "./tabs.css/InboxTab.css";
 import "./tabs.css/AcceptedTab.css";
 import "./tabs.css/PrintedTab.css";
 import "./tabs.css/ScheduledTab.css";
+import "./tabs.css/ComputerBorrowingTab.css"; // Add this import
 
 export default function StaffDashboard() {
   const navigate = useNavigate();
@@ -97,6 +98,7 @@ export default function StaffDashboard() {
   // Calculate badge counts for sidebar - AUTOMATICALLY UPDATED
   const badgeCounts = {
     inbox: residents?.length || 0,
+    computer: 0, // Add this for computer tab
     accepted: acceptedFiles?.length || 0,
     scheduled: acceptedSchedules?.length || 0,
     printed: printedFiles?.length || 0,
@@ -163,32 +165,36 @@ export default function StaffDashboard() {
 
   // Render active tab content
   const renderActiveTab = () => {
-    const commonProps = {
-      staffId,
-      searchTerm,
-      setSearchTerm,
-      setSelectedFile,
-      setSelectedSchedule,
-      setSelectedAccepted,
-      setSelectedPendingAccount,
-      modalLoading,
-      setModalLoading
-    };
+  const commonProps = {
+    staffId,
+    searchTerm,
+    setSearchTerm,
+    setSelectedFile,
+    setSelectedSchedule,
+    setSelectedAccepted,
+    setSelectedPendingAccount,
+    modalLoading,
+    setModalLoading
+  };
 
-    switch (activeTab) {
-      case "inbox":
-        return (
-          <InboxTab
-            {...commonProps}
-            residents={residents}
-            selectedResident={selectedResident}
-            selectedResidentRequests={selectedResidentRequests}
-            setSelectedResident={setSelectedResident}
-            fetchResidentRequests={fetchResidentRequests}
-            handleFileStatusChange={handleFileStatusChange}
-            handleScheduleStatusChange={handleScheduleStatusChange}
-          />
+  switch (activeTab) {
+    case "inbox":
+      return (
+        <InboxTab
+          {...commonProps}
+          residents={residents || []}
+          selectedResident={selectedResident}
+          selectedResidentRequests={selectedResidentRequests || { files: [], schedules: [], computerRequests: [] }}
+          setSelectedResident={setSelectedResident}
+          fetchResidentRequests={fetchResidentRequests}
+          handleFileStatusChange={handleFileStatusChange}
+          handleScheduleStatusChange={handleScheduleStatusChange}
+          staffId={staffId}
+        />
         );
+      
+      case "computer": // ADD THIS CASE
+        return <ComputerBorrowingTab />;
       
       case "accepted":
         return (

@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import Calendar from "react-calendar";
+import { useNavigate } from "react-router-dom"; // ADD THIS
 import "react-calendar/dist/Calendar.css";
-import "./ScheduleForm.css";
+import "../styles/ScheduleForm.css";
 
 export default function ScheduleForm() {
+  const navigate = useNavigate(); // ADD THIS
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
   
   const [form, setForm] = useState({
@@ -35,7 +37,6 @@ export default function ScheduleForm() {
 
   // ========== FUNCTIONS ==========
   
-  // NEW: Fetch user data on component mount
   useEffect(() => {
     fetchItems();
   }, [API_URL]);
@@ -50,7 +51,6 @@ export default function ScheduleForm() {
       console.error("Error fetching items:", err);
     }
   };
-
 
   useEffect(() => {
     if (!form.item) {
@@ -97,14 +97,13 @@ export default function ScheduleForm() {
   }, [form.item, API_URL]);
 
   const formatDate = (date) => {
-  // Add null check
-  if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
-    return ''; // Return empty string or handle appropriately
-  }
-  
-  const tzOffset = date.getTimezoneOffset() * 60000;
-  return new Date(date - tzOffset).toISOString().split("T")[0];
-};
+    if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+      return '';
+    }
+    
+    const tzOffset = date.getTimezoneOffset() * 60000;
+    return new Date(date - tzOffset).toISOString().split("T")[0];
+  };
 
   const formatDisplayDate = (date) => {
     return new Date(date).toLocaleDateString("en-PH", {
@@ -240,8 +239,6 @@ export default function ScheduleForm() {
     });
   };
 
-
-
   const handleSubmit = async () => {
     const { borrowDate, returnDate, timeFrom, timeTo, item, quantity, reason, acceptPolicy } = form;
     
@@ -261,11 +258,8 @@ export default function ScheduleForm() {
       return alert("⚠️ Return date cannot be before borrow date!");
     }
 
-    // In handleSubmit function, line 191-192, it should just show alert:
     if (!checkAvailabilityForSelectedRange()) {
-    return alert("⚠️ Not enough items available for selected dates!");
-
-      
+      return alert("⚠️ Not enough items available for selected dates!");
     }
 
     setLoading(true);
@@ -285,9 +279,13 @@ export default function ScheduleForm() {
       );
       
       setSubmitted(true);
-   
+      
+      // REDIRECT TO YOUR ACCOUNT AFTER 2 SECONDS - ADD THIS
+      setTimeout(() => {
+        navigate("/resident/youraccount");
+      }, 2000);
+      
       fetchItems();
-   
       
     } catch (err) {
       alert(err.response?.data?.error || "❌ Failed to submit borrowing request");
@@ -296,49 +294,47 @@ export default function ScheduleForm() {
     }
   };
 
-const getTileClassName = ({ date, view }) => {
-  if (view !== 'month') return '';
-  
-  // Check if date is valid
-  if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
-    return '';
-  }
-  
-  const iso = formatDate(date);
-  const today = formatDate(new Date());
-  
-  // Check if iso is valid
-  if (!iso) return '';
-  
-  const day = itemAvailability.find((a) => a.date === iso);
-  
-  if (iso < today) return 'past-date';
-  if (!day || day.available <= 0) return 'unavailable-date';
-  
-  if (selectedBorrowDate && formatDate(selectedBorrowDate) === iso) return 'borrow-date';
-  if (selectedReturnDate && formatDate(selectedReturnDate) === iso) return 'return-date';
-  
-  if (selectedRange.length === 2) {
-    const start = formatDate(selectedRange[0]);
-    const end = formatDate(selectedRange[1]);
-    if (start && end && iso >= start && iso <= end) return 'selected-range';
-  }
-  
-  return 'available-date';
-};
+  const getTileClassName = ({ date, view }) => {
+    if (view !== 'month') return '';
+    
+    if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+      return '';
+    }
+    
+    const iso = formatDate(date);
+    const today = formatDate(new Date());
+    
+    if (!iso) return '';
+    
+    const day = itemAvailability.find((a) => a.date === iso);
+    
+    if (iso < today) return 'past-date';
+    if (!day || day.available <= 0) return 'unavailable-date';
+    
+    if (selectedBorrowDate && formatDate(selectedBorrowDate) === iso) return 'borrow-date';
+    if (selectedReturnDate && formatDate(selectedReturnDate) === iso) return 'return-date';
+    
+    if (selectedRange.length === 2) {
+      const start = formatDate(selectedRange[0]);
+      const end = formatDate(selectedRange[1]);
+      if (start && end && iso >= start && iso <= end) return 'selected-range';
+    }
+    
+    return 'available-date';
+  };
 
- const isDateDisabled = (date) => {
-  if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
-    return true; // Disable invalid dates
-  }
-  
-  const iso = formatDate(date);
-  if (!iso) return true;
-  
-  const today = formatDate(new Date());
-  const day = itemAvailability.find((a) => a.date === iso);
-  return iso < today || !day || day.available <= 0;
-};
+  const isDateDisabled = (date) => {
+    if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+      return true;
+    }
+    
+    const iso = formatDate(date);
+    if (!iso) return true;
+    
+    const today = formatDate(new Date());
+    const day = itemAvailability.find((a) => a.date === iso);
+    return iso < today || !day || day.available <= 0;
+  };
 
   const getDurationDays = () => {
     if (!selectedBorrowDate || !selectedReturnDate) return 0;
@@ -399,13 +395,7 @@ const getTileClassName = ({ date, view }) => {
     setSubmitted(false);
   };
 
- 
-
-  // ========== RENDER FUNCTIONS ==========
-
-  
-
-  // Step 1: Item and Date Selection (same as before but with waitlist option)
+  // Step 1: Item and Date Selection
   const renderStep1 = () => (
     <div className="schedule-step-container">
       <div className="schedule-step-header">
@@ -437,7 +427,6 @@ const getTileClassName = ({ date, view }) => {
               {items.map((item) => (
                 <option key={item.id} value={item.item_name}>
                   {item.item_name} ({item.available} available)
-                  
                 </option>
               ))}
             </select>
@@ -450,8 +439,7 @@ const getTileClassName = ({ date, view }) => {
             ) : form.item && maxAvailable === 0 && (
               <div className="schedule-info-box">
                 <span className="schedule-info-icon">⏳</span>
-                This item is currently out of stock. 
-              
+                This item is currently out of stock.
               </div>
             )}
           </div>
@@ -536,7 +524,6 @@ const getTileClassName = ({ date, view }) => {
                 <div className="schedule-warning-box">
                   <span className="schedule-warning-icon">⚠️</span>
                   Not enough items available for all selected dates
-                  
                 </div>
               )}
             </div>
@@ -563,7 +550,7 @@ const getTileClassName = ({ date, view }) => {
     </div>
   );
 
-  // Step 2: Time and Details (same as before)
+  // Step 2: Time and Details
   const renderStep2 = () => (
     <div className="schedule-step-container">
       <div className="schedule-step-header">
@@ -696,7 +683,7 @@ const getTileClassName = ({ date, view }) => {
     </div>
   );
 
-  // Step 3: Policy and Submission (same as before)
+  // Step 3: Policy and Submission
   const renderStep3 = () => (
     <div className="schedule-step-container">
       <div className="schedule-step-header">
@@ -833,7 +820,7 @@ const getTileClassName = ({ date, view }) => {
     </div>
   );
 
-  // Success Screen
+  // Success Screen - UPDATED WITH REDIRECT MESSAGE
   const renderSuccess = () => (
     <div className="schedule-success-container">
       <div className="schedule-success-content">
@@ -875,6 +862,14 @@ const getTileClassName = ({ date, view }) => {
               <li>Return the item in the same condition</li>
             </ol>
           </div>
+
+          {/* ADDED REDIRECT MESSAGE */}
+          <div className="schedule-redirect-message">
+            <p>⏳ <strong>Redirecting to Your Account in 2 seconds...</strong></p>
+            <p className="schedule-redirect-note">
+              You'll be automatically redirected to view all your requests and schedules.
+            </p>
+          </div>
         </div>
 
         <button 
@@ -891,15 +886,13 @@ const getTileClassName = ({ date, view }) => {
     <section className="schedule-form-container">
       <h2 className="schedule-form-title">📅 Borrowing System Dashboard</h2>
       
-   
-
-     {submitted ? renderSuccess() : (
-      <>
-        {currentStep === 1 && renderStep1()}
-        {currentStep === 2 && renderStep2()}
-        {currentStep === 3 && renderStep3()}
-      </>
-    )}
+      {submitted ? renderSuccess() : (
+        <>
+          {currentStep === 1 && renderStep1()}
+          {currentStep === 2 && renderStep2()}
+          {currentStep === 3 && renderStep3()}
+        </>
+      )}
     </section>
   );
 }

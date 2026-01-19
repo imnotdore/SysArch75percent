@@ -1,44 +1,23 @@
+// server.js
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
 
-
 const itemRoutes = require('./routes/itemRoutes');
 const borrowingRoutes = require('./routes/borrowingRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const itemAdminRoutes = require("./routes/itemAdminRoutes");
-
+const adminRoutes = require("./routes/adminRoutes"); // ✅ DAGDAG MO ITO!
+const computerBorrowRoutes = require("./routes/computerBorrowRoutes");
 const app = express();
 
-const scheduleRoutes = require('./routes/scheduleRoutes'); // if you combined the new routes here
-// OR create a separate file for new features
+const scheduleRoutes = require('./routes/scheduleRoutes');
 
 // ---------------- Middleware ---------------- //
 app.use(cors({ origin: "http://localhost:5173", credentials: true }));
-
-
-
-// basta pang testing to sa mobile view
-/*const allowedOrigins = [
-  "http://localhost:5173",       // desktop
-  "http://192.168.100.12:5173"  // phone
-];
-
-app.use(cors({
-  origin: function(origin, callback) {
-    if (!origin) return callback(null, true); // allow non-browser tools like Postman
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("CORS not allowed"));
-    }
-  },
-  credentials: true
-}));*/
-
 app.use(express.json());
-app.use(express.urlencoded({ extended: true })); // <-- parses urlencoded form data
+app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.use("/api/items/admin", itemAdminRoutes);
@@ -55,9 +34,8 @@ app.use("/api/computer-borrow", require("./routes/computerBorrowRoutes"));
 app.use('/api/items', itemRoutes);
 app.use('/api/borrowing', borrowingRoutes);
 app.use('/api/notifications', notificationRoutes);
-// If you put all new routes in scheduleRoutes:
-app.use('/api', scheduleRoutes); // This should include /api/user/borrowings, etc.
-
+app.use("/api/admin", adminRoutes); // ✅ DAGDAG MO ITO!
+app.use("/api/computer-requests", computerBorrowRoutes);
 // ---------------- Health Check ---------------- //
 app.get("/", (req, res) => res.send("Barangay Management System Backend is running"));
 

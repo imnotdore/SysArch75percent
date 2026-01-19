@@ -1,7 +1,16 @@
+// Sidebar.jsx - Keep this as is
 import React from "react";
-import { FaTachometerAlt, FaUserClock, FaUserCheck, FaUsers, FaBox, FaSignOutAlt } from "react-icons/fa";
+import { 
+  FaTachometerAlt, 
+  FaUserClock, 
+  FaUserCheck, 
+  FaUsers, 
+  FaBox, 
+  FaSignOutAlt,
+  FaFileAlt,
+  FaUserTie
+} from "react-icons/fa";
 
-export      
 const Sidebar = ({ sidebarRef, sidebarOpen, activeTab, setActiveTab, setSidebarOpen, handleLogout }) => (
   <div ref={sidebarRef} className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
     <div className="sidebar-header">
@@ -44,22 +53,10 @@ const Sidebar = ({ sidebarRef, sidebarOpen, activeTab, setActiveTab, setSidebarO
       <div className="sidebar-section">
         <h3 className="sidebar-section-title">Staff</h3>
         <button 
-          className={activeTab === "pending-staff" ? "active" : ""} 
-          onClick={() => setActiveTab("pending-staff")}
-        >
-          <FaUserClock /> Pending Staff
-        </button>
-        <button 
-          className={activeTab === "approved-staff" ? "active" : ""} 
-          onClick={() => setActiveTab("approved-staff")}
-        >
-          <FaUserCheck /> Approved Staff
-        </button>
-        <button 
           className={activeTab === "all-staff" ? "active" : ""} 
           onClick={() => setActiveTab("all-staff")}
         >
-          <FaUsers /> All Staff
+          <FaUserTie /> All Staff
         </button>
       </div>
       
@@ -69,9 +66,16 @@ const Sidebar = ({ sidebarRef, sidebarOpen, activeTab, setActiveTab, setSidebarO
       >
         <FaBox /> Item Management
       </button>
+      
+      <button 
+        className={activeTab === "page-limits" ? "active" : ""} 
+        onClick={() => setActiveTab("page-limits")}
+      >
+        <FaFileAlt /> Page Limits
+      </button>
     </div>
     
-    <button className="log-btn" onClick={handleLogout}>
+    <button className="logout-btn" onClick={handleLogout}>
       <FaSignOutAlt /> Logout
     </button>
   </div>

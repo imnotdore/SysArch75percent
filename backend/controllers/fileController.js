@@ -232,7 +232,7 @@ exports.uploadFile = async (req, res) => {
 };
 
 // Check availability for a single date
-// Sa checkAvailability function
+// fileController.js - Sa checkAvailability function
 exports.checkAvailability = async (req, res) => {
   try {
     const { date } = req.params;
@@ -242,8 +242,17 @@ exports.checkAvailability = async (req, res) => {
       return res.status(400).json({ error: "Date is required" });
     }
 
-    const residentLimit = 30;
-    const systemLimit = 100;
+    // KUNIN ANG LIMITS MULA SA DATABASE
+    const [limitRows] = await db.query(
+      `SELECT 
+        MAX(CASE WHEN type = 'global' THEN value END) as system_limit,
+        MAX(CASE WHEN type = 'resident' THEN value END) as resident_limit
+      FROM upload_limits
+      WHERE staff_id IS NULL`
+    );
+
+    const residentLimit = limitRows[0]?.resident_limit || 30;
+    const systemLimit = limitRows[0]?.system_limit || 100;
 
     // Get resident's usage for the date
     const [residentRows] = await db.query(
@@ -286,11 +295,22 @@ exports.checkAvailability = async (req, res) => {
 
 
 // Get all dates availability (for calendar)
+// fileController.js - Sa getAllAvailability function
 exports.getAllAvailability = async (req, res) => {
   try {
     const residentId = req.user.id;
-    const residentLimit = 30;
-    const systemLimit = 100;
+    
+    // KUNIN ANG LIMITS MULA SA DATABASE
+    const [limitRows] = await db.query(
+      `SELECT 
+        MAX(CASE WHEN type = 'global' THEN value END) as system_limit,
+        MAX(CASE WHEN type = 'resident' THEN value END) as resident_limit
+      FROM upload_limits
+      WHERE staff_id IS NULL`
+    );
+
+    const systemLimit = limitRows[0]?.system_limit || 100;
+    const residentLimit = limitRows[0]?.resident_limit || 30;
 
     const [rows] = await db.query(
       `SELECT 
@@ -536,29 +556,28 @@ exports.getAcceptedSchedules = async (req, res) => {
 
 
 // Get upload limits
+// fileController.js - Sa getLimits function
 exports.getLimits = async (req, res) => {
   try {
-    // You can store limits in a database table or use hardcoded values
+    // Kumuha ng limits mula sa database
     const [limitRows] = await db.query(
-      `SELECT type, value FROM upload_limits WHERE staff_id IS NULL`
+      `SELECT 
+        MAX(CASE WHEN type = 'global' THEN value END) as system_limit,
+        MAX(CASE WHEN type = 'resident' THEN value END) as resident_limit
+      FROM upload_limits
+      WHERE staff_id IS NULL`
     );
 
-    // If no limits in database, use defaults
-    let limits = [];
-    if (limitRows.length > 0) {
-      limits = limitRows;
-    } else {
-      // Default limits
-      limits = [
-        { type: 'resident', value: 30, description: 'Daily page limit per resident' },
-        { type: 'global', value: 100, description: 'Daily system-wide page limit' }
-      ];
-    }
+    const systemLimit = limitRows[0]?.system_limit || 100;
+    const residentLimit = limitRows[0]?.resident_limit || 30;
 
     res.json({
       success: true,
       data: {
-        limits: limits
+        limits: [
+          { type: 'resident', value: residentLimit, description: 'Daily page limit per resident' },
+          { type: 'global', value: systemLimit, description: 'Daily system-wide page limit' }
+        ]
       }
     });
   } catch (err) {
@@ -570,6 +589,42 @@ exports.getLimits = async (req, res) => {
           { type: 'resident', value: 30 },
           { type: 'global', value: 100 }
         ]
+      }
+    });
+  }
+};
+
+// controllers/fileController.js - dagdagan ito
+exports.getLimitsForResident = async (req, res) => {
+  try {
+    // Kumuha ng limits mula sa database
+    const [limitRows] = await db.query(
+      `SELECT type, value FROM upload_limits WHERE type IN ('resident', 'global')`
+    );
+
+    // Convert to object
+    const limits = {};
+    limitRows.forEach(row => {
+      limits[row.type] = row.value;
+    });
+
+    const residentLimit = limits.resident || 30;
+    const systemLimit = limits.global || 100;
+
+    res.json({
+      success: true,
+      data: {
+        resident: residentLimit,
+        system: systemLimit
+      }
+    });
+  } catch (err) {
+    console.error("Error fetching limits for resident:", err);
+    res.json({
+      success: true,
+      data: {
+        resident: 30,
+        system: 100
       }
     });
   }

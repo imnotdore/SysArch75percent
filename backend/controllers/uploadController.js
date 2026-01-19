@@ -1,7 +1,7 @@
 // controllers/uploadController.js
 const db = require("../config/db");
 
-// Upload file
+// function para sa pagupload ng file ni resident
 const uploadFile = async (req, res) => {
   try {
     if (!req.file) {

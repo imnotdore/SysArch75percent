@@ -1,10 +1,15 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { API_URL } from "../../../config";
 
 export default function useStaffData(staffId, activeTab) {
   const [residents, setResidents] = useState([]);
   const [selectedResident, setSelectedResident] = useState(null);
-  const [selectedResidentRequests, setSelectedResidentRequests] = useState({ files: [], schedules: [] });
+  const [selectedResidentRequests, setSelectedResidentRequests] = useState({ 
+    files: [], 
+    schedules: [], 
+    computerRequests: [] // Initialize with empty array
+  });
   const [selectedFile, setSelectedFile] = useState(null);
   const [selectedSchedule, setSelectedSchedule] = useState(null);
   const [selectedAccepted, setSelectedAccepted] = useState(null);
@@ -19,7 +24,7 @@ export default function useStaffData(staffId, activeTab) {
   const [modalLoading, setModalLoading] = useState(false);
 
   const token = localStorage.getItem("token");
-  const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+  const baseUrl = API_URL || import.meta.env.VITE_API_URL || "http://localhost:3000";
   
   const axiosAuth = axios.create({
     baseURL: baseUrl,
@@ -39,59 +44,45 @@ export default function useStaffData(staffId, activeTab) {
   };
 
   // Fetch accepted requests
-// Fetch accepted requests
-const fetchAcceptedRequests = async () => {
-  try {
-    const [filesRes, schedulesRes] = await Promise.all([
-      axiosAuth.get("/api/staff/accepted"),
-      axiosAuth.get("/api/staff/accepted-schedules"),
-    ]);
+  const fetchAcceptedRequests = async () => {
+    try {
+      const [filesRes, schedulesRes] = await Promise.all([
+        axiosAuth.get("/api/staff/accepted"),
+        axiosAuth.get("/api/staff/accepted-schedules"),
+      ]);
 
-    setAcceptedFiles(
-      Array.isArray(filesRes.data)
-        ? filesRes.data.map((f) => ({
-            ...f,
-            id: f.request_id,
-            approved_at: f.approved_at ? new Date(f.approved_at) : null,
-            // Mas maayos na display ng staff name
-            staff_username: f.staff_name || f.staff_username || `Staff#${f.approved_by}`,
-          }))
-        : []
-    );
+      setAcceptedFiles(
+        Array.isArray(filesRes.data)
+          ? filesRes.data.map((f) => ({
+              ...f,
+              id: f.request_id,
+              approved_at: f.approved_at ? new Date(f.approved_at) : null,
+              staff_username: f.staff_name || f.staff_username || `Staff#${f.approved_by}`,
+            }))
+          : []
+      );
 
-    setAcceptedSchedules(
-      Array.isArray(schedulesRes.data)
-        ? schedulesRes.data.map((s, idx) => ({
-            ...s,
-            id: s.id ?? s.schedule_id ?? idx,
-            approved_at: s.approved_at ? new Date(s.approved_at) : null,
-            // DITO: Mas descriptive ang staff display
-            staff_display: s.staff_name 
-              ? `${s.staff_name} (${s.staff_username})` 
-              : s.staff_username || `Staff#${s.approved_by}`,
-            staff_username: s.staff_username,
-            staff_name: s.staff_name,
-          }))
-        : []
-    );
-    
-    // Debug: Tingnan kung may staff data
-    console.log("Accepted schedules with staff info:", 
-      Array.isArray(schedulesRes.data) ? schedulesRes.data.map(s => ({
-        id: s.schedule_id,
-        item: s.item,
-        approved_by: s.approved_by,
-        staff_username: s.staff_username,
-        staff_name: s.staff_name
-      })) : []
-    );
-    
-  } catch (err) {
-    console.error("Error fetching accepted requests:", err.response?.data || err.message);
-    setAcceptedFiles([]);
-    setAcceptedSchedules([]);
-  }
-};
+      setAcceptedSchedules(
+        Array.isArray(schedulesRes.data)
+          ? schedulesRes.data.map((s, idx) => ({
+              ...s,
+              id: s.id ?? s.schedule_id ?? idx,
+              approved_at: s.approved_at ? new Date(s.approved_at) : null,
+              staff_display: s.staff_name 
+                ? `${s.staff_name} (${s.staff_username})` 
+                : s.staff_username || `Staff#${s.approved_by}`,
+              staff_username: s.staff_username,
+              staff_name: s.staff_name,
+            }))
+          : []
+      );
+      
+    } catch (err) {
+      console.error("Error fetching accepted requests:", err.response?.data || err.message);
+      setAcceptedFiles([]);
+      setAcceptedSchedules([]);
+    }
+  };
 
   // Fetch returned schedules
   const fetchReturnedSchedules = async () => {
@@ -128,50 +119,58 @@ const fetchAcceptedRequests = async () => {
     }
   };
 
-// Fetch resident requests
-// I-update ang fetchResidentRequests function sa useStaffData hook
-const fetchResidentRequests = async (residentId) => {
-  try {
-    const [filesRes, schedulesRes] = await Promise.all([
-      axiosAuth.get(`/api/staff/files/resident/${residentId}`),
-      axiosAuth.get(`/api/staff/schedules/resident/${residentId}`),
-    ]);
-
-    // Kunin ang resident info
-    const residentInfo = residents.find(r => r.id === residentId) || {};
-    
-    // I-enhance ang files data
-    const enhancedFiles = Array.isArray(filesRes.data)
-      ? filesRes.data.filter((f) => f.status.toLowerCase() === "pending").map(file => ({
-          ...file,
-          resident_username: residentInfo.username || `Resident #${file.user_id}`,
-          resident_name: residentInfo.name || residentInfo.username || `Resident #${file.user_id}`
-        }))
-      : [];
-
-    // I-enhance ang schedules data
-    const enhancedSchedules = Array.isArray(schedulesRes.data)
-      ? schedulesRes.data.filter((s) => s.status.toLowerCase() === "pending").map(schedule => ({
-          ...schedule,
-          resident_username: residentInfo.username || `Resident #${schedule.user_id}`,
-          resident_name: residentInfo.name || residentInfo.username || `Resident #${schedule.user_id}`
-        }))
-      : [];
-
-    setSelectedResidentRequests({
-      files: enhancedFiles,
-      schedules: enhancedSchedules,
-    });
-    
-    // I-log para makita ang data structure
-    console.log("Enhanced schedules data:", enhancedSchedules);
-    console.log("Resident info:", residentInfo);
-    
-  } catch (err) {
-    console.error("Error fetching resident requests:", err.response?.data || err.message);
-    setSelectedResidentRequests({ files: [], schedules: [] });
-  }
-};
+  // Fetch resident requests
+  const fetchResidentRequests = async (residentId) => {
+    try {
+      const token = localStorage.getItem("token");
+      
+      if (!API_URL) {
+        console.error("API_URL is not defined. Check your config file.");
+        return { files: [], schedules: [], computerRequests: [] };
+      }
+      
+      // Fetch files
+      const filesResponse = await axios.get(
+        `${API_URL}/api/staff/files/resident/${residentId}`,
+        { 
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 10000
+        }
+      ).catch(() => ({ data: [] }));
+      
+      // Fetch schedules
+      const schedulesResponse = await axios.get(
+        `${API_URL}/api/staff/schedules/resident/${residentId}`,
+        { 
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 10000
+        }
+      ).catch(() => ({ data: [] }));
+      
+      // Fetch computer requests
+      const computerResponse = await axios.get(
+        `${API_URL}/api/staff/computer-requests/resident/${residentId}`,
+        { 
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 10000
+        }
+      ).catch(() => ({ data: [] }));
+      
+      const result = {
+        files: (filesResponse.data || []).filter(file => file.status === 'Pending'),
+        schedules: (schedulesResponse.data || []).filter(schedule => schedule.status === 'Pending'),
+        computerRequests: (computerResponse.data || []).filter(computer => computer && computer.status === 'Pending')
+      };
+      
+      setSelectedResidentRequests(result);
+      return result;
+    } catch (error) {
+      console.error("Error fetching resident requests:", error);
+      const result = { files: [], schedules: [], computerRequests: [] };
+      setSelectedResidentRequests(result);
+      return result;
+    }
+  };
 
   // ==================== ACTION FUNCTIONS ====================
 
@@ -179,7 +178,7 @@ const fetchResidentRequests = async (residentId) => {
   const releaseSchedule = async (scheduleId) => {
     try {
       await axiosAuth.put(`/api/staff/schedules/${scheduleId}/release`);
-      fetchAcceptedRequests(); // Refresh the lists
+      fetchAcceptedRequests();
       fetchReleasedSchedules();
       return true;
     } catch (err) {
@@ -193,7 +192,7 @@ const fetchResidentRequests = async (residentId) => {
   const returnSchedule = async (scheduleId, returnData) => {
     try {
       await axiosAuth.put(`/api/staff/schedules/${scheduleId}/return`, returnData);
-      fetchReleasedSchedules(); // Refresh the lists
+      fetchReleasedSchedules();
       fetchReturnedSchedules();
       return true;
     } catch (err) {
@@ -202,211 +201,199 @@ const fetchResidentRequests = async (residentId) => {
       return false;
     }
   };
-const handleFileStatusChange = async (fileId, status) => {
-  try {
-    const userData = JSON.parse(localStorage.getItem("user") || "{}");
-    const staffId = userData.id || localStorage.getItem("staffId");
-    
-    if (!staffId) {
-      alert("Error: Staff information not found. Please login again.");
-      return;
-    }
-    
-    console.log("=== DEBUG FILE STATUS CHANGE ===");
-    console.log("Original status from button:", status);
-    console.log("Staff ID:", staffId);
-    console.log("File ID:", fileId);
-    
-    // Try different status formats
-    const statusFormats = [
-      "APPROVED",      // UPPERCASE (like schedules)
-      "Approved",      // Capitalized (current)
-      "approved",      // lowercase
-      "Accepted",      // Maybe "Accepted" instead of "Approved"
-    ];
-    
-    let success = false;
-    let lastError = null;
-    
-    // Try each format until one works
-    for (const statusValue of statusFormats) {
-      try {
-        const payload = { 
-          status: statusValue,
-          approved_by: staffId
-        };
-        
-        console.log(`Trying status: "${statusValue}"`);
-        
-        const response = await axiosAuth.put(`/api/staff/files/${fileId}`, payload);
-        
-        console.log(`✅ SUCCESS with status: "${statusValue}"`);
-        console.log("Backend response:", response.data);
-        
-        alert(`✅ File ${status} successfully!`);
-        
-        // Refresh data
-        fetchResidents();
-        fetchAcceptedRequests();
-        setSelectedFile(null);
-        
-        success = true;
-        break; // Exit loop if successful
-        
-      } catch (err) {
-        lastError = err;
-        console.log(`❌ FAILED with status: "${statusValue}"`);
+
+  const handleFileStatusChange = async (fileId, status) => {
+    try {
+      const userData = JSON.parse(localStorage.getItem("user") || "{}");
+      const staffId = userData.id || localStorage.getItem("staffId");
+      
+      if (!staffId) {
+        alert("Error: Staff information not found. Please login again.");
+        return;
       }
+      
+      console.log("=== DEBUG FILE STATUS CHANGE ===");
+      console.log("Original status from button:", status);
+      console.log("Staff ID:", staffId);
+      console.log("File ID:", fileId);
+      
+      const statusFormats = [
+        "APPROVED",
+        "Approved",
+        "approved",
+        "Accepted",
+      ];
+      
+      let success = false;
+      let lastError = null;
+      
+      for (const statusValue of statusFormats) {
+        try {
+          const payload = { 
+            status: statusValue,
+            approved_by: staffId
+          };
+          
+          console.log(`Trying status: "${statusValue}"`);
+          
+          const response = await axiosAuth.put(`/api/staff/files/${fileId}`, payload);
+          
+          console.log(`✅ SUCCESS with status: "${statusValue}"`);
+          console.log("Backend response:", response.data);
+          
+          alert(`✅ File ${status} successfully!`);
+          
+          fetchResidents();
+          fetchAcceptedRequests();
+          setSelectedFile(null);
+          
+          success = true;
+          break;
+          
+        } catch (err) {
+          lastError = err;
+          console.log(`❌ FAILED with status: "${statusValue}"`);
+        }
+      }
+      
+      if (!success && lastError) {
+        console.error("All formats failed:", lastError);
+        throw lastError;
+      }
+      
+    } catch (err) {
+      console.error("=== ERROR DETAILS ===");
+      console.error("Error response:", err.response);
+      console.error("Error status:", err.response?.status);
+      console.error("Error data:", err.response?.data);
+      console.error("Error message:", err.message);
+      
+      let errorMessage = "Failed to update file status.";
+      if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      }
+      
+      alert(`❌ Error: ${errorMessage}`);
     }
-    
-    if (!success && lastError) {
-      console.error("All formats failed:", lastError);
-      throw lastError;
-    }
-    
-  } catch (err) {
-    console.error("=== ERROR DETAILS ===");
-    console.error("Error response:", err.response);
-    console.error("Error status:", err.response?.status);
-    console.error("Error data:", err.response?.data);
-    console.error("Error message:", err.message);
-    
-    let errorMessage = "Failed to update file status.";
-    if (err.response?.data?.error) {
-      errorMessage = err.response.data.error;
-    } else if (err.response?.data?.message) {
-      errorMessage = err.response.data.message;
-    }
-    
-    alert(`❌ Error: ${errorMessage}`);
-  }
-};
+  };
 
-const handleScheduleStatusChange = async (scheduleId, status) => {
-  try {
-    // IMPORTANT: Kunin ang staff ID mula sa localStorage
-    const userData = JSON.parse(localStorage.getItem("user") || "{}");
-    const staffId = userData.id || localStorage.getItem("staffId");
-    
-    if (!staffId) {
-      alert("Error: Staff information not found. Please login again.");
-      return;
-    }
+  const handleScheduleStatusChange = async (scheduleId, status) => {
+    try {
+      const userData = JSON.parse(localStorage.getItem("user") || "{}");
+      const staffId = userData.id || localStorage.getItem("staffId");
+      
+      if (!staffId) {
+        alert("Error: Staff information not found. Please login again.");
+        return;
+      }
 
-    console.log("Staff approving:", staffId);
-    
-    // Gumamit ng uppercase status gaya ng ginagamit ng backend
-    const statusUpper = status.toUpperCase();
-    
-    // Payload base sa backend requirements
-    const payload = { 
-      status: statusUpper, 
-      approved_by: staffId
-    };
+      console.log("Staff approving:", staffId);
+      
+      const statusUpper = status.toUpperCase();
+      
+      const payload = { 
+        status: statusUpper, 
+        approved_by: staffId
+      };
 
-    console.log("Approving schedule:", {
-      scheduleId,
-      payload,
-      endpoint: `/api/staff/schedules/${scheduleId}/status`
-    });
+      console.log("Approving schedule:", {
+        scheduleId,
+        payload,
+        endpoint: `/api/staff/schedules/${scheduleId}/status`
+      });
 
-    const response = await axiosAuth.put(
-      `/api/staff/schedules/${scheduleId}/status`, 
-      payload
-    );
-    
-    console.log("Backend response:", response.data);
-    
-    alert(`✅ Schedule ${status} successfully!`);
-    
-    // Update local state
-    if (selectedResident) {
-      const updatedSchedules = selectedResidentRequests.schedules.filter(
-        s => s.id !== scheduleId
+      const response = await axiosAuth.put(
+        `/api/staff/schedules/${scheduleId}/status`, 
+        payload
       );
-      const updatedFiles = selectedResidentRequests.files;
-      updateInboxIfNoPending(selectedResident.id, updatedFiles, updatedSchedules);
-    }
-    
-    // Refresh data - IMPORTANTE: Ito ang magpapakita ng staff name
-    fetchAcceptedRequests();
-    setSelectedSchedule(null);
-    
-  } catch (err) {
-    console.error("Schedule approval error:", {
-      status: err.response?.status,
-      data: err.response?.data,
-      message: err.message
-    });
-    
-    let errorMessage = "Failed to update schedule status.";
-    if (err.response?.data?.error) {
-      errorMessage = err.response.data.error;
-    } else if (err.response?.data?.message) {
-      errorMessage = err.response.data.message;
-    }
-    
-    alert(`❌ Error: ${errorMessage}`);
-  }
-};
-
-  // Handle account action
- // Handle account action WITH EMAIL
-const handleAccountAction = async (id, action) => {
-  try {
-    const confirmMessage = action === 'approved' 
-      ? 'Are you sure you want to approve this account? An email will be sent to the user.'
-      : 'Are you sure you want to reject this account? An email will be sent to the user.';
-    
-    if (!window.confirm(confirmMessage)) {
-      return false;
-    }
-
-    // Determine endpoint and method
-    let endpoint;
-    let method;
-    
-    if (action === 'approved') {
-      endpoint = `${baseUrl}/api/auth/resident/approve/${id}`;
-      method = 'PUT';
-    } else {
-      endpoint = `${baseUrl}/api/auth/resident/reject/${id}`;
-      method = 'DELETE';
-    }
-
-    // Make the request
-    const response = await fetch(endpoint, {
-      method: method,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    const data = await response.json();
-    
-    if (data.success) {
-      alert(`✅ Account ${action === 'approved' ? 'approved' : 'rejected'} successfully! ${data.emailSent ? 'Email sent to user.' : ''}`);
       
-      // Remove from pending accounts list
-      setPendingAccounts(prev => prev.filter(acc => acc.id !== id));
+      console.log("Backend response:", response.data);
       
-      // Close modal if open
-      if (selectedPendingAccount && selectedPendingAccount.id === id) {
-        setSelectedPendingAccount(null);
+      alert(`✅ Schedule ${status} successfully!`);
+      
+      if (selectedResident) {
+        const updatedSchedules = selectedResidentRequests.schedules.filter(
+          s => s.id !== scheduleId
+        );
+        const updatedFiles = selectedResidentRequests.files;
+        updateInboxIfNoPending(selectedResident.id, updatedFiles, updatedSchedules);
       }
       
-      return true;
-    } else {
-      alert(`❌ Error: ${data.message || data.error}`);
+      fetchAcceptedRequests();
+      setSelectedSchedule(null);
+      
+    } catch (err) {
+      console.error("Schedule approval error:", {
+        status: err.response?.status,
+        data: err.response?.data,
+        message: err.message
+      });
+      
+      let errorMessage = "Failed to update schedule status.";
+      if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      }
+      
+      alert(`❌ Error: ${errorMessage}`);
+    }
+  };
+
+  // Handle account action WITH EMAIL
+  const handleAccountAction = async (id, action) => {
+    try {
+      const confirmMessage = action === 'approved' 
+        ? 'Are you sure you want to approve this account? An email will be sent to the user.'
+        : 'Are you sure you want to reject this account? An email will be sent to the user.';
+      
+      if (!window.confirm(confirmMessage)) {
+        return false;
+      }
+
+      let endpoint;
+      let method;
+      
+      if (action === 'approved') {
+        endpoint = `${baseUrl}/api/auth/resident/approve/${id}`;
+        method = 'PUT';
+      } else {
+        endpoint = `${baseUrl}/api/auth/resident/reject/${id}`;
+        method = 'DELETE';
+      }
+
+      const response = await fetch(endpoint, {
+        method: method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        alert(`✅ Account ${action === 'approved' ? 'approved' : 'rejected'} successfully! ${data.emailSent ? 'Email sent to user.' : ''}`);
+        
+        setPendingAccounts(prev => prev.filter(acc => acc.id !== id));
+        
+        if (selectedPendingAccount && selectedPendingAccount.id === id) {
+          setSelectedPendingAccount(null);
+        }
+        
+        return true;
+      } else {
+        alert(`❌ Error: ${data.message || data.error}`);
+        return false;
+      }
+    } catch (err) {
+      console.error("Error updating account status:", err.response?.data || err.message);
+      alert('❌ Failed to process request. Please try again.');
       return false;
     }
-  } catch (err) {
-    console.error("Error updating account status:", err.response?.data || err.message);
-    alert('❌ Failed to process request. Please try again.');
-    return false;
-  }
-};
+  };
 
   // ==================== HELPER FUNCTIONS ====================
 
@@ -416,9 +403,13 @@ const handleAccountAction = async (id, action) => {
     if (!hasPending) {
       setResidents((prev) => prev.filter((r) => r.id !== residentId));
       setSelectedResident(null);
-      setSelectedResidentRequests({ files: [], schedules: [] });
+      setSelectedResidentRequests({ files: [], schedules: [], computerRequests: [] });
     } else {
-      setSelectedResidentRequests({ files: updatedFiles, schedules: updatedSchedules });
+      setSelectedResidentRequests({ 
+        files: updatedFiles, 
+        schedules: updatedSchedules,
+        computerRequests: selectedResidentRequests.computerRequests || []
+      });
     }
   };
 

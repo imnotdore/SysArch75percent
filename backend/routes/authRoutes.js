@@ -4,6 +4,7 @@ const router = express.Router();
 const authController = require("../controllers/authController");
 const { checkAdminExists } = require("../controllers/authController");
 const multer = require("multer");
+const adminController = require("../controllers/adminController"); // ✅ Mayroon na ito
 
 // ---------------- Multer setup for ID uploads ----------------
 const storage = multer.diskStorage({
@@ -50,6 +51,37 @@ router.get("/admin/residents/approved", authController.getApprovedResidents);
 router.put("/admin/residents/:id", upload.single("id_picture"), authController.updateResident); 
 router.delete("/admin/residents/:id", authController.deleteResident);
 router.delete("/admin/residents/:id/reject", authController.rejectResident);
+
+// --- Page Limits for Admin --- 🆕 DAGDAG MO ITO! 🆕
+router.get("/admin/page-limits", 
+  authController.verifyToken, 
+  authController.isAdmin, 
+  adminController.getPageLimits
+);
+
+router.put("/admin/page-limits", 
+  authController.verifyToken, 
+  authController.isAdmin, 
+  adminController.updatePageLimit
+);
+// routes/authRoutes.js - Add this route
+router.get("/today-usage/:userId", 
+  authController.verifyToken,
+  adminController.getTodayUsage
+);
+
+// Keep the existing routes
+router.get("/admin/page-limits", 
+  authController.verifyToken, 
+  authController.isAdmin, 
+  adminController.getPageLimits
+);
+
+router.put("/admin/page-limits", 
+  authController.verifyToken, 
+  authController.isAdmin, 
+  adminController.updatePageLimit
+);
 // Add this route
 router.post('/check-duplicate', authController.checkDuplicate);
 

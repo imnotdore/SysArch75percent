@@ -1,5 +1,5 @@
-import { FaUserCheck, FaUserClock, FaUserPlus } from "react-icons/fa";
-
+import { FaUserCheck, FaUserClock, FaUserPlus, FaBox, FaFileAlt, FaTools } from "react-icons/fa";
+import "./styles/DashboardCards.css";
 const DashboardCards = ({
   approvedStaff, 
   pendingResidents, 
@@ -14,46 +14,58 @@ const DashboardCards = ({
     return Math.round(((current - previous) / previous) * 100);
   };
 
-  const Card = ({ title, count, previousCount, icon: Icon, onClick, showAddButton = false }) => {
+  const Card = ({ title, count, previousCount, icon: Icon, onClick, showAddButton = false, badge, badgeColor = '#2563eb' }) => {
     const growth = calculateGrowth(count, previousCount);
     
     return (
-      <div className={`dashboard-card ${title.toLowerCase().includes('pending') ? 'pending-card' : 'approved-card'}`} onClick={onClick}>
-        <div className="card-left">
-          <div className="icon-wrapper"><Icon className="icon" /></div>
-          <h2>{count}</h2>
-          <span>{title}</span>
+      <div className="dashboard-card" onClick={onClick}>
+        <div className="card-header">
+          <div className="card-title-wrapper">
+            <div className="icon-wrapper">
+              <Icon className="card-icon" />
+            </div>
+            <h3 className="card-title">{title}</h3>
+          </div>
+          {badge && (
+            <span className="card-badge" style={{ backgroundColor: badgeColor }}>
+              {badge}
+            </span>
+          )}
         </div>
-        <div className="card-right">
+        
+        <div className="card-content">
+          <div className="card-stats">
+            <h2 className="card-count">{count}</h2>
+            {previousCount !== undefined && (
+              <div className="growth-indicator">
+                <span className={`growth-percent ${growth >= 0 ? 'positive' : 'negative'}`}>
+                  {growth > 0 ? `+${growth}%` : `${growth}%`}
+                </span>
+                <span className="growth-label">vs previous</span>
+              </div>
+            )}
+          </div>
+          
           {showAddButton ? (
             <button 
-              className="add-staff-btn"
+              className="card-action-btn primary"
               onClick={(e) => {
                 e.stopPropagation();
                 setShowAddStaffModal(true);
               }}
-              style={{
-                background: '#2563eb',
-                color: 'white',
-                border: 'none',
-                padding: '8px 16px',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px',
-                fontSize: '14px'
+            >
+              <FaUserPlus /> Add Staff
+            </button>
+          ) : onClick && (
+            <button 
+              className="card-action-btn secondary"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClick();
               }}
             >
-              <FaUserPlus/> Add Staff
+              View Details
             </button>
-          ) : (
-            <>
-              <p className="growth">
-                {growth > 0 ? `+${growth}%` : `${growth}%`}
-              </p>
-              <span>Growth</span>
-            </>
           )}
         </div>
       </div>
@@ -61,39 +73,85 @@ const DashboardCards = ({
   };
 
   return (
-    <div className="dashboard-cards">
-      <Card
-        title="Staff Accounts"
-        count={approvedStaff.length}
-        previousCount={prevCounts.current.approvedStaff}
-        icon={FaUserCheck}
-        onClick={() => setActiveTab("approved-staff")}
-        showAddButton={true}
-      />
+    <div className="dashboard-container">
+      <div className="dashboard-header">
+        <h1>Dashboard Overview</h1>
+        <p className="dashboard-subtitle">Monitor your system at a glance</p>
+      </div>
+      
+      <div className="dashboard-cards-grid">
+        <Card
+          title="Staff Accounts"
+          count={approvedStaff.length}
+          previousCount={prevCounts.current.approvedStaff}
+          icon={FaUserCheck}
+          onClick={() => setActiveTab("all-staff")}
+          showAddButton={true}
+          badge="Accounts"
+          badgeColor="#3b82f6"
+        />
 
-      <Card
-        title="Pending Residents"
-        count={pendingResidents.length}
-        previousCount={prevCounts.current.pendingRes}
-        icon={FaUserClock}
-        onClick={() => setActiveTab("pending-res")}
-      />
+        <Card
+          title="Pending Residents"
+          count={pendingResidents.length}
+          previousCount={prevCounts.current.pendingRes}
+          icon={FaUserClock}
+          onClick={() => setActiveTab("pending-res")}
+          badge="Approval"
+          badgeColor="#f59e0b"
+        />
 
-      <Card
-        title="Approved Residents"
-        count={approvedResidents.length}
-        previousCount={prevCounts.current.approvedRes}
-        icon={FaUserCheck}
-        onClick={() => setActiveTab("approved-res")}
-      />
+        <Card
+          title="Approved Residents"
+          count={approvedResidents.length}
+          previousCount={prevCounts.current.approvedRes}
+          icon={FaUserCheck}
+          onClick={() => setActiveTab("approved-res")}
+          badge="Active"
+          badgeColor="#10b981"
+        />
 
-      <Card
-  title="Total Residents"
-  count={pendingResidents.length + approvedResidents.length}
-  previousCount={prevCounts.current.pendingRes + prevCounts.current.approvedRes}
-  icon={FaUserCheck}
-  onClick={() => setActiveTab("all-residents")} // Baguhin mula "all" to "all-residents"
-/>
+        <Card
+          title="Total Residents"
+          count={pendingResidents.length + approvedResidents.length}
+          previousCount={prevCounts.current.pendingRes + prevCounts.current.approvedRes}
+          icon={FaUserCheck}
+          onClick={() => setActiveTab("all-residents")}
+          badge="Total"
+          badgeColor="#8b5cf6"
+        />
+
+        {/* Quick Access Cards */}
+        <Card
+          title="Item Management"
+          count="Manage"
+          previousCount={undefined}
+          icon={FaBox}
+          onClick={() => setActiveTab("items")}
+          badge="Inventory"
+          badgeColor="#f97316"
+        />
+
+        <Card
+          title="Page Limits"
+          count="Set"
+          previousCount={undefined}
+          icon={FaFileAlt}
+          onClick={() => setActiveTab("page-limits")}
+          badge="Settings"
+          badgeColor="#6366f1"
+        />
+
+        <Card
+          title="System Tools"
+          count="Access"
+          previousCount={undefined}
+          icon={FaTools}
+          onClick={() => {}}
+          badge="Utilities"
+          badgeColor="#6b7280"
+        />
+      </div>
     </div>
   );
 };

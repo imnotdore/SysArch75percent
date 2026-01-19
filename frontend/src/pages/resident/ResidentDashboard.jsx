@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import ResidentLayout from "./ResidentLayout";
 import AnnouncementsSection from "./sections/AnnouncementsSection";
 import ProjectsGallery from "./sections/ProjectsGallery";
-import "./ResidentDashboard.css";
+import "../resident/styles/ResidentDashboard.css";
 
 export default function ResidentDashboard() {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);

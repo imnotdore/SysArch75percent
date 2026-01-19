@@ -10,11 +10,11 @@ import EditUserModal from "./EditUserModal";
 import "./admin.css";
 import ItemManager from "./ItemManager";
 import Sidebar from "./Sidebar";
+import PageLimitManager from "./PageLimitManager";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const [pendingStaff, setPendingStaff] = useState([]);
-  const [approvedStaff, setApprovedStaff] = useState([]);
+  const [approvedStaff, setApprovedStaff] = useState([]); // Removed pendingStaff
   const [pendingResidents, setPendingResidents] = useState([]);
   const [approvedResidents, setApprovedResidents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -32,7 +32,7 @@ export default function AdminDashboard() {
     password: ''
   });
 
-  const prevCounts = useRef({ pendingStaff:0, approvedStaff:0, pendingRes:0, approvedRes:0 });
+  const prevCounts = useRef({ approvedStaff:0, pendingRes:0, approvedRes:0 }); // Removed pendingStaff
   const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
   const sidebarRef = useRef(null);
 
@@ -66,21 +66,18 @@ export default function AdminDashboard() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [pendingStaffRes, approvedStaffRes, pendingResRes, approvedResRes] = await Promise.all([
-        axios.get(`${baseUrl}/api/auth/admin/staff/pending`),
+      const [approvedStaffRes, pendingResRes, approvedResRes] = await Promise.all([
         axios.get(`${baseUrl}/api/auth/admin/staff/approved`),
         axios.get(`${baseUrl}/api/auth/admin/residents/pending`),
         axios.get(`${baseUrl}/api/auth/admin/residents/approved`)
       ]);
 
       prevCounts.current = {
-        pendingStaff: pendingStaffRes.data.length,
         approvedStaff: approvedStaffRes.data.length,
         pendingRes: pendingResRes.data.length,
         approvedRes: approvedResRes.data.length
       };
 
-      setPendingStaff(pendingStaffRes.data);
       setApprovedStaff(approvedStaffRes.data);
       setPendingResidents(pendingResRes.data);
       setApprovedResidents(approvedResRes.data);
@@ -123,17 +120,6 @@ export default function AdminDashboard() {
         if (action === "delete") {
           const res = await axios.delete(`${baseUrl}/api/auth/admin/staff/${user.id}`);
           if (res.status === 200) setApprovedStaff(prev => prev.filter(s => s.id !== user.id));
-        } else {
-          endpoint = `${baseUrl}/api/auth/admin/staff-requests/${user.id}/${action}`;
-          const res = await axios.post(endpoint);
-          if (res.status === 200) {
-            if (action === "accept") {
-              setApprovedStaff(prev => [...prev, { ...user, status:"approved" }]);
-              setPendingStaff(prev => prev.filter(s => s.id !== user.id));
-            } else if (action === "reject") {
-              setPendingStaff(prev => prev.filter(s => s.id !== user.id));
-            }
-          }
         }
       } else if (type === "resident") {
         if (action === "delete") {
@@ -159,83 +145,84 @@ export default function AdminDashboard() {
     }
   };
 
-const handleSaveEdit = async (updatedUser) => {
-  if (!updatedUser?.id) return alert("Invalid user data");
-  try {
-    const type = editModal.type;
-    const endpointType = type === 'resident' ? 'residents' : 'staff';
+  const handleSaveEdit = async (updatedUser) => {
+    if (!updatedUser?.id) return alert("Invalid user data");
+    try {
+      const type = editModal.type;
+      const endpointType = type === 'resident' ? 'residents' : 'staff';
 
-    const formData = new FormData();
-    
-    if (type === "staff") {
-      formData.append("username", updatedUser.username || "");
-      formData.append("name", updatedUser.name || "");
-      formData.append("contact", updatedUser.contact || "");
-      formData.append("staff_id", updatedUser.staff_id || "");
-    } else if (type === "resident") {
-      // Personal Information
-      formData.append("first_name", updatedUser.first_name || "");
-      formData.append("middle_name", updatedUser.middle_name || "");
-      formData.append("last_name", updatedUser.last_name || "");
-      formData.append("suffix", updatedUser.suffix || "");
-      formData.append("sex", updatedUser.sex || "");
-      formData.append("birthday", updatedUser.birthday || "");
-      formData.append("age", updatedUser.age || "");
-      formData.append("civil_status", updatedUser.civil_status || "");
-      formData.append("citizenship", updatedUser.citizenship || "");
-      
-      // Address Information
-      formData.append("house_no_street", updatedUser.house_no_street || "");
-      formData.append("purok_sitio", updatedUser.purok_sitio || "");
-      formData.append("barangay", updatedUser.barangay || "");
-      formData.append("city_municipality", updatedUser.city_municipality || "");
-      formData.append("province", updatedUser.province || "");
-      
-      // Contact Information
-      formData.append("mobile_number", updatedUser.mobile_number || "");
-      formData.append("email_address", updatedUser.email_address || "");
-      formData.append("email", updatedUser.email_address || "");
-      
-      // Identity Verification
-      formData.append("valid_id_type", updatedUser.valid_id_type || "");
-      formData.append("valid_id_number", updatedUser.valid_id_number || "");
-      
-      // Household Information
-      formData.append("household_id", updatedUser.household_id || "");
-      formData.append("family_role", updatedUser.family_role || "");
-      formData.append("household_members", updatedUser.household_members || "");
-      formData.append("emergency_contact_name", updatedUser.emergency_contact_name || "");
-      formData.append("emergency_contact_number", updatedUser.emergency_contact_number || "");
-      
-      // Account
-      formData.append("username", updatedUser.username || "");
-    }
-
-    const res = await axios.put(
-      `${baseUrl}/api/auth/admin/${endpointType}/${updatedUser.id}`,
-      formData,
-      { headers: { "Content-Type": "multipart/form-data" } }
-    );
-
-    if (res.status === 200) {
-      const updatedData = res.data.data || updatedUser;
+      const formData = new FormData();
       
       if (type === "staff") {
-        setApprovedStaff(prev => prev.map(u => u.id === updatedUser.id ? { ...u, ...updatedData } : u));
+        formData.append("username", updatedUser.username || "");
+        formData.append("name", updatedUser.name || "");
+        formData.append("contact", updatedUser.contact || "");
+        formData.append("staff_id", updatedUser.staff_id || "");
+      } else if (type === "resident") {
+        // Personal Information
+        formData.append("first_name", updatedUser.first_name || "");
+        formData.append("middle_name", updatedUser.middle_name || "");
+        formData.append("last_name", updatedUser.last_name || "");
+        formData.append("suffix", updatedUser.suffix || "");
+        formData.append("sex", updatedUser.sex || "");
+        formData.append("birthday", updatedUser.birthday || "");
+        formData.append("age", updatedUser.age || "");
+        formData.append("civil_status", updatedUser.civil_status || "");
+        formData.append("citizenship", updatedUser.citizenship || "");
+        
+        // Address Information
+        formData.append("house_no_street", updatedUser.house_no_street || "");
+        formData.append("purok_sitio", updatedUser.purok_sitio || "");
+        formData.append("barangay", updatedUser.barangay || "");
+        formData.append("city_municipality", updatedUser.city_municipality || "");
+        formData.append("province", updatedUser.province || "");
+        
+        // Contact Information
+        formData.append("mobile_number", updatedUser.mobile_number || "");
+        formData.append("email_address", updatedUser.email_address || "");
+        formData.append("email", updatedUser.email_address || "");
+        
+        // Identity Verification
+        formData.append("valid_id_type", updatedUser.valid_id_type || "");
+        formData.append("valid_id_number", updatedUser.valid_id_number || "");
+        
+        // Household Information
+        formData.append("household_id", updatedUser.household_id || "");
+        formData.append("family_role", updatedUser.family_role || "");
+        formData.append("household_members", updatedUser.household_members || "");
+        formData.append("emergency_contact_name", updatedUser.emergency_contact_name || "");
+        formData.append("emergency_contact_number", updatedUser.emergency_contact_number || "");
+        
+        // Account
+        formData.append("username", updatedUser.username || "");
       }
-      if (type === "resident") {
-        setApprovedResidents(prev => prev.map(u => u.id === updatedUser.id ? { ...u, ...updatedData } : u));
+
+      const res = await axios.put(
+        `${baseUrl}/api/auth/admin/${endpointType}/${updatedUser.id}`,
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+
+      if (res.status === 200) {
+        const updatedData = res.data.data || updatedUser;
+        
+        if (type === "staff") {
+          setApprovedStaff(prev => prev.map(u => u.id === updatedUser.id ? { ...u, ...updatedData } : u));
+        }
+        if (type === "resident") {
+          setApprovedResidents(prev => prev.map(u => u.id === updatedUser.id ? { ...u, ...updatedData } : u));
+        }
+        
+        alert(res.data.message || "Updated successfully");
+        setEditModal({ show: false, user: null, viewOnly: false, type: "" });
+        fetchData();
       }
-      
-      alert(res.data.message || "Updated successfully");
-      setEditModal({ show: false, user: null, viewOnly: false, type: "" });
-      fetchData();
+    } catch (err) {
+      console.error("Error saving:", err);
+      alert(`Error saving: ${err.message}. ${err.response?.data?.error || ""}`);
     }
-  } catch (err) {
-    console.error("Error saving:", err);
-    alert(`Error saving: ${err.message}. ${err.response?.data?.error || ""}`);
-  }
-};
+  };
+
   // Handle creating staff account
   const handleAddStaff = async () => {
     try {
@@ -301,7 +288,6 @@ const handleSaveEdit = async (updatedUser) => {
           {/* Dashboard Cards */}
           {activeTab === "dashboard" && (
             <DashboardCards
-              pendingStaff={pendingStaff}
               approvedStaff={approvedStaff}
               pendingResidents={pendingResidents}
               approvedResidents={approvedResidents}
@@ -310,14 +296,23 @@ const handleSaveEdit = async (updatedUser) => {
               setShowAddStaffModal={setShowAddStaffModal}
             />
           )}
- {activeTab === "items" && (
-    <ItemManager />
-  )}
+          
+          {/* Item Manager */}
+          {activeTab === "items" && (
+            <ItemManager />
+          )}
+          
+          {/* Page Limit Manager */}
+          {activeTab === "page-limits" && (
+            <PageLimitManager />
+          )}
+          
           {/* Users Table */}
-          {activeTab !== "dashboard" && (
+          {activeTab !== "dashboard" && 
+           activeTab !== "items" && 
+           activeTab !== "page-limits" && (
             <UsersTable
               activeTab={activeTab}
-              pendingStaff={pendingStaff}
               approvedStaff={approvedStaff}
               pendingResidents={pendingResidents}
               approvedResidents={approvedResidents}
